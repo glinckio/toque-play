@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma:*)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?|ts\\)$\")",
+      "Bash(xargs grep:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(ipconfig)",
+      "Bash(powershell:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npx ts-node:*)",
+      "Bash(npm install:*)",
+      "Bash(tasklist)",
+      "Bash(python3:*)",
+      "Bash(node -e \"const t=require\\('fs'\\).readFileSync\\('src/screens/tournament/TournamentDetailModal.tsx','utf8'\\); const o=t.split\\('{'\\).length-1; const c=t.split\\('}'\\).length-1; console.log\\('Open:',o,'Close:',c,'Diff:',o-c\\)\")",
+      "Bash(node -e ':*)",
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(npx expo:*)"
+    ]
+  }
+}

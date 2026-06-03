@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec toqueplay-redis:*)",
+      "Bash(adb devices:*)",
+      "Bash(xcrun simctl:*)",
+      "Bash(ipconfig)",
+      "Bash(powershell -Command '\\(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notmatch '\\\\''Loopback'\\\\'' } | Select-Object IPAddress, InterfaceAlias\\).PSObject.Properties | ForEach-Object { $_.Value }')",
+      "Bash(powershell -Command 'Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notmatch '\\\\''Loopback'\\\\'' } | Format-Table IPAddress, InterfaceAlias')"
+    ]
+  }
+}

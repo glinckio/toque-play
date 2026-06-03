@@ -1,0 +1,77 @@
+import { Controller, Get, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { IsNumber, IsOptional, IsBoolean } from 'class-validator';
+import { UsersService } from './users.service';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { NotificationPreferencesDto } from './dto/notification-preferences.dto';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Type } from 'class-transformer';
+
+class UpdateLocationDto {
+  @IsNumber()
+  @Type(() => Number)
+  latitude: number;
+
+  @IsNumber()
+  @Type(() => Number)
+  longitude: number;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  enableLocationNotifications?: boolean;
+}
+
+@ApiTags('Users')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get('me')
+  @ApiOperation({ summary: 'Perfil do usuário logado' })
+  async getProfile(@CurrentUser('id') userId: string) {
+    return this.usersService.getProfile(userId);
+  }
+
+  @Patch('me')
+  @ApiOperation({ summary: 'Atualizar perfil' })
+  async updateProfile(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.usersService.updateProfile(userId, dto);
+  }
+
+  @Patch('me/location')
+  @ApiOperation({ summary: 'Atualizar localização do usuário' })
+  async updateLocation(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateLocationDto,
+  ) {
+    return this.usersService.updateLocation(userId, dto);
+  }
+
+  @Get('me/notification-preferences')
+  @ApiOperation({ summary: 'Buscar preferências de notificação' })
+  async getNotificationPreferences(@CurrentUser('id') userId: string) {
+    return this.usersService.getNotificationPreferences(userId);
+  }
+
+  @Patch('me/notification-preferences')
+  @ApiOperation({ summary: 'Atualizar preferências de notificação' })
+  async updateNotificationPreferences(
+    @CurrentUser('id') userId: string,
+    @Body() dto: NotificationPreferencesDto,
+  ) {
+    return this.usersService.updateNotificationPreferences(userId, dto);
+  }
+
+  @Get(':id/stats')
+  @ApiOperation({ summary: 'Buscar estatísticas de um atleta' })
+  async getUserStats(@Param('id') userId: string) {
+    return this.usersService.getUserStats(userId);
+  }
+}

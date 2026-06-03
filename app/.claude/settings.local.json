@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx expo:*)",
+      "Bash(node -e \"try { require\\('expo-constants'\\); console.log\\('installed'\\) } catch\\(e\\) { console.log\\('not installed'\\) }\")",
+      "Bash(ipconfig)",
+      "Bash(powershell:*)"
+    ]
+  }
+}

@@ -1,0 +1,406 @@
+import {
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../common/prisma.service';
+import { MailService } from '../mail/mail.service';
+import { RedisService } from '../../common/redis/redis.service';
+import { GoogleAuthDto } from './dto/google-auth.dto';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendCodeDto } from './dto/resend-code.dto';
+import { OAuth2Client } from 'google-auth-library';
+import { AppError } from '../../common/errors/app-error';
+import * as bcrypt from 'bcrypt';
+
+@Injectable()
+export class AuthService {
+  private googleClient: OAuth2Client;
+
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+    private configService: ConfigService,
+    private mailService: MailService,
+    private redisService: RedisService,
+  ) {
+    this.googleClient = new OAuth2Client(
+      this.configService.get<string>('GOOGLE_CLIENT_ID'),
+    );
+  }
+
+  async register(dto: RegisterDto) {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (existing) {
+      throw AppError.emailAlreadyExists();
+    }
+
+    if (dto.password !== dto.confirmPassword) {
+      throw AppError.passwordsDoNotMatch();
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        name: dto.name,
+        password: hashedPassword,
+        isFirstAccess: true,
+        isEmailVerified: false,
+      },
+    });
+
+    const plainCode = await this.createVerificationCode(user.id);
+    await this.mailService.sendVerificationEmail(
+      user.email,
+      plainCode,
+      user.name,
+    );
+
+    return { message: 'Registro realizado. Verifique seu email.' };
+  }
+
+  async verifyEmail(dto: VerifyEmailDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (!user) {
+      throw AppError.userNotFound();
+    }
+    if (user.isEmailVerified) {
+      throw AppError.emailAlreadyVerified();
+    }
+
+    const verification = await this.prisma.emailVerification.findFirst({
+      where: {
+        userId: user.id,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!verification) {
+      throw AppError.invalidOrExpiredCode();
+    }
+
+    const isValid = await bcrypt.compare(dto.code, verification.code);
+    if (!isValid) {
+      throw AppError.invalidOrExpiredCode();
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { isEmailVerified: true },
+    });
+
+    await this.prisma.emailVerification.deleteMany({
+      where: { userId: user.id },
+    });
+
+    const { accessToken, refreshToken } = await this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+        isFirstAccess: user.isFirstAccess,
+        isEmailVerified: true,
+        role: user.role,
+      },
+    };
+  }
+
+  async resendCode(dto: ResendCodeDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (!user) {
+      throw AppError.userNotFound();
+    }
+    if (user.isEmailVerified) {
+      throw AppError.emailAlreadyVerified();
+    }
+
+    const latestCode = await this.prisma.emailVerification.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (latestCode) {
+      const cooldown = new Date(latestCode.createdAt.getTime() + 60_000);
+      if (new Date() < cooldown) {
+        throw AppError.codeResendCooldown();
+      }
+    }
+
+    await this.prisma.emailVerification.deleteMany({
+      where: { userId: user.id },
+    });
+
+    const plainCode = await this.createVerificationCode(user.id);
+    await this.mailService.sendVerificationEmail(
+      user.email,
+      plainCode,
+      user.name,
+    );
+
+    return { message: 'Codigo reenviado com sucesso' };
+  }
+
+  async login(dto: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      throw AppError.emailNotFound();
+    }
+
+    if (!user.password) {
+      throw AppError.emailNotFound();
+    }
+
+    const passwordMatches = await bcrypt.compare(dto.password, user.password);
+    if (!passwordMatches) {
+      throw AppError.invalidPassword();
+    }
+
+    if (!user.isEmailVerified) {
+      throw AppError.emailNotVerified();
+    }
+
+    const { accessToken, refreshToken } = await this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+        isFirstAccess: user.isFirstAccess,
+        isEmailVerified: user.isEmailVerified,
+        role: user.role,
+      },
+    };
+  }
+
+  async loginWithGoogle(dto: GoogleAuthDto) {
+    const googleUser = await this.verifyGoogleToken(dto.token);
+
+    let user = await this.prisma.user.findUnique({
+      where: { googleId: googleUser.sub },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.findUnique({
+        where: { email: googleUser.email },
+      });
+
+      if (user) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: { googleId: googleUser.sub, isEmailVerified: true },
+        });
+      } else {
+        user = await this.prisma.user.create({
+          data: {
+            email: googleUser.email!,
+            name: googleUser.name || googleUser.email!.split('@')[0],
+            avatarUrl: googleUser.picture || null,
+            googleId: googleUser.sub,
+            isFirstAccess: true,
+            isEmailVerified: true,
+          },
+        });
+      }
+    }
+
+    const { accessToken, refreshToken } = await this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+        isFirstAccess: user.isFirstAccess,
+        isEmailVerified: user.isEmailVerified,
+        role: user.role,
+      },
+    };
+  }
+
+  async refreshToken(refreshToken: string) {
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+      include: { user: true },
+    });
+
+    if (!stored || stored.expiresAt < new Date()) {
+      throw AppError.invalidRefreshToken();
+    }
+
+    await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+
+    const {
+      accessToken,
+      refreshToken: newRefreshToken,
+    } = await this.generateTokens(stored.user.id, stored.user.email, stored.user.role);
+
+    return {
+      accessToken,
+      refreshToken: newRefreshToken,
+      user: {
+        id: stored.user.id,
+        email: stored.user.email,
+        name: stored.user.name,
+        avatarUrl: stored.user.avatarUrl,
+        isFirstAccess: stored.user.isFirstAccess,
+        isEmailVerified: stored.user.isEmailVerified,
+        role: stored.user.role,
+      },
+    };
+  }
+
+  async logout(userId: string) {
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId },
+    });
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    // Always return success to prevent email enumeration
+    if (!user || !user.password) {
+      return { message: 'Se o email existir, voce recebera o codigo de redefinicao.' };
+    }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const redisKey = `reset:${email}`;
+    await this.redisService.set(redisKey, code, 15 * 60); // 15 min TTL
+
+    await this.mailService.sendPasswordResetEmail(email, code, user.name);
+
+    return { message: 'Se o email existir, voce recebera o codigo de redefinicao.' };
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string) {
+    const redisKey = `reset:${email}`;
+    const storedCode = await this.redisService.get(redisKey);
+
+    if (!storedCode) {
+      throw AppError.resetTokenExpired();
+    }
+
+    if (storedCode !== code) {
+      throw AppError.resetTokenInvalid();
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw AppError.userNotFound();
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    await this.redisService.del(redisKey);
+
+    // Invalidate all refresh tokens for security
+    await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+
+    return { message: 'Senha redefinida com sucesso.' };
+  }
+
+  private async createVerificationCode(userId: string): Promise<string> {
+    const plainCode = String(
+      Math.floor(100000 + Math.random() * 900000),
+    );
+    const hashedCode = await bcrypt.hash(plainCode, 10);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await this.prisma.emailVerification.create({
+      data: {
+        code: hashedCode,
+        userId,
+        expiresAt,
+      },
+    });
+
+    return plainCode;
+  }
+
+  private async verifyGoogleToken(token: string) {
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken: token,
+        audience: this.configService.get<string>('GOOGLE_CLIENT_ID'),
+      });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) {
+        throw AppError.invalidGoogleToken();
+      }
+      return payload;
+    } catch {
+      throw AppError.invalidGoogleToken();
+    }
+  }
+
+  private async generateTokens(userId: string, email: string, role: string) {
+    const payload = { sub: userId, email, role };
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: this.configService.get<number>('JWT_EXPIRES_IN') as any,
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: this.configService.get<number>(
+        'JWT_REFRESH_EXPIRES_IN',
+      ) as any,
+    });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await this.prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId,
+        expiresAt,
+      },
+    });
+
+    return { accessToken, refreshToken };
+  }
+}
