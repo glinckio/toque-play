@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -10,7 +10,6 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,18 +19,22 @@ import type { RouteProp } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
-import TeamAvatar from '../../components/TeamAvatar';
+import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import { teamService } from '../../services/team';
 import { useAuthStore } from '../../stores/authStore';
 import type { TeamStackParamList } from '../../navigation/types';
 import type { Team, TeamMember } from '../../types/team';
+import HeroHeader from '../../components/HeroHeader';
 
 type Nav = NativeStackNavigationProp<TeamStackParamList, 'TeamDetail'>;
+type Route = RouteProp<TeamStackParamList, 'TeamDetail'>;
 
 function memberName(m: TeamMember) {
   return m.user?.name ?? m.guestName ?? '?';
 }
-type Route = RouteProp<TeamStackParamList, 'TeamDetail'>;
+
+const POSITIONS = ['Levantador', 'Ponteiro', 'Oposto', 'Central', 'Líbero', 'Ponta'];
 
 export default function TeamDetailModal() {
   const navigation = useNavigation<Nav>();
@@ -44,6 +47,7 @@ export default function TeamDetailModal() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [editingPosition, setEditingPosition] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -61,11 +65,7 @@ export default function TeamDetailModal() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    load();
-  };
-
+  const onRefresh = () => { setRefreshing(true); load(); };
   const isOwner = team?.ownerId === user?.id;
 
   const handleRemoveMember = (member: TeamMember) => {
@@ -76,15 +76,12 @@ export default function TeamDetailModal() {
     Alert.alert('Remover Membro', `Remover ${memberName(member)}?`, [
       { text: 'Cancelar', style: 'cancel' },
       {
-        text: 'Remover',
-        style: 'destructive',
+        text: 'Remover', style: 'destructive',
         onPress: async () => {
           try {
             await teamService.removeMember(teamId, member.id);
             setMembers((prev) => prev.filter((m) => m.id !== member.id));
-          } catch {
-            Alert.alert('Erro', 'Não foi possível remover.');
-          }
+          } catch { Alert.alert('Erro', 'Não foi possível remover.'); }
         },
       },
     ]);
@@ -94,15 +91,10 @@ export default function TeamDetailModal() {
     Alert.alert('Excluir Equipe', 'Tem certeza? Essa ação não pode ser desfeita.', [
       { text: 'Cancelar', style: 'cancel' },
       {
-        text: 'Excluir',
-        style: 'destructive',
+        text: 'Excluir', style: 'destructive',
         onPress: async () => {
-          try {
-            await teamService.remove(teamId);
-            navigation.goBack();
-          } catch {
-            Alert.alert('Erro', 'Não foi possível excluir.');
-          }
+          try { await teamService.remove(teamId); navigation.goBack(); }
+          catch { Alert.alert('Erro', 'Não foi possível excluir.'); }
         },
       },
     ]);
@@ -111,57 +103,51 @@ export default function TeamDetailModal() {
   const handleToggleCaptain = (member: TeamMember) => {
     Alert.alert(
       member.isCaptain ? 'Remover Capitão' : 'Tornar Capitão',
-      member.isCaptain
-        ? `${memberName(member)} não será mais capitão.`
-        : `${memberName(member)} será o novo capitão.`,
+      member.isCaptain ? `${memberName(member)} não será mais capitão.` : `${memberName(member)} será o novo capitão.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Confirmar',
           onPress: async () => {
             try {
-              await teamService.updateMember(teamId, member.id, {
-                isCaptain: !member.isCaptain,
-              });
-              setMembers((prev) =>
-                prev.map((m) =>
-                  m.id === member.id ? { ...m, isCaptain: !m.isCaptain } : m
-                )
-              );
-            } catch {
-              Alert.alert('Erro', 'Não foi possível atualizar.');
-            }
+              await teamService.updateMember(teamId, member.id, { isCaptain: !member.isCaptain });
+              setMembers((prev) => prev.map((m) => m.id === member.id ? { ...m, isCaptain: !m.isCaptain } : m));
+            } catch { Alert.alert('Erro', 'Não foi possível atualizar.'); }
           },
         },
       ]
     );
   };
 
+  const handleSetPosition = async (memberId: string, position: string) => {
+    try {
+      await teamService.updateMember(teamId, memberId, { position });
+      setMembers((prev) => prev.map((m) => m.id === memberId ? { ...m, position } : m));
+      setEditingPosition(null);
+    } catch { Alert.alert('Erro', 'Não foi possível atualizar posição.'); }
+  };
+
   const handleAvatarUpload = async () => {
     if (!isOwner || uploadingAvatar) return;
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+      mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8,
     });
     if (result.canceled || !result.assets[0]) return;
-
     setUploadingAvatar(true);
     try {
       const updated = await teamService.uploadAvatar(teamId, result.assets[0].uri);
       setTeam(updated);
-    } catch {
-      Alert.alert('Erro', 'Não foi possível enviar o brasão.');
-    } finally {
-      setUploadingAvatar(false);
-    }
+    } catch { Alert.alert('Erro', 'Não foi possível enviar o brasão.'); }
+    finally { setUploadingAvatar(false); }
   };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingRoot} edges={['top']}>
-        <ActivityIndicator color={colors.primary} size="large" />
+        <HeroHeader title="EQUIPE" watermark="TEAM" onBack={() => navigation.goBack()} rounded />
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
       </SafeAreaView>
     );
   }
@@ -169,83 +155,90 @@ export default function TeamDetailModal() {
   if (!team) {
     return (
       <SafeAreaView style={styles.loadingRoot} edges={['top']}>
-        <Text style={styles.errorText}>Equipe não encontrada</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backLink}>Voltar</Text>
-        </TouchableOpacity>
+        <HeroHeader title="EQUIPE" watermark="TEAM" onBack={() => navigation.goBack()} rounded />
+        <View style={styles.loadingWrap}>
+          <Text style={styles.errorText}>Equipe não encontrada</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backLink}>Voltar</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Ionicons name="close" size={26} color={colors.text} />
-        </TouchableOpacity>
-      </View>
+      <HeroHeader
+        title={team.name.toUpperCase()}
+        watermark={team.name.toUpperCase().slice(0, 8)}
+        onBack={() => navigation.goBack()}
+        subtitle={team.description ?? undefined}
+        rounded
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {/* Team Hero */}
-        <View style={styles.hero}>
+        {/* Avatar + upload */}
+        <View style={styles.avatarSection}>
           <TouchableOpacity
             style={styles.avatarWrap}
             onPress={isOwner ? handleAvatarUpload : undefined}
             activeOpacity={isOwner ? 0.7 : 1}
           >
             {uploadingAvatar ? (
-              <View style={styles.avatarGradient}>
+              <View style={styles.avatarCircle}>
                 <ActivityIndicator color={colors.primary} size="large" />
               </View>
+            ) : team.avatarUrl ? (
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarLetter}>{team.name[0]}</Text>
+              </View>
             ) : (
-              <TeamAvatar avatarUrl={team.avatarUrl} name={team.name} size={80} />
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarLetter}>{team.name[0]}</Text>
+              </View>
             )}
             {isOwner && !uploadingAvatar && (
               <View style={styles.avatarEditBadge}>
-                <Ionicons name="camera" size={12} color={colors.text} />
-              </View>
-            )}
-            {isOwner && (
-              <View style={styles.ownerCrown}>
-                <Ionicons name="star" size={10} color="#FFD700" />
+                <Ionicons name="camera" size={12} color="#FFFFFF" />
               </View>
             )}
           </TouchableOpacity>
+        </View>
 
-          <Text style={styles.teamName}>{team.name}</Text>
-          {team.description ? (
-            <Text style={styles.teamDesc}>{team.description}</Text>
-          ) : null}
-
-          <View style={styles.heroMeta}>
-            <View style={styles.metaChip}>
-              <Ionicons name="people" size={14} color={colors.primaryGlow} />
-              <Text style={styles.metaChipText}>
-                {members.length} membro{members.length !== 1 ? 's' : ''}
-              </Text>
-            </View>
+        {/* Stats card */}
+        <View style={styles.statsCard}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{members.length}</Text>
+            <Text style={styles.statLabel}>Membros</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statLabel}>Vitórias</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>0%</Text>
+            <Text style={styles.statLabel}>Aproveitamento</Text>
           </View>
         </View>
 
-        {/* Members Section */}
+        {/* Athletes section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>ELENCO</Text>
+            <Text style={styles.sectionTitle}>ATLETAS</Text>
             {isOwner && (
               <TouchableOpacity
-                style={styles.addMemberBtn}
+                style={styles.addBtn}
                 onPress={() => navigation.navigate('AddMember', { teamId })}
                 activeOpacity={0.7}
               >
-                <Ionicons name="person-add-outline" size={16} color={colors.primaryGlow} />
-                <Text style={styles.addMemberText}>ADICIONAR</Text>
+                <Ionicons name="person-add-outline" size={16} color={colors.primary} />
+                <Text style={styles.addBtnText}>Adicionar</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -254,34 +247,17 @@ export default function TeamDetailModal() {
             <View style={styles.memberList}>
               {members.map((member) => (
                 <View key={member.id} style={styles.memberCard}>
-                  {/* Avatar */}
-                  <View style={styles.memberAvatarWrap}>
-                    <LinearGradient
-                      colors={
-                        member.isCaptain
-                          ? ['#FFD700', '#FFA000']
-                          : [colors.surfaceSoft, colors.surfaceSoft]
-                      }
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.memberAvatarGradient}
-                    >
-                      <Text style={[
-                        styles.memberAvatarLetter,
-                        !member.isCaptain && styles.memberAvatarLetterMuted,
-                      ]}>
-                        {(memberName(member)).charAt(0).toUpperCase()}
-                      </Text>
-                    </LinearGradient>
+                  <View style={[styles.memberAvatar, member.isCaptain && styles.memberAvatarCaptain]}>
+                    <Text style={[styles.memberAvatarLetter, member.isCaptain && styles.memberAvatarLetterCaptain]}>
+                      {memberName(member).charAt(0).toUpperCase()}
+                    </Text>
                   </View>
-
-                  {/* Info */}
                   <View style={styles.memberInfo}>
                     <View style={styles.memberNameRow}>
                       <Text style={styles.memberName} numberOfLines={1}>{memberName(member)}</Text>
                       {member.isCaptain && (
                         <View style={styles.captainBadge}>
-                          <Ionicons name="ribbon" size={10} color={colors.primaryGlow} />
+                          <Ionicons name="ribbon" size={10} color={colors.primary} />
                           <Text style={styles.captainBadgeText}>CAP</Text>
                         </View>
                       )}
@@ -291,9 +267,35 @@ export default function TeamDetailModal() {
                         </View>
                       )}
                     </View>
+                    {editingPosition === member.id ? (
+                      <View style={styles.positionPicker}>
+                        {POSITIONS.map((pos) => (
+                          <TouchableOpacity
+                            key={pos}
+                            style={[styles.positionChip, member.position === pos && styles.positionChipActive]}
+                            onPress={() => handleSetPosition(member.id, pos)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.positionChipText, member.position === pos && styles.positionChipTextActive]}>
+                              {pos.slice(0, 3).toUpperCase()}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity onPress={() => setEditingPosition(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                          <Ionicons name="close" size={16} color={colors.textMuted} />
+                        </TouchableOpacity>
+                      </View>
+                    ) : member.position || isOwner ? (
+                      <TouchableOpacity
+                        onPress={() => isOwner && setEditingPosition(member.id)}
+                        activeOpacity={isOwner ? 0.7 : 1}
+                      >
+                        <Text style={styles.positionText}>
+                          {member.position ?? 'Definir posição'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
-
-                  {/* Actions */}
                   {isOwner && (
                     <View style={styles.memberActions}>
                       <TouchableOpacity
@@ -304,7 +306,7 @@ export default function TeamDetailModal() {
                         <Ionicons
                           name={member.isCaptain ? 'ribbon' : 'ribbon-outline'}
                           size={18}
-                          color={member.isCaptain ? colors.primaryGlow : colors.textMuted}
+                          color={member.isCaptain ? colors.primary : colors.textPlaceholder}
                         />
                       </TouchableOpacity>
                       {!member.isCaptain && (
@@ -323,24 +325,18 @@ export default function TeamDetailModal() {
             </View>
           ) : (
             <View style={styles.emptyMembers}>
-              <Ionicons name="people-outline" size={32} color={colors.textMuted} />
+              <Ionicons name="people-outline" size={32} color={colors.textPlaceholder} />
               <Text style={styles.emptyMembersText}>Nenhum membro ainda</Text>
             </View>
           )}
         </View>
 
-        {/* Danger Zone */}
+        {/* Delete */}
         {isOwner && (
-          <View style={styles.dangerSection}>
-            <TouchableOpacity
-              onPress={handleDeleteTeam}
-              style={styles.deleteBtn}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="trash-outline" size={18} color={colors.error} />
-              <Text style={styles.deleteBtnText}>EXCLUIR EQUIPE</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={handleDeleteTeam} style={styles.deleteBtn} activeOpacity={0.7}>
+            <Ionicons name="trash-outline" size={18} color={colors.error} />
+            <Text style={styles.deleteBtnText}>Excluir equipe</Text>
+          </TouchableOpacity>
         )}
 
         <View style={{ height: 40 }} />
@@ -351,227 +347,145 @@ export default function TeamDetailModal() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  loadingRoot: { flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' },
+  loadingRoot: { flex: 1, backgroundColor: colors.background },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { color: colors.textMuted, fontSize: 16, fontFamily: fonts.text.regular },
-  backLink: { color: colors.primaryGlow, fontSize: 14, fontFamily: fonts.text.semiBold, marginTop: spacing.md },
-
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-  },
+  backLink: { color: colors.primary, fontSize: 14, fontFamily: fonts.text.semiBold, marginTop: spacing.md },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 40 },
 
-  // Hero
-  hero: {
-    alignItems: 'center',
-    marginBottom: spacing.xxl,
+  avatarSection: { alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.lg },
+  avatarWrap: { position: 'relative' },
+  avatarCircle: {
+    width: 72, height: 72, borderRadius: 22,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
   },
-  avatarWrap: {
-    position: 'relative',
-    marginBottom: spacing.lg,
-  },
-  avatarGradient: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
+  avatarLetter: {
+    fontFamily: fonts.title.regular, fontSize: 32,
+    color: colors.primary, lineHeight: 1,
   },
   avatarEditBadge: {
-    position: 'absolute',
-    bottom: -4,
-    right: -4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primaryGlow,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ownerCrown: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  teamName: {
-    fontFamily: fonts.title.display,
-    fontSize: 34,
-    color: colors.text,
-    letterSpacing: 2,
-    textAlign: 'center',
-  },
-  teamDesc: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-    fontFamily: fonts.text.regular,
-    lineHeight: 20,
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.xl,
-  },
-  heroMeta: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  metaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(109,46,192,0.1)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm - 2,
-    borderRadius: 10,
-  },
-  metaChipText: {
-    fontSize: 12,
-    color: colors.primaryGlow,
-    fontFamily: fonts.text.medium,
+    position: 'absolute', bottom: -4, right: -4,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
   },
 
-  // Section
+  statsCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.card,
+    padding: spacing.xl,
+    marginBottom: spacing.xxl,
+    shadowColor: 'rgba(20,10,30,0.06)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  statItem: { flex: 1, alignItems: 'center' },
+  statValue: {
+    fontFamily: fonts.title.regular, fontSize: typography.sizes.title,
+    color: colors.text, lineHeight: 1,
+  },
+  statLabel: {
+    fontFamily: fonts.text.medium, fontSize: typography.sizes.md,
+    color: colors.textMuted, marginTop: 4,
+  },
+  statDivider: { width: 1, backgroundColor: '#F4EFFA' },
+
   section: { marginBottom: spacing.xxl },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontFamily: fonts.title.display,
-    fontSize: 20,
-    color: colors.text,
-    letterSpacing: 2,
+    fontFamily: fonts.title.regular, fontSize: typography.sizes.heading,
+    color: colors.text, letterSpacing: typography.letterSpacing.medium,
   },
-  addMemberBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  addMemberText: {
-    fontSize: 11,
-    letterSpacing: 2,
-    color: colors.primaryGlow,
-    fontFamily: fonts.text.semiBold,
+  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  addBtnText: {
+    fontFamily: fonts.text.semiBold, fontSize: typography.sizes.md, color: colors.primary,
   },
 
-  // Members
   memberList: { gap: spacing.md },
   memberCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#FFFFFF', borderRadius: radius.card,
+    padding: spacing.lg, gap: spacing.md,
+    shadowColor: 'rgba(20,10,30,0.06)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1, shadowRadius: 12, elevation: 2,
   },
-  memberAvatarWrap: {},
-  memberAvatarGradient: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  memberAvatar: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
   },
+  memberAvatarCaptain: { backgroundColor: '#FFF3CD' },
   memberAvatarLetter: {
-    fontFamily: fonts.title.display,
-    fontSize: 18,
-    color: colors.text,
+    fontFamily: fonts.title.regular, fontSize: 18, color: colors.primary, lineHeight: 1,
   },
-  memberAvatarLetterMuted: {
-    color: colors.textMuted,
-  },
+  memberAvatarLetterCaptain: { color: '#B8860B' },
   memberInfo: { flex: 1 },
-  memberNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
+  memberNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   memberName: {
-    fontSize: 14,
-    color: colors.text,
-    fontFamily: fonts.text.semiBold,
+    fontFamily: fonts.text.semiBold, fontSize: typography.sizes.input, color: colors.text,
+  },
+  positionText: {
+    fontFamily: fonts.text.medium, fontSize: typography.sizes.sm,
+    color: colors.textMuted, marginTop: 2,
+  },
+  positionPicker: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4,
+  },
+  positionChip: {
+    paddingHorizontal: 8, paddingVertical: 3,
+    backgroundColor: colors.inputBackground, borderRadius: 6,
+  },
+  positionChipActive: {
+    backgroundColor: colors.primary,
+  },
+  positionChipText: {
+    fontFamily: fonts.text.bold, fontSize: 9,
+    color: colors.textMuted, letterSpacing: 0.5,
+  },
+  positionChipTextActive: {
+    color: '#FFFFFF',
   },
   captainBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: 'rgba(109,46,192,0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: colors.primaryTint,
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
   },
   captainBadgeText: {
-    fontSize: 9,
+    fontFamily: fonts.text.bold, fontSize: 9, color: colors.primary,
     letterSpacing: 1.5,
-    color: colors.primaryGlow,
-    fontFamily: fonts.text.bold,
   },
   guestBadge: {
-    backgroundColor: 'rgba(255,152,0,0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    backgroundColor: 'rgba(240,160,48,0.15)',
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
   },
   guestBadgeText: {
-    fontSize: 9,
-    letterSpacing: 1.5,
-    color: '#FF9800',
-    fontFamily: fonts.text.bold,
+    fontFamily: fonts.text.bold, fontSize: 9, color: colors.warning, letterSpacing: 1.5,
   },
-  memberActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
+  memberActions: { flexDirection: 'row', gap: spacing.sm },
 
   emptyMembers: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-    paddingVertical: spacing.hero,
-    alignItems: 'center',
-    gap: spacing.sm,
+    backgroundColor: '#FFFFFF', borderRadius: radius.card,
+    padding: spacing.xxl, alignItems: 'center', gap: spacing.sm,
   },
   emptyMembersText: {
-    fontSize: 13,
-    color: colors.textMuted,
-    fontFamily: fonts.text.regular,
+    fontFamily: fonts.text.regular, fontSize: typography.sizes.body, color: colors.textMuted,
   },
 
-  // Danger
-  dangerSection: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.04)',
-    paddingTop: spacing.xl,
-  },
   deleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.lg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,77,77,0.2)',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: spacing.sm, paddingVertical: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(224,69,69,0.08)',
   },
   deleteBtnText: {
-    fontSize: 12,
-    letterSpacing: 2,
-    color: colors.error,
-    fontFamily: fonts.text.semiBold,
+    fontFamily: fonts.text.semiBold, fontSize: typography.sizes.input, color: colors.error,
   },
 });

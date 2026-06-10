@@ -11,6 +11,7 @@ export interface TournamentPreview {
   name: string;
   startDate: string;
   city: string;
+  location?: string;
   modality: string;
   registrationCount: number;
 }

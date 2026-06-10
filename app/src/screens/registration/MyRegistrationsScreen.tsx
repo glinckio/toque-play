@@ -189,14 +189,14 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md, marginBottom: spacing.md },
   backBtn: { padding: 8, marginRight: spacing.sm },
-  headerTitle: { fontSize: 20, fontFamily: fonts.title.display, color: colors.text, letterSpacing: 2 },
+  headerTitle: { fontSize: 20, fontFamily: fonts.title.regular, color: colors.text, letterSpacing: 2 },
 
   // Filter
   filterRow: { flexDirection: 'row', paddingHorizontal: spacing.xl, marginBottom: spacing.lg, gap: spacing.sm },
   filterTab: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm - 2, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
   filterTabActive: { backgroundColor: 'rgba(109,46,192,0.15)', borderColor: 'rgba(157,115,230,0.3)' },
   filterTabText: { fontSize: 10, fontFamily: fonts.text.semiBold, color: colors.textMuted, letterSpacing: 1 },
-  filterTabTextActive: { color: colors.primaryGlow },
+  filterTabTextActive: { color: colors.primaryLight },
 
   scrollContent: { paddingHorizontal: spacing.xl, paddingBottom: 120 },
   center: { alignItems: 'center', paddingTop: spacing.hero },

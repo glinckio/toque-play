@@ -21,6 +21,27 @@ export declare class HomeController {
             status: import(".prisma/client").$Enums.FriendlyStatus;
         }[];
         acceptedFriendlies: ({
+            match: {
+                id: string;
+                status: import(".prisma/client").$Enums.MatchStatus;
+                scoreTeamA: number;
+                scoreTeamB: number;
+                teamA: {
+                    id: string;
+                    name: string;
+                } | null;
+                teamB: {
+                    id: string;
+                    name: string;
+                } | null;
+                sets: {
+                    id: string;
+                    matchId: string;
+                    setNumber: number;
+                    scoreA: number;
+                    scoreB: number;
+                }[];
+            } | null;
             requester: {
                 id: string;
                 name: string;
@@ -41,27 +62,6 @@ export declare class HomeController {
                 name: string;
                 avatarUrl: string | null;
             } | null;
-            match: {
-                id: string;
-                status: import(".prisma/client").$Enums.MatchStatus;
-                teamA: {
-                    id: string;
-                    name: string;
-                } | null;
-                teamB: {
-                    id: string;
-                    name: string;
-                } | null;
-                scoreTeamA: number;
-                scoreTeamB: number;
-                sets: {
-                    id: string;
-                    matchId: string;
-                    setNumber: number;
-                    scoreA: number;
-                    scoreB: number;
-                }[];
-            } | null;
         } & {
             id: string;
             status: import(".prisma/client").$Enums.FriendlyStatus;
@@ -71,24 +71,24 @@ export declare class HomeController {
             updatedAt: Date;
             description: string | null;
             title: string | null;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            date: Date;
+            startTime: Date | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
+            regionRadius: number | null;
+            modality: string | null;
+            categoryFormat: string | null;
+            scoreTeamA: number | null;
+            scoreTeamB: number | null;
+            matchId: string | null;
             requesterId: string;
             requesterTeamId: string | null;
             challengedId: string | null;
             challengedTeamId: string | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
             addressNumber: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
-            scoreTeamA: number | null;
-            scoreTeamB: number | null;
-            modality: string | null;
-            categoryFormat: string | null;
-            matchId: string | null;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
         })[];
         unreadNotifications: number;
     }>;

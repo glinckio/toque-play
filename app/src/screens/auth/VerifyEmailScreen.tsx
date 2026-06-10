@@ -1,12 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ImageBackground,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,9 +7,12 @@ import type { RouteProp } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import type { AuthStackParamList } from '../../navigation/types';
 import AuthLayout from '../../components/AuthLayout';
-import Button from '../../components/Button';
+import HeroHeader from '../../components/HeroHeader';
+import ChevronButton from '../../components/ChevronButton';
 import { authService } from '../../services/auth';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -38,7 +34,6 @@ export default function VerifyEmailScreen() {
 
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  // Resend cooldown timer
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
@@ -47,18 +42,15 @@ export default function VerifyEmailScreen() {
 
   const handleChange = (value: string, index: number) => {
     if (!/^\d*$/.test(value)) return;
-
     const newCode = [...code];
     newCode[index] = value.slice(-1);
     setCode(newCode);
     setError('');
 
-    // Auto-advance
     if (value && index < CODE_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all filled
     const fullCode = newCode.join('');
     if (fullCode.length === CODE_LENGTH && !newCode.includes('')) {
       handleVerify(fullCode);
@@ -77,10 +69,8 @@ export default function VerifyEmailScreen() {
   const handleVerify = async (fullCode?: string) => {
     const finalCode = fullCode ?? code.join('');
     if (finalCode.length < CODE_LENGTH) return;
-
     setLoading(true);
     setError('');
-
     try {
       const data = await authService.verifyEmail({ email, code: finalCode });
       useAuthStore.getState().setAuth(data);
@@ -108,285 +98,166 @@ export default function VerifyEmailScreen() {
   if (verified) {
     return (
       <AuthLayout>
-        <ImageBackground
-          source={require('../../../assets/img/ChatGPT Image 27 de mai. de 2026, 21_15_28.png')}
-          style={StyleSheet.absoluteFillObject}
-          resizeMode="cover"
-        >
-          <LinearGradient
-            colors={[
-              'rgba(5,6,10,0.55)',
-              'rgba(5,6,10,0.7)',
-              'rgba(5,6,10,0.92)',
-              'rgba(5,6,10,1)',
-            ]}
-            locations={[0, 0.25, 0.55, 0.8]}
-            style={StyleSheet.absoluteFillObject}
-          />
-
-          <View style={styles.verifiedContent}>
-            <View style={styles.card}>
-              <View style={styles.cardGlowBar} />
-              <View style={styles.iconCircle}>
-                <LinearGradient
-                  colors={[colors.primary, colors.primaryGlow]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.iconGradient}
-                >
-                  <Ionicons name="checkmark" size={36} color={colors.text} />
-                </LinearGradient>
-              </View>
-              <Text style={styles.cardTitle}>CONFIRMADO</Text>
-              <Text style={styles.cardSubtitle}>
-                Seu e-mail foi verificado. Bem-vindo à arena.
-              </Text>
-            </View>
+        <HeroHeader title="CONFIRMADO" watermark="OK" variant="primary" rounded />
+        <View style={styles.verifiedContent}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="checkmark-circle" size={64} color={colors.success} />
           </View>
-        </ImageBackground>
+          <Text style={styles.verifiedTitle}>E-mail verificado!</Text>
+          <Text style={styles.verifiedSubtitle}>
+            Bem-vindo ao ToquePlay. Sua conta está pronta.
+          </Text>
+        </View>
       </AuthLayout>
     );
   }
 
   return (
     <AuthLayout>
-      <ImageBackground
-        source={require('../../../assets/img/ChatGPT Image 27 de mai. de 2026, 21_15_28.png')}
-        style={StyleSheet.absoluteFillObject}
-        resizeMode="cover"
-      >
-        <LinearGradient
-          colors={[
-            'rgba(5,6,10,0.55)',
-            'rgba(5,6,10,0.7)',
-            'rgba(5,6,10,0.92)',
-            'rgba(5,6,10,1)',
-          ]}
-          locations={[0, 0.25, 0.55, 0.8]}
-          style={StyleSheet.absoluteFillObject}
-        />
+      <HeroHeader
+        title="VERIFICAR E-MAIL"
+        subtitle={`Enviamos um código de 6 dígitos para ${email}`}
+        watermark="EMAIL"
+        rounded
+      />
 
-        <LinearGradient
-          colors={['rgba(109,46,192,0.15)', 'transparent']}
-          locations={[0.3, 1]}
-          style={StyleSheet.absoluteFillObject}
-        />
-
-        <View style={styles.content}>
-          {/* ─── Brand ─────────────────────────── */}
-          <View style={styles.brandBlock}>
-            <Text style={styles.brandName}>TOQUEPLAY</Text>
-          </View>
-
-          {/* ─── Card ──────────────────────────── */}
-          <View style={styles.card}>
-            <View style={styles.cardGlowBar} />
-
-            <View style={styles.iconCircle}>
-              <LinearGradient
-                colors={[colors.primary, colors.primaryGlow]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.iconGradient}
-              >
-                <Ionicons name="mail" size={28} color={colors.text} />
-              </LinearGradient>
-            </View>
-
-            <Text style={styles.cardTitle}>VERIFICAR E-MAIL</Text>
-            <Text style={styles.cardSubtitle}>
-              Enviamos um código de 6 dígitos para{'\n'}
-              <Text style={styles.emailText}>{email}</Text>
-            </Text>
-
-            {/* Code inputs */}
-            <View style={styles.codeRow}>
-              {code.map((digit, i) => (
-                <TextInput
-                  key={i}
-                  ref={(ref) => { inputRefs.current[i] = ref; }}
-                  value={digit}
-                  onChangeText={(v) => handleChange(v, i)}
-                  onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
-                  style={[
-                    styles.codeInput,
-                    !!digit && styles.codeInputFilled,
-                    !!error && styles.codeInputError,
-                  ]}
-                  keyboardType="number-pad"
-                  maxLength={1}
-                  textContentType="oneTimeCode"
-                  autoFocus={i === 0}
-                  editable={!loading}
-                />
-              ))}
-            </View>
-
-            {!!error && <Text style={styles.errorText}>{error}</Text>}
-
-            <Button
-              title={loading ? 'VERIFICANDO...' : 'VERIFICAR'}
-              onPress={() => handleVerify()}
-              disabled={code.join('').length < CODE_LENGTH || loading}
-              style={{ marginTop: spacing.xl }}
-            />
-
-            {/* Resend */}
-            <View style={styles.resendRow}>
-              {cooldown > 0 ? (
-                <Text style={styles.resendCooldown}>
-                  Reenviar em {cooldown}s
-                </Text>
-              ) : (
-                <Text style={styles.resendLink} onPress={handleResend}>
-                  Não recebeu? Reenviar código
-                </Text>
-              )}
-            </View>
-          </View>
+      <View style={styles.content}>
+        {/* Icon */}
+        <View style={styles.iconCircle}>
+          <Ionicons name="mail" size={32} color={colors.primary} />
         </View>
-      </ImageBackground>
+
+        {/* Code inputs */}
+        <View style={styles.codeRow}>
+          {code.map((digit, i) => (
+            <TextInput
+              key={i}
+              ref={(ref) => { inputRefs.current[i] = ref; }}
+              value={digit}
+              onChangeText={(v) => handleChange(v, i)}
+              onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
+              style={[
+                styles.codeInput,
+                !!digit && styles.codeInputFilled,
+                !!error && styles.codeInputError,
+              ]}
+              keyboardType="number-pad"
+              maxLength={1}
+              textContentType="oneTimeCode"
+              autoFocus={i === 0}
+              editable={!loading}
+            />
+          ))}
+        </View>
+
+        {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+        <View style={{ marginTop: spacing.xl }}>
+          <ChevronButton
+            variant="primary"
+            size="lg"
+            fullWidth
+            onPress={() => handleVerify()}
+            disabled={code.join('').length < CODE_LENGTH || loading}
+          >
+            {loading ? 'VERIFICANDO...' : 'VERIFICAR'}
+          </ChevronButton>
+        </View>
+
+        {/* Resend */}
+        <View style={styles.resendRow}>
+          {cooldown > 0 ? (
+            <Text style={styles.resendCooldown}>Reenviar em {cooldown}s</Text>
+          ) : (
+            <Text style={styles.resendLink} onPress={handleResend}>
+              Não recebeu? Reenviar código
+            </Text>
+          )}
+        </View>
+      </View>
     </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    minHeight: '100%',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-
   verifiedContent: {
-    minHeight: '100%',
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    gap: spacing.lg,
   },
-
-  brandBlock: {
-    position: 'absolute',
-    top: spacing.hero + 12,
-    left: spacing.xl,
-  },
-  brandName: {
-    fontFamily: fonts.title.display,
-    fontSize: 42,
-    lineHeight: 44,
-    color: colors.text,
-    letterSpacing: 6,
-  },
-
-  card: {
-    backgroundColor: 'rgba(10,10,16,0.75)',
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(157,115,230,0.12)',
-    paddingVertical: spacing.xxl,
-    paddingHorizontal: spacing.xl,
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  cardGlowBar: {
-    position: 'absolute',
-    top: 0,
-    left: '15%',
-    right: '15%',
-    height: 2,
-    backgroundColor: colors.primaryGlow,
-    borderRadius: 2,
-    shadowColor: colors.primaryGlow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-  },
-
   iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: 'rgba(109,46,192,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(157,115,230,0.2)',
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: colors.primaryTint,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
     marginBottom: spacing.xl,
   },
-  iconGradient: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+  content: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
   },
-
-  cardTitle: {
-    fontFamily: fonts.title.display,
-    fontSize: 32,
-    lineHeight: 34,
+  verifiedTitle: {
+    fontFamily: fonts.title.regular,
+    fontSize: typography.sizes.display,
     color: colors.text,
-    textAlign: 'center',
-    letterSpacing: 3,
+    letterSpacing: typography.letterSpacing.medium,
   },
-  cardSubtitle: {
-    fontSize: 14,
+  verifiedSubtitle: {
+    fontFamily: fonts.text.regular,
+    fontSize: typography.sizes.input,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
-    marginTop: spacing.md,
-    marginBottom: spacing.xxl,
-    fontFamily: fonts.text.regular,
   },
-  emailText: {
-    color: colors.primaryGlow,
-    fontFamily: fonts.text.semiBold,
-  },
-
-  // ─── Code inputs ────────────────────────────────
   codeRow: {
     flexDirection: 'row',
     gap: spacing.sm,
     justifyContent: 'center',
+    marginTop: spacing.lg,
   },
   codeInput: {
     width: 48,
     height: 56,
-    borderRadius: 14,
-    backgroundColor: colors.background,
+    borderRadius: radius.lg,
+    backgroundColor: colors.inputBackground,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'transparent',
     color: colors.text,
     fontSize: 24,
-    fontFamily: fonts.title.display,
+    fontFamily: fonts.title.regular,
     textAlign: 'center',
-    letterSpacing: 0,
   },
   codeInputFilled: {
-    borderColor: colors.primaryGlow,
-    backgroundColor: 'rgba(109,46,192,0.08)',
+    borderColor: colors.primary,
+    backgroundColor: '#FFFFFF',
   },
   codeInputError: {
     borderColor: colors.error,
   },
-
   errorText: {
     color: colors.error,
-    fontSize: 13,
+    fontSize: typography.sizes.md,
     marginTop: spacing.md,
+    textAlign: 'center',
     fontFamily: fonts.text.regular,
   },
-
   resendRow: {
-    marginTop: spacing.lg,
-    paddingVertical: spacing.sm,
+    marginTop: spacing.xl,
+    alignItems: 'center',
   },
   resendLink: {
-    color: colors.primaryGlow,
-    fontSize: 13,
+    color: colors.primary,
+    fontSize: typography.sizes.body,
     fontFamily: fonts.text.medium,
   },
   resendCooldown: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: typography.sizes.body,
     fontFamily: fonts.text.regular,
   },
 });

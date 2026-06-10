@@ -1,10 +1,9 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl,
   TextInput, Modal, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,28 +12,26 @@ import { teamService } from '../../services/team';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import type { Team } from '../../types/team';
 import TeamAvatar from '../../components/TeamAvatar';
 import type { Friendly } from '../../types/friendly';
-import { FriendlyStatus, FRIENDLY_STATUS_LABELS } from '../../types/friendly';
+import { FriendlyStatus } from '../../types/friendly';
 import type { RootStackParamList } from '../../navigation/types';
+import HeroHeader from '../../components/HeroHeader';
+import TabBar from '../../components/TabBar';
+import StatusBadge from '../../components/StatusBadge';
+import ChevronButton from '../../components/ChevronButton';
 
 type FilterTab = 'ALL' | FriendlyStatus;
 
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
-  { key: 'ALL', label: 'TODOS' },
-  { key: FriendlyStatus.PENDING, label: 'PENDENTES' },
-  { key: FriendlyStatus.ACCEPTED, label: 'ACEITOS' },
-  { key: FriendlyStatus.COMPLETED, label: 'CONCLUÍDOS' },
+  { key: 'ALL', label: 'Todos' },
+  { key: FriendlyStatus.PENDING, label: 'Pendentes' },
+  { key: FriendlyStatus.ACCEPTED, label: 'Aceitos' },
+  { key: FriendlyStatus.COMPLETED, label: 'Concluídos' },
 ];
-
-const STATUS_COLORS: Record<string, string> = {
-  [FriendlyStatus.PENDING]: '#FF9800',
-  [FriendlyStatus.ACCEPTED]: '#4CAF50',
-  [FriendlyStatus.REJECTED]: colors.error,
-  [FriendlyStatus.CANCELLED]: colors.textMuted,
-  [FriendlyStatus.COMPLETED]: colors.primaryGlow,
-};
 
 export default function MyFriendliesScreen({ navigation }: any) {
   const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -95,25 +92,24 @@ export default function MyFriendliesScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>MEUS AMISTOSOS</Text>
-      </View>
+      <HeroHeader
+        title="MEUS AMISTOSOS"
+        subtitle={`${friendlies.length} amistoso${friendlies.length !== 1 ? 's' : ''}`}
+        watermark="FRIENDLY"
+        onBack={() => navigation.goBack()}
+        rounded
+      />
 
       {/* Filter tabs */}
-      <View style={s.filterRow}>
-        {FILTER_TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[s.filterTab, filter === tab.key && s.filterTabActive]}
-            onPress={() => setFilter(tab.key)}
-            activeOpacity={0.7}
-          >
-            <Text style={[s.filterTabText, filter === tab.key && s.filterTabTextActive]}>{tab.label}</Text>
-          </TouchableOpacity>
-        ))}
+      <View style={s.filterWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <TabBar
+            tabs={FILTER_TABS.map((t) => ({ key: t.key, label: t.label }))}
+            activeTab={filter}
+            onTabChange={(key) => setFilter(key as FilterTab)}
+            variant="pill"
+          />
+        </ScrollView>
       </View>
 
       <ScrollView
@@ -122,19 +118,21 @@ export default function MyFriendliesScreen({ navigation }: any) {
         contentContainerStyle={s.scrollContent}
       >
         {/* Request friendly button */}
-        <TouchableOpacity style={s.requestBtn} onPress={() => { setShowSearch(true); setSearchQuery(''); setSearchResults([]); }} activeOpacity={0.8}>
-          <LinearGradient colors={[colors.primary, colors.primaryGlow]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.requestGradient}>
-            <Ionicons name="flash" size={18} color={colors.text} />
-            <Text style={s.requestText}>SOLICITAR AMISTOSO</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        <ChevronButton
+          variant="primary"
+          size="lg"
+          fullWidth
+          onPress={() => { setShowSearch(true); setSearchQuery(''); setSearchResults([]); }}
+          icon={<Ionicons name="flash" size={16} color="#FFFFFF" />}
+        >
+          SOLICITAR AMISTOSO
+        </ChevronButton>
 
         {filtered.length > 0 ? (
           <View style={s.list}>
             {filtered.map((f) => {
               const nameA = f.requesterTeam?.name ?? 'Time A';
               const nameB = f.challengedTeam?.name ?? 'A definir';
-              const color = STATUS_COLORS[f.status] ?? colors.textMuted;
               return (
                 <TouchableOpacity
                   key={f.id}
@@ -142,9 +140,8 @@ export default function MyFriendliesScreen({ navigation }: any) {
                   activeOpacity={0.7}
                   onPress={() => rootNav.navigate('Friendly', { screen: 'FriendlyDetail', params: { friendlyId: f.id } })}
                 >
-                  <View style={[s.statusBadge, { backgroundColor: color + '20' }]}>
-                    <View style={[s.statusDot, { backgroundColor: color }]} />
-                    <Text style={[s.statusText, { color: color }]}>{FRIENDLY_STATUS_LABELS[f.status]}</Text>
+                  <View style={s.cardTop}>
+                    <StatusBadge status={f.status} size="sm" />
                   </View>
 
                   <View style={s.teamsRow}>
@@ -177,12 +174,14 @@ export default function MyFriendliesScreen({ navigation }: any) {
           </View>
         ) : (
           <View style={s.emptySection}>
-            <Ionicons name="flash-outline" size={48} color={colors.textMuted} />
+            <View style={s.emptyIcon}>
+              <Ionicons name="flash-outline" size={40} color={colors.textPlaceholder} />
+            </View>
             <Text style={s.emptyTitle}>Nenhum amistoso encontrado</Text>
             <Text style={s.emptyText}>
               {filter === 'ALL'
                 ? 'Solicite um amistoso para encontrar adversários'
-                : `Nenhum amistoso ${FRIENDLY_STATUS_LABELS[filter as FriendlyStatus]?.toLowerCase() ?? ''}`}
+                : 'Nenhum amistoso com esse filtro'}
             </Text>
           </View>
         )}
@@ -191,27 +190,20 @@ export default function MyFriendliesScreen({ navigation }: any) {
       {/* Team search modal */}
       <Modal visible={showSearch} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowSearch(false)}>
         <View style={s.searchContainer}>
-          <View style={s.searchHeader}>
-            <TouchableOpacity onPress={() => setShowSearch(false)} style={s.backBtn}>
-              <Ionicons name="chevron-back" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={s.headerTitle}>BUSCAR TIME</Text>
-            <View style={{ width: 40 }} />
-          </View>
-          <Text style={s.searchHint}>Encontre um time para solicitar o amistoso</Text>
+          <HeroHeader title="BUSCAR TIME" watermark="SEARCH" onBack={() => setShowSearch(false)} rounded />
           <View style={s.searchInputWrap}>
-            <Ionicons name="search" size={20} color={colors.textMuted} />
+            <Ionicons name="search" size={20} color={colors.textPlaceholder} />
             <TextInput
               style={s.searchInputField}
               value={searchQuery}
               onChangeText={handleTeamSearch}
               placeholder="Nome do time..."
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={colors.textPlaceholder}
               autoFocus
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchResults([]); }}>
-                <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                <Ionicons name="close-circle" size={18} color={colors.textPlaceholder} />
               </TouchableOpacity>
             )}
           </View>
@@ -231,7 +223,7 @@ export default function MyFriendliesScreen({ navigation }: any) {
                     <Text style={s.searchResultName}>{team.name}</Text>
                     <Text style={s.searchResultMeta}>{team._count?.members ?? 0} membros</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textPlaceholder} />
                 </TouchableOpacity>
               ))}
               {searchQuery.length >= 2 && searchResults.length === 0 && (
@@ -250,73 +242,65 @@ export default function MyFriendliesScreen({ navigation }: any) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md, marginBottom: spacing.md },
-  backBtn: { padding: 8, marginRight: spacing.sm },
-  headerTitle: { fontSize: 20, fontFamily: fonts.title.display, color: colors.text, letterSpacing: 2 },
 
-  // Filter
-  filterRow: { flexDirection: 'row', paddingHorizontal: spacing.xl, marginBottom: spacing.lg, gap: spacing.sm },
-  filterTab: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm - 2, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
-  filterTabActive: { backgroundColor: 'rgba(109,46,192,0.15)', borderColor: 'rgba(157,115,230,0.3)' },
-  filterTabText: { fontSize: 10, fontFamily: fonts.text.semiBold, color: colors.textMuted, letterSpacing: 1 },
-  filterTabTextActive: { color: colors.primaryGlow },
+  filterWrap: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+  },
 
-  // Request button
-  requestBtn: { marginHorizontal: spacing.xl, marginBottom: spacing.xl, borderRadius: 16, overflow: 'hidden' },
-  requestGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
-  requestText: { fontSize: 14, fontFamily: fonts.text.bold, color: colors.text, letterSpacing: 2 },
-
-  scrollContent: { paddingBottom: 120 },
-  list: { paddingHorizontal: spacing.xl, gap: spacing.md },
+  scrollContent: { paddingHorizontal: spacing.xl, paddingBottom: 120, paddingTop: spacing.lg, gap: spacing.lg },
+  list: { gap: spacing.md },
 
   // Card
   card: {
-    backgroundColor: colors.surface, borderRadius: 20,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
-    padding: spacing.xl, overflow: 'hidden',
+    backgroundColor: colors.surface, borderRadius: radius.card,
+    padding: spacing.xl,
+    shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 12, elevation: 2,
   },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: 8, marginBottom: spacing.md },
-  statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 10, letterSpacing: 1.5, fontFamily: fonts.text.semiBold },
+  cardTop: { marginBottom: spacing.md },
 
-  // Teams in card
   teamsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', marginBottom: spacing.lg },
   teamBlock: { alignItems: 'center', flex: 1 },
-  teamCircle: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.sm },
-  teamInitial: { fontSize: 18, fontFamily: fonts.title.display, color: colors.text },
-  teamName: { fontSize: 12, fontFamily: fonts.text.semiBold, color: colors.text, textAlign: 'center' },
-  vs: { fontSize: 14, fontFamily: fonts.title.display, color: colors.primaryGlow, letterSpacing: 2 },
+  teamName: { fontSize: typography.sizes.md, fontFamily: fonts.text.semiBold, color: colors.text, textAlign: 'center', marginTop: spacing.sm },
+  vs: { fontSize: typography.sizes.subtitle, fontFamily: fonts.title.regular, color: colors.primary, letterSpacing: typography.letterSpacing.medium },
 
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 11, color: colors.textMuted, fontFamily: fonts.text.regular },
+  metaText: { fontSize: typography.sizes.md, color: colors.textMuted, fontFamily: fonts.text.regular },
 
   // Empty
-  emptySection: { alignItems: 'center', paddingTop: spacing.hero * 2, gap: spacing.md, paddingHorizontal: spacing.xl },
-  emptyTitle: { fontSize: 16, fontFamily: fonts.text.semiBold, color: colors.text },
-  emptyText: { fontSize: 13, color: colors.textMuted, textAlign: 'center', fontFamily: fonts.text.regular, lineHeight: 18 },
+  emptySection: { alignItems: 'center', paddingTop: 60, gap: spacing.md },
+  emptyIcon: {
+    width: 80, height: 80, borderRadius: 24,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    fontFamily: fonts.title.regular, fontSize: typography.sizes.heading,
+    color: colors.text, letterSpacing: typography.letterSpacing.medium,
+  },
+  emptyText: {
+    fontFamily: fonts.text.regular, fontSize: typography.sizes.body,
+    color: colors.textMuted, textAlign: 'center',
+  },
 
   // Search modal
   searchContainer: { flex: 1, backgroundColor: colors.background },
-  searchHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.lg, marginBottom: spacing.sm },
-  searchHint: { fontSize: 13, color: colors.textMuted, fontFamily: fonts.text.regular, paddingHorizontal: spacing.xl, marginBottom: spacing.lg },
   searchInputWrap: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
-    paddingHorizontal: spacing.lg, height: 50,
-    marginHorizontal: spacing.xl, marginBottom: spacing.lg,
+    backgroundColor: colors.inputBackground,
+    paddingHorizontal: spacing.lg, height: 48,
+    marginHorizontal: spacing.xl, marginBottom: spacing.lg, marginTop: spacing.lg,
   },
-  searchInputField: { flex: 1, color: colors.text, fontFamily: fonts.text.regular, fontSize: 14, height: 50 },
+  searchInputField: { flex: 1, color: colors.text, fontFamily: fonts.form.regular, fontSize: typography.sizes.input, height: 48 },
   searchResultCard: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.surface, borderRadius: 16,
+    backgroundColor: colors.surface, borderRadius: radius.card,
     padding: spacing.lg, marginBottom: spacing.sm,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
+    shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2,
   },
-  searchResultAvatar: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  searchResultInitial: { fontSize: 18, fontFamily: fonts.title.display, color: colors.text },
-  searchResultName: { fontSize: 14, fontFamily: fonts.text.semiBold, color: colors.text },
-  searchResultMeta: { fontSize: 11, fontFamily: fonts.text.regular, color: colors.textMuted, marginTop: 2 },
-  searchEmpty: { fontSize: 13, color: colors.textMuted, fontFamily: fonts.text.regular, textAlign: 'center', marginTop: spacing.xl },
+  searchResultName: { fontSize: typography.sizes.input, fontFamily: fonts.text.semiBold, color: colors.text },
+  searchResultMeta: { fontSize: typography.sizes.md, fontFamily: fonts.text.regular, color: colors.textMuted, marginTop: 2 },
+  searchEmpty: { fontSize: typography.sizes.body, color: colors.textMuted, fontFamily: fonts.text.regular, textAlign: 'center', marginTop: spacing.xl },
 });

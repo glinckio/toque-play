@@ -1,4 +1,5 @@
 export type AuthStackParamList = {
+  Splash: undefined;
   Login: undefined;
   Register: undefined;
   VerifyEmail: { email: string };
@@ -12,6 +13,7 @@ export type MainTabParamList = {
   Explore: undefined;
   Teams: undefined;
   Notifications: undefined;
+  Profile: undefined;
 };
 
 export type TournamentStackParamList = {

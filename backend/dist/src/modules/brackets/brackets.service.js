@@ -80,6 +80,7 @@ let BracketsService = class BracketsService {
         const bestOfSets = category?.bestOfSets ?? 1;
         const semifinalBestOfSets = category?.semifinalBestOfSets ?? bestOfSets;
         const finalBestOfSets = category?.finalBestOfSets ?? bestOfSets;
+        const tiebreakScore = category?.tiebreakScore ?? null;
         const result = await this.prisma.$transaction(async (tx) => {
             const bracket = await tx.bracket.create({
                 data: {
@@ -89,10 +90,10 @@ let BracketsService = class BracketsService {
                 },
             });
             if (dto.type === client_1.BracketType.SINGLE_ELIMINATION) {
-                await this.generateSingleElimination(tx, bracket.id, teamIds, bestOfSets, semifinalBestOfSets, finalBestOfSets);
+                await this.generateSingleElimination(tx, bracket.id, teamIds, bestOfSets, semifinalBestOfSets, finalBestOfSets, tiebreakScore);
             }
             else if (dto.type === client_1.BracketType.ROUND_ROBIN) {
-                await this.generateRoundRobin(tx, bracket.id, teamIds, bestOfSets);
+                await this.generateRoundRobin(tx, bracket.id, teamIds, bestOfSets, semifinalBestOfSets, finalBestOfSets, tiebreakScore);
             }
             else if (dto.type === client_1.BracketType.GROUPS_THEN_ELIMINATION) {
                 await this.generateGroupsThenElimination(tx, bracket.id, teamIds, category, bestOfSets, semifinalBestOfSets, finalBestOfSets);
@@ -123,7 +124,7 @@ let BracketsService = class BracketsService {
         }
         return result;
     }
-    async generateSingleElimination(tx, bracketId, teamIds, bestOfSets, semifinalBestOfSets, finalBestOfSets) {
+    async generateSingleElimination(tx, bracketId, teamIds, bestOfSets, semifinalBestOfSets, finalBestOfSets, tiebreakScore) {
         const numTeams = teamIds.length;
         const numRounds = Math.ceil(Math.log2(numTeams));
         const totalSlots = Math.pow(2, numRounds);
@@ -143,10 +144,14 @@ let BracketsService = class BracketsService {
                 if (round === numRounds) {
                     matchData.label = 'FINAL';
                     matchData.bestOfSets = finalBestOfSets;
+                    if (tiebreakScore)
+                        matchData.tiebreakScore = tiebreakScore;
                 }
                 else if (round === numRounds - 1) {
                     matchData.label = 'SEMIFINAL';
                     matchData.bestOfSets = semifinalBestOfSets;
+                    if (tiebreakScore)
+                        matchData.tiebreakScore = tiebreakScore;
                 }
                 if (nextRoundKey && matchMap.has(nextRoundKey)) {
                     matchData.nextMatchId = matchMap.get(nextRoundKey);
@@ -195,7 +200,7 @@ let BracketsService = class BracketsService {
             await tx.match.update({ where: { id: nextMatchId }, data: updateData });
         }
     }
-    async generateRoundRobin(tx, bracketId, teamIds, bestOfSets) {
+    async generateRoundRobin(tx, bracketId, teamIds, bestOfSets, semifinalBestOfSets, finalBestOfSets, tiebreakScore) {
         const numTeams = teamIds.length;
         let round = 1;
         let position = 0;
@@ -219,6 +224,31 @@ let BracketsService = class BracketsService {
                 });
                 position++;
             }
+        }
+        if (numTeams >= 4) {
+            const playoffRound = round + 1;
+            await tx.match.create({
+                data: {
+                    bracketId,
+                    round: playoffRound,
+                    position: 0,
+                    status: client_1.MatchStatus.SCHEDULED,
+                    bestOfSets: semifinalBestOfSets,
+                    tiebreakScore,
+                    label: 'TERCEIRO_LUGAR',
+                },
+            });
+            await tx.match.create({
+                data: {
+                    bracketId,
+                    round: playoffRound,
+                    position: 1,
+                    status: client_1.MatchStatus.SCHEDULED,
+                    bestOfSets: finalBestOfSets,
+                    tiebreakScore,
+                    label: 'FINAL',
+                },
+            });
         }
     }
     async generateGroupsThenElimination(tx, bracketId, teamIds, category, bestOfSets, semifinalBestOfSets, finalBestOfSets) {
@@ -300,10 +330,14 @@ let BracketsService = class BracketsService {
                     if (round === numRounds) {
                         matchData.label = 'FINAL';
                         matchData.bestOfSets = finalBestOfSets;
+                        if (category?.tiebreakScore)
+                            matchData.tiebreakScore = category.tiebreakScore;
                     }
                     else if (round === numRounds - 1) {
                         matchData.label = 'SEMIFINAL';
                         matchData.bestOfSets = semifinalBestOfSets;
+                        if (category?.tiebreakScore)
+                            matchData.tiebreakScore = category.tiebreakScore;
                     }
                     if (nextRoundKey && matchMap.has(nextRoundKey)) {
                         matchData.nextMatchId = matchMap.get(nextRoundKey);

@@ -27,6 +27,9 @@ export declare class CategoryDto {
     minMembers?: number;
     maxMembers?: number;
     bestOfSets?: number;
+    semifinalBestOfSets?: number;
+    finalBestOfSets?: number;
+    tiebreakScore?: number;
     startTime?: string;
     registrationPrice?: number;
     registrationDeadline?: string;

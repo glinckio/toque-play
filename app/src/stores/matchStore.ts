@@ -10,9 +10,10 @@ const WS_URL = BASE_URL.replace('/api', '');
 export interface MatchEvent {
   type: string;
   team?: string;
-  scoreA: number;
-  scoreB: number;
+  scoreA?: number;
+  scoreB?: number;
   setNumber?: number;
+  winnerId?: string;
   timestamp: string;
 }
 
@@ -83,19 +84,23 @@ export const useLiveMatchStore = create<LiveMatchState>((set, get) => ({
 
     socket.on('match:point', (data: any) => {
       updateMatch(data);
-      set((s) => ({
-        events: [
-          {
-            type: data.sideSwitch ? 'SIDE_SWITCH' : 'POINT',
-            team: data.team,
-            scoreA: data.scoreA ?? data.scoreTeamA ?? s.match?.scoreTeamA ?? 0,
-            scoreB: data.scoreB ?? data.scoreTeamB ?? s.match?.scoreTeamB ?? 0,
-            sideSwitch: data.sideSwitch ?? false,
-            timestamp: new Date().toISOString(),
-          },
-          ...s.events,
-        ],
-      }));
+      set((s) => {
+        const currentSetNum = s.match?.sets?.[s.match.sets.length - 1]?.setNumber ?? 1;
+        return {
+          events: [
+            {
+              type: data.sideSwitch ? 'SIDE_SWITCH' : 'POINT',
+              team: data.team,
+              scoreA: data.scoreA ?? data.scoreTeamA ?? s.match?.scoreTeamA ?? 0,
+              scoreB: data.scoreB ?? data.scoreTeamB ?? s.match?.scoreTeamB ?? 0,
+              sideSwitch: data.sideSwitch ?? false,
+              setNumber: currentSetNum,
+              timestamp: new Date().toISOString(),
+            },
+            ...s.events,
+          ],
+        };
+      });
     });
 
     socket.on('match:start', (data: any) => {

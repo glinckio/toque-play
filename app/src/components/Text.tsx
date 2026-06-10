@@ -1,9 +1,10 @@
 import React from 'react';
 import { Text as RNText, type TextStyle } from 'react-native';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/fonts';
 import { typography } from '../theme/typography';
 
-type Variant = 'hero' | 'subtitle' | 'label' | 'body' | 'caption';
+type Variant = 'title' | 'subtitle' | 'label' | 'body' | 'caption';
 
 interface TextProps {
   children: React.ReactNode;
@@ -13,33 +14,34 @@ interface TextProps {
 }
 
 const variants: Record<Variant, TextStyle> = {
-  hero: {
-    fontSize: typography.sizes.hero,
-    lineHeight: typography.lineHeights.hero,
-    fontWeight: typography.weights.bold,
+  title: {
+    fontSize: typography.sizes.title,
+    fontFamily: fonts.title.regular,
+    lineHeight: typography.sizes.title * typography.lineHeights.normal,
     letterSpacing: typography.letterSpacing.normal,
     color: colors.text,
   },
   subtitle: {
     fontSize: typography.sizes.subtitle,
-    lineHeight: typography.lineHeights.tight,
-    fontWeight: typography.weights.regular,
+    fontFamily: fonts.text.semiBold,
+    lineHeight: typography.sizes.subtitle * typography.lineHeights.tight,
     color: colors.textSecondary,
   },
   label: {
     fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
+    fontFamily: fonts.text.semiBold,
     letterSpacing: typography.letterSpacing.wide,
     textTransform: 'uppercase',
     color: colors.textSecondary,
   },
   body: {
     fontSize: typography.sizes.input,
-    fontWeight: typography.weights.medium,
+    fontFamily: fonts.text.medium,
     color: colors.text,
   },
   caption: {
     fontSize: typography.sizes.sm,
+    fontFamily: fonts.text.regular,
     color: colors.textMuted,
   },
 };

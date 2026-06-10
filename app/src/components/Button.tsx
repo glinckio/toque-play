@@ -2,11 +2,10 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, type ViewStyle, type TextStyle } from 'react-native';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
+import { fonts } from '../theme/fonts';
 import { typography } from '../theme/typography';
-import { radius } from '../theme/radius';
-import { fonts } from '../theme';
 
-type Variant = 'primary' | 'secondary' | 'outline' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 
 interface ButtonProps {
   title: string;
@@ -14,6 +13,8 @@ interface ButtonProps {
   variant?: Variant;
   disabled?: boolean;
   icon?: React.ReactNode;
+  fullWidth?: boolean;
+  size?: 'sm' | 'md' | 'lg';
   style?: ViewStyle;
   textStyle?: TextStyle;
 }
@@ -24,6 +25,8 @@ export default function Button({
   variant = 'primary',
   disabled,
   icon,
+  fullWidth,
+  size = 'lg',
   style,
   textStyle,
 }: ButtonProps) {
@@ -31,13 +34,19 @@ export default function Button({
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
+      activeOpacity={0.8}
       style={[
         styles.base,
         variant === 'primary' && styles.primary,
         variant === 'secondary' && styles.secondary,
         variant === 'outline' && styles.outline,
         variant === 'ghost' && styles.ghost,
+        variant === 'danger' && styles.danger,
         disabled && styles.disabled,
+        fullWidth && styles.fullWidth,
+        size === 'sm' && styles.sm,
+        size === 'md' && styles.md,
+        size === 'lg' && styles.lg,
         style,
       ]}
     >
@@ -46,8 +55,9 @@ export default function Button({
         style={[
           styles.text,
           variant === 'secondary' && styles.textSecondary,
-          variant === 'outline' && styles.textSecondary,
+          variant === 'outline' && styles.textOutline,
           variant === 'ghost' && styles.textGhost,
+          variant === 'danger' && styles.textDanger,
           !!icon && { marginLeft: spacing.sm },
           textStyle,
         ]}
@@ -61,41 +71,67 @@ export default function Button({
 const styles = StyleSheet.create({
   base: {
     flexDirection: 'row',
-    borderRadius: radius.button,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  sm: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    height: 28,
+  },
+  md: {
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
+    height: 40,
+  },
+  lg: {
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.lg,
+    height: 48,
+  },
+  fullWidth: {
+    width: '100%',
   },
   primary: {
     backgroundColor: colors.primary,
   },
   secondary: {
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#ECECF0',
   },
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: colors.primary,
   },
   ghost: {
-    backgroundColor: 'transparent',
+    backgroundColor: colors.primaryTint,
+  },
+  danger: {
+    backgroundColor: colors.error,
   },
   disabled: {
-    opacity: 0.5,
+    backgroundColor: colors.disabled,
+    opacity: 1,
   },
   text: {
-    color: colors.text,
+    fontFamily: fonts.title.regular,
     fontSize: typography.sizes.button,
-    letterSpacing: typography.letterSpacing.normal,
-    fontFamily: fonts.text.semiBold,
+    color: '#FFFFFF',
+    letterSpacing: typography.letterSpacing.medium,
   },
   textSecondary: {
-    color: colors.textSecondary,
+    color: colors.text,
+  },
+  textOutline: {
+    color: colors.primary,
   },
   textGhost: {
     color: colors.primary,
+  },
+  textDanger: {
+    color: '#FFFFFF',
   },
 });

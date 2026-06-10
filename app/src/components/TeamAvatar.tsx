@@ -16,13 +16,10 @@ export default function TeamAvatar({ avatarUrl, name, size = 48 }: TeamAvatarPro
   const letter = (name ?? '?').charAt(0).toUpperCase();
 
   if (avatarUrl) {
-    console.log('[TeamAvatar] uri:', avatarUrl);
     return (
       <Image
         source={{ uri: avatarUrl }}
         style={[styles.image, { width: size, height: size, borderRadius }]}
-        onLoad={() => console.log('[TeamAvatar] loaded OK')}
-        onError={(e) => console.log('[TeamAvatar] ERROR:', e.nativeEvent.error)}
       />
     );
   }
@@ -30,7 +27,7 @@ export default function TeamAvatar({ avatarUrl, name, size = 48 }: TeamAvatarPro
   return (
     <View style={[styles.wrap, { width: size, height: size, borderRadius }]}>
       <LinearGradient
-        colors={[colors.primary, colors.primaryGlow]}
+        colors={[colors.primary, colors.primaryLight]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.gradient, { borderRadius }]}
@@ -54,7 +51,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   letter: {
-    fontFamily: fonts.title.display,
-    color: colors.text,
+    fontFamily: fonts.title.regular,
+    color: '#FFFFFF',
   },
 });

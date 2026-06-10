@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TournamentsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../common/prisma.service");
+const notification_service_1 = require("../../common/services/notification.service");
 const app_error_1 = require("../../common/errors/app-error");
 const client_1 = require("@prisma/client");
 const OWNER_INCLUDE = {
@@ -26,8 +27,10 @@ const FULL_INCLUDE = {
 };
 let TournamentsService = class TournamentsService {
     prisma;
-    constructor(prisma) {
+    notificationService;
+    constructor(prisma, notificationService) {
         this.prisma = prisma;
+        this.notificationService = notificationService;
     }
     async create(userId, dto) {
         return this.prisma.tournament.create({
@@ -271,12 +274,18 @@ let TournamentsService = class TournamentsService {
         const user = await this.prisma.user.findUnique({ where: { email } });
         if (!user)
             throw app_error_1.AppError.userNotFound();
-        return this.prisma.tournamentReferee.upsert({
+        const result = await this.prisma.tournamentReferee.upsert({
             where: { tournamentId_userId: { tournamentId, userId: user.id } },
             update: {},
             create: { tournamentId, userId: user.id },
             include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } },
         });
+        const tournament = await this.prisma.tournament.findUnique({
+            where: { id: tournamentId },
+            select: { name: true },
+        });
+        await this.notificationService.createNotification(user.id, 'Convite de Árbitro', `Você foi adicionado como árbitro do torneio ${tournament?.name ?? ''}.`, 'REFEREE_ASSIGNED', tournamentId);
+        return result;
     }
     async removeReferee(tournamentId, organizerId, refereeId) {
         await this.verifyOwnership(tournamentId, organizerId);
@@ -683,7 +692,7 @@ let TournamentsService = class TournamentsService {
 exports.TournamentsService = TournamentsService;
 exports.TournamentsService = TournamentsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService, notification_service_1.NotificationService])
 ], TournamentsService);
 function composeStageAddress(stage) {
     const parts = [stage.street, stage.number, stage.neighborhood].filter(Boolean);

@@ -11,25 +11,23 @@ export declare class TournamentsController {
     create(userId: string, dto: CreateTournamentDto): Promise<{
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
-        };
-        _count: {
-            registrations: number;
         };
         categories: {
             id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            startTime: Date | null;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            bestOfSets: number;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.TournamentType;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             minMembers: number;
             maxMembers: number;
+            bestOfSets: number;
             semifinalBestOfSets: number | null;
             finalBestOfSets: number | null;
+            tiebreakScore: number | null;
+            startTime: Date | null;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
             registrationDeadline: Date | null;
             registrationRules: string | null;
@@ -43,8 +41,8 @@ export declare class TournamentsController {
             facilities: {
                 id: string;
                 name: string;
-                available: boolean;
                 stageId: string;
+                available: boolean;
             }[];
         } & {
             number: string | null;
@@ -52,17 +50,17 @@ export declare class TournamentsController {
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         })[];
         sponsors: {
             id: string;
@@ -71,42 +69,43 @@ export declare class TournamentsController {
             tournamentId: string;
             logoUrl: string | null;
         }[];
+        _count: {
+            registrations: number;
+        };
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }>;
     update(id: string, userId: string, dto: CreateTournamentDto): Promise<{
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
-        };
-        _count: {
-            registrations: number;
         };
         categories: {
             id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            startTime: Date | null;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            bestOfSets: number;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.TournamentType;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             minMembers: number;
             maxMembers: number;
+            bestOfSets: number;
             semifinalBestOfSets: number | null;
             finalBestOfSets: number | null;
+            tiebreakScore: number | null;
+            startTime: Date | null;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
             registrationDeadline: Date | null;
             registrationRules: string | null;
@@ -120,8 +119,8 @@ export declare class TournamentsController {
             facilities: {
                 id: string;
                 name: string;
-                available: boolean;
                 stageId: string;
+                available: boolean;
             }[];
         } & {
             number: string | null;
@@ -129,17 +128,17 @@ export declare class TournamentsController {
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         })[];
         sponsors: {
             id: string;
@@ -148,42 +147,43 @@ export declare class TournamentsController {
             tournamentId: string;
             logoUrl: string | null;
         }[];
+        _count: {
+            registrations: number;
+        };
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }>;
     updateStructure(id: string, userId: string, dto: UpdateStructureDto): Promise<{
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
-        };
-        _count: {
-            registrations: number;
         };
         categories: {
             id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            startTime: Date | null;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            bestOfSets: number;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.TournamentType;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             minMembers: number;
             maxMembers: number;
+            bestOfSets: number;
             semifinalBestOfSets: number | null;
             finalBestOfSets: number | null;
+            tiebreakScore: number | null;
+            startTime: Date | null;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
             registrationDeadline: Date | null;
             registrationRules: string | null;
@@ -197,8 +197,8 @@ export declare class TournamentsController {
             facilities: {
                 id: string;
                 name: string;
-                available: boolean;
                 stageId: string;
+                available: boolean;
             }[];
         } & {
             number: string | null;
@@ -206,17 +206,17 @@ export declare class TournamentsController {
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         })[];
         sponsors: {
             id: string;
@@ -225,26 +225,29 @@ export declare class TournamentsController {
             tournamentId: string;
             logoUrl: string | null;
         }[];
+        _count: {
+            registrations: number;
+        };
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }>;
     addStageFacilities(id: string, stageId: string, userId: string, dto: AddFacilitiesDto): Promise<({
         facilities: {
             id: string;
             name: string;
-            available: boolean;
             stageId: string;
+            available: boolean;
         }[];
     } & {
         number: string | null;
@@ -252,17 +255,17 @@ export declare class TournamentsController {
         name: string | null;
         latitude: number | null;
         longitude: number | null;
-        date: Date;
-        startTime: Date | null;
-        address: string | null;
-        city: string | null;
-        state: string | null;
-        regionRadius: number | null;
         tournamentId: string;
+        startTime: Date | null;
+        date: Date;
         maxTeams: number | null;
         street: string | null;
         neighborhood: string | null;
+        address: string | null;
+        city: string | null;
+        state: string | null;
         cep: string | null;
+        regionRadius: number | null;
     }) | null>;
     removeStageFacility(id: string, stageId: string, facilityId: string, userId: string): Promise<void>;
     addSponsors(id: string, userId: string, dto: AddSponsorsDto): Promise<({
@@ -276,40 +279,38 @@ export declare class TournamentsController {
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }) | null>;
     removeSponsor(id: string, sponsorId: string, userId: string): Promise<void>;
     getSummary(id: string, userId: string): Promise<({
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
-        };
-        _count: {
-            registrations: number;
         };
         categories: {
             id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            startTime: Date | null;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            bestOfSets: number;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.TournamentType;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             minMembers: number;
             maxMembers: number;
+            bestOfSets: number;
             semifinalBestOfSets: number | null;
             finalBestOfSets: number | null;
+            tiebreakScore: number | null;
+            startTime: Date | null;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
             registrationDeadline: Date | null;
             registrationRules: string | null;
@@ -323,8 +324,8 @@ export declare class TournamentsController {
             facilities: {
                 id: string;
                 name: string;
-                available: boolean;
                 stageId: string;
+                available: boolean;
             }[];
         } & {
             number: string | null;
@@ -332,17 +333,17 @@ export declare class TournamentsController {
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         })[];
         sponsors: {
             id: string;
@@ -351,42 +352,43 @@ export declare class TournamentsController {
             tournamentId: string;
             logoUrl: string | null;
         }[];
+        _count: {
+            registrations: number;
+        };
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }) | null>;
     publish(id: string, userId: string): Promise<{
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
-        };
-        _count: {
-            registrations: number;
         };
         categories: {
             id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            startTime: Date | null;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            bestOfSets: number;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.TournamentType;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             minMembers: number;
             maxMembers: number;
+            bestOfSets: number;
             semifinalBestOfSets: number | null;
             finalBestOfSets: number | null;
+            tiebreakScore: number | null;
+            startTime: Date | null;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
             registrationDeadline: Date | null;
             registrationRules: string | null;
@@ -400,8 +402,8 @@ export declare class TournamentsController {
             facilities: {
                 id: string;
                 name: string;
-                available: boolean;
                 stageId: string;
+                available: boolean;
             }[];
         } & {
             number: string | null;
@@ -409,17 +411,17 @@ export declare class TournamentsController {
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         })[];
         sponsors: {
             id: string;
@@ -428,42 +430,43 @@ export declare class TournamentsController {
             tournamentId: string;
             logoUrl: string | null;
         }[];
+        _count: {
+            registrations: number;
+        };
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }>;
     startTournament(id: string, userId: string): Promise<{
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
-        };
-        _count: {
-            registrations: number;
         };
         categories: {
             id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            startTime: Date | null;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            bestOfSets: number;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.TournamentType;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             minMembers: number;
             maxMembers: number;
+            bestOfSets: number;
             semifinalBestOfSets: number | null;
             finalBestOfSets: number | null;
+            tiebreakScore: number | null;
+            startTime: Date | null;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
             registrationDeadline: Date | null;
             registrationRules: string | null;
@@ -477,8 +480,8 @@ export declare class TournamentsController {
             facilities: {
                 id: string;
                 name: string;
-                available: boolean;
                 stageId: string;
+                available: boolean;
             }[];
         } & {
             number: string | null;
@@ -486,17 +489,17 @@ export declare class TournamentsController {
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         })[];
         sponsors: {
             id: string;
@@ -505,19 +508,22 @@ export declare class TournamentsController {
             tournamentId: string;
             logoUrl: string | null;
         }[];
+        _count: {
+            registrations: number;
+        };
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }>;
     generateRefereeCode(id: string, userId: string): Promise<{
         code: string;
@@ -529,14 +535,14 @@ export declare class TournamentsController {
     addReferee(id: string, userId: string, email: string): Promise<{
         user: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
         };
     } & {
         id: string;
-        userId: string;
         tournamentId: string;
+        userId: string;
         codeConfirmed: boolean;
         invitedAt: Date;
     }>;
@@ -544,39 +550,37 @@ export declare class TournamentsController {
     getReferees(id: string): Promise<({
         user: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
         };
     } & {
         id: string;
-        userId: string;
         tournamentId: string;
+        userId: string;
         codeConfirmed: boolean;
         invitedAt: Date;
     })[]>;
     saveAsDraft(id: string, userId: string): Promise<{
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
-        };
-        _count: {
-            registrations: number;
         };
         categories: {
             id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            startTime: Date | null;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            bestOfSets: number;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.TournamentType;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             minMembers: number;
             maxMembers: number;
+            bestOfSets: number;
             semifinalBestOfSets: number | null;
             finalBestOfSets: number | null;
+            tiebreakScore: number | null;
+            startTime: Date | null;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
             registrationDeadline: Date | null;
             registrationRules: string | null;
@@ -590,8 +594,8 @@ export declare class TournamentsController {
             facilities: {
                 id: string;
                 name: string;
-                available: boolean;
                 stageId: string;
+                available: boolean;
             }[];
         } & {
             number: string | null;
@@ -599,17 +603,17 @@ export declare class TournamentsController {
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         })[];
         sponsors: {
             id: string;
@@ -618,30 +622,29 @@ export declare class TournamentsController {
             tournamentId: string;
             logoUrl: string | null;
         }[];
+        _count: {
+            registrations: number;
+        };
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }>;
     findMine(userId: string): Promise<({
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
-        };
-        _count: {
-            registrations: number;
-            categories: number;
         };
         stages: {
             number: string | null;
@@ -649,75 +652,101 @@ export declare class TournamentsController {
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         }[];
+        _count: {
+            categories: number;
+            registrations: number;
+        };
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     })[]>;
     findRefereeMine(userId: string): Promise<{
         invitedAt: Date;
-        _count: {
-            brackets: number;
-        };
         stages: {
             number: string | null;
             id: string;
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         }[];
+        _count: {
+            brackets: number;
+        };
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }[]>;
     explore(query: ExploreQueryDto): Promise<{
         nearby: any[];
         all: {
             id: string;
             name: string;
+            imageUrl: string | null;
             status: import(".prisma/client").$Enums.TournamentStatus;
             createdAt: Date;
+            owner: {
+                id: string;
+                name: string;
+                email: string;
+                avatarUrl: string | null;
+            };
+            categories: {
+                type: import(".prisma/client").$Enums.TournamentType;
+                format: import(".prisma/client").$Enums.TournamentFormat;
+                modality: import(".prisma/client").$Enums.TournamentModality;
+                registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
+            }[];
+            stages: {
+                number: string | null;
+                date: Date;
+                maxTeams: number | null;
+                street: string | null;
+                neighborhood: string | null;
+                city: string | null;
+                state: string | null;
+            }[];
             registrations: {
                 team: {
                     id: string;
@@ -725,31 +754,9 @@ export declare class TournamentsController {
                     avatarUrl: string | null;
                 };
             }[];
-            owner: {
-                id: string;
-                email: string;
-                name: string;
-                avatarUrl: string | null;
-            };
             _count: {
                 registrations: number;
             };
-            imageUrl: string | null;
-            categories: {
-                type: import(".prisma/client").$Enums.TournamentType;
-                modality: import(".prisma/client").$Enums.TournamentModality;
-                format: import(".prisma/client").$Enums.TournamentFormat;
-                registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
-            }[];
-            stages: {
-                number: string | null;
-                date: Date;
-                city: string | null;
-                state: string | null;
-                maxTeams: number | null;
-                street: string | null;
-                neighborhood: string | null;
-            }[];
         }[];
         hasMore: boolean;
         nextCursor: string | null;
@@ -757,25 +764,23 @@ export declare class TournamentsController {
     findAll(query: QueryTournamentsDto): Promise<({
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
-        };
-        _count: {
-            categories: number;
         };
         categories: {
             id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            startTime: Date | null;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            bestOfSets: number;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.TournamentType;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             minMembers: number;
             maxMembers: number;
+            bestOfSets: number;
             semifinalBestOfSets: number | null;
             finalBestOfSets: number | null;
+            tiebreakScore: number | null;
+            startTime: Date | null;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
             registrationDeadline: Date | null;
             registrationRules: string | null;
@@ -785,42 +790,43 @@ export declare class TournamentsController {
             teamsPerGroup: number | null;
             teamsAdvancing: number | null;
         }[];
+        _count: {
+            categories: number;
+        };
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     })[]>;
     findOne(id: string): Promise<{
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
-        };
-        _count: {
-            registrations: number;
         };
         categories: {
             id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            startTime: Date | null;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            bestOfSets: number;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.TournamentType;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             minMembers: number;
             maxMembers: number;
+            bestOfSets: number;
             semifinalBestOfSets: number | null;
             finalBestOfSets: number | null;
+            tiebreakScore: number | null;
+            startTime: Date | null;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
             registrationDeadline: Date | null;
             registrationRules: string | null;
@@ -834,8 +840,8 @@ export declare class TournamentsController {
             facilities: {
                 id: string;
                 name: string;
-                available: boolean;
                 stageId: string;
+                available: boolean;
             }[];
         } & {
             number: string | null;
@@ -843,17 +849,17 @@ export declare class TournamentsController {
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         })[];
         sponsors: {
             id: string;
@@ -862,19 +868,22 @@ export declare class TournamentsController {
             tournamentId: string;
             logoUrl: string | null;
         }[];
+        _count: {
+            registrations: number;
+        };
     } & {
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }>;
     getPublicDetails(id: string, userId: string): Promise<{
         userRegistration: {
@@ -887,8 +896,8 @@ export declare class TournamentsController {
         } | null;
         owner: {
             id: string;
-            email: string;
             name: string;
+            email: string;
             avatarUrl: string | null;
         };
         categories: ({
@@ -903,16 +912,17 @@ export declare class TournamentsController {
             }[];
         } & {
             id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            startTime: Date | null;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            bestOfSets: number;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.TournamentType;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             minMembers: number;
             maxMembers: number;
+            bestOfSets: number;
             semifinalBestOfSets: number | null;
             finalBestOfSets: number | null;
+            tiebreakScore: number | null;
+            startTime: Date | null;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
             registrationDeadline: Date | null;
             registrationRules: string | null;
@@ -926,8 +936,8 @@ export declare class TournamentsController {
             facilities: {
                 id: string;
                 name: string;
-                available: boolean;
                 stageId: string;
+                available: boolean;
             }[];
         } & {
             number: string | null;
@@ -935,17 +945,17 @@ export declare class TournamentsController {
             name: string | null;
             latitude: number | null;
             longitude: number | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
             tournamentId: string;
+            startTime: Date | null;
+            date: Date;
             maxTeams: number | null;
             street: string | null;
             neighborhood: string | null;
+            address: string | null;
+            city: string | null;
+            state: string | null;
             cep: string | null;
+            regionRadius: number | null;
         })[];
         sponsors: {
             id: string;
@@ -973,20 +983,21 @@ export declare class TournamentsController {
             } & {
                 id: string;
                 status: import(".prisma/client").$Enums.MatchStatus;
+                refereeCode: string | null;
+                refereeCodeExpiresAt: Date | null;
+                bestOfSets: number | null;
+                tiebreakScore: number | null;
+                position: number;
+                round: number;
+                bracketId: string | null;
+                friendlyId: string | null;
+                scheduledAt: Date | null;
+                group: number | null;
+                label: string | null;
                 teamAId: string | null;
                 teamBId: string | null;
                 scoreTeamA: number;
                 scoreTeamB: number;
-                refereeCode: string | null;
-                refereeCodeExpiresAt: Date | null;
-                bracketId: string | null;
-                friendlyId: string | null;
-                round: number;
-                position: number;
-                scheduledAt: Date | null;
-                group: number | null;
-                bestOfSets: number | null;
-                label: string | null;
                 nextMatchId: string | null;
                 winnerId: string | null;
                 refereeId: string | null;
@@ -995,22 +1006,22 @@ export declare class TournamentsController {
             })[];
         } & {
             id: string;
-            type: import(".prisma/client").$Enums.BracketType;
             tournamentId: string;
+            type: import(".prisma/client").$Enums.BracketType;
             categoryId: string;
         })[];
         id: string;
         name: string;
-        status: import(".prisma/client").$Enums.TournamentStatus;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
-        ownerId: string;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
         imageUrl: string | null;
         eventType: import(".prisma/client").$Enums.TournamentEventType;
+        status: import(".prisma/client").$Enums.TournamentStatus;
         isPublished: boolean;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        ownerId: string;
     }>;
     cancel(id: string, userId: string): Promise<void>;
 }

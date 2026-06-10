@@ -13,16 +13,17 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
 import { radius } from '../../theme/radius';
 import { matchService } from '../../services/match';
 import { useLiveMatchStore } from '../../stores/matchStore';
 import { useAuthStore } from '../../stores/authStore';
 import { Match, MatchStatus } from '../../types/match';
 import TeamAvatar from '../../components/TeamAvatar';
+import ChevronButton from '../../components/ChevronButton';
 import type { TournamentStackParamList, FriendlyStackParamList } from '../../navigation/types';
 import { tournamentService } from '../../services/tournament';
 
@@ -48,10 +49,10 @@ export default function LiveMatchScreen() {
   const [isTournamentReferee, setIsTournamentReferee] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [selectedSet, setSelectedSet] = useState<number | null>(null);
 
   const { match, events, isReferee, joinMatch, leaveMatch, setMatch } = useLiveMatchStore();
 
-  // Always fetch full timeline from API
   const loadTimeline = useCallback(async () => {
     try {
       const timeline = await matchService.getTimeline(matchId);
@@ -67,7 +68,6 @@ export default function LiveMatchScreen() {
       (async () => {
         try {
           if (isFriendly) {
-            // Friendly: load match directly
             const found = await matchService.findOne(matchId) as Match;
             if (found && mounted) {
               setMatch(found);
@@ -78,20 +78,15 @@ export default function LiveMatchScreen() {
               loadTimeline();
             }
           } else {
-            // Tournament: load match directly
             const found = await matchService.findOne(matchId) as Match;
-
             if (found && mounted) {
               setMatch(found);
-
               const isDone = found.status === MatchStatus.FINISHED || found.status === MatchStatus.WALKOVER;
               if (!isDone) {
                 joinMatch(found, tournamentId);
               }
               loadTimeline();
             }
-
-            // Check if owner + referee (tournament only)
             const [tournament, refs] = await Promise.all([
               tournamentService.findOne(tournamentId!),
               tournamentService.getReferees(tournamentId!).catch(() => []),
@@ -144,7 +139,6 @@ export default function LiveMatchScreen() {
     setActionLoading(true);
     try {
       await matchService.registerPoint(matchId, team);
-      // Socket updates the score in real-time; reload only as fallback
       await reloadMatch();
     } catch (e: any) {
       const msg = e?.response?.data?.message ?? 'Erro ao marcar ponto.';
@@ -231,11 +225,12 @@ export default function LiveMatchScreen() {
   if (initialLoading) {
     return (
       <SafeAreaView style={s.root} edges={['top']}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+        <View style={s.topBar}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>PARTIDA</Text>
+          <Text style={s.topTitle}>PARTIDA</Text>
+          <View style={{ width: 36 }} />
         </View>
         <View style={s.loader}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -247,14 +242,15 @@ export default function LiveMatchScreen() {
   if (!match) {
     return (
       <SafeAreaView style={s.root} edges={['top']}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+        <View style={s.topBar}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>PARTIDA</Text>
+          <Text style={s.topTitle}>PARTIDA</Text>
+          <View style={{ width: 36 }} />
         </View>
         <View style={s.loader}>
-          <Text style={{ color: colors.textMuted }}>Partida não encontrada</Text>
+          <Text style={{ color: colors.textPlaceholder }}>Partida não encontrada</Text>
         </View>
       </SafeAreaView>
     );
@@ -265,198 +261,265 @@ export default function LiveMatchScreen() {
   const isScheduled = match.status === MatchStatus.SCHEDULED;
   const isFinished = match.status === MatchStatus.FINISHED || match.status === MatchStatus.WALKOVER;
   const currentSet = match.sets?.[match.sets.length - 1];
+  const currentSetNum = currentSet?.setNumber ?? 1;
 
-  // Always use API-fetched timeline; for live matches, append any new socket events
-  const displayEvents = isLive && events.length > timelineEvents.length ? events : timelineEvents;
+  const setsWonA = match.sets?.filter((set) => set.scoreA > set.scoreB).length ?? 0;
+  const setsWonB = match.sets?.filter((set) => set.scoreB > set.scoreA).length ?? 0;
+
+  const cleanName = (name?: string | null) => name?.replace('[Seed T] ', '') ?? 'TBD';
+
+  const getFilteredEvents = () => {
+    const activeSet = selectedSet ?? currentSetNum;
+    const apiFiltered = timelineEvents.filter(ev =>
+      ev.setNumber === activeSet || ev.type === 'MATCH_START' || ev.type === 'MATCH_FINISH'
+    );
+    if (activeSet === currentSetNum && isLive) {
+      const newestApiTs = apiFiltered.length > 0
+        ? new Date(apiFiltered[0].timestamp).getTime()
+        : 0;
+      const newSocketEvents = events.filter(ev =>
+        (ev.setNumber === activeSet || ev.setNumber === undefined) &&
+        new Date(ev.timestamp).getTime() > newestApiTs
+      );
+      return [...newSocketEvents, ...apiFiltered];
+    }
+    return apiFiltered;
+  };
+
+  const displayEvents = getFilteredEvents();
+
+  const scoreA = isLive && currentSet ? currentSet.scoreA : (currentSet?.scoreA ?? 0);
+  const scoreB = isLive && currentSet ? currentSet.scoreB : (currentSet?.scoreB ?? 0);
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+      {/* Top bar */}
+      <View style={s.topBar}>
+        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+          <Ionicons name="chevron-back" size={20} color={colors.text} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>PARTIDA</Text>
-        {isLive && (
-          <View style={s.liveBadge}>
-            <View style={s.liveDot} />
-            <Text style={s.liveText}>AO VIVO</Text>
-          </View>
-        )}
+
+        <View style={s.topCenter}>
+          <Text style={s.matchLabel}>{match.label ?? 'PARTIDA'}</Text>
+          {isLive && (
+            <View style={s.liveBadge}>
+              <View style={s.liveDot} />
+              <Text style={s.liveText}>AO VIVO</Text>
+            </View>
+          )}
+          {isFinished && (
+            <View style={s.finishedBadge}>
+              <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+              <Text style={s.finishedBadgeText}>ENCERRADA</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={s.setIndicator}>
+          <Ionicons name="timer-outline" size={14} color={colors.textMuted} />
+          <Text style={s.setIndicatorText}>Set {currentSetNum}</Text>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        {/* Best of sets indicator */}
-        {match.bestOfSets && match.bestOfSets > 1 && (
-          <View style={s.bestOfRow}>
-            <Text style={s.bestOfText}>Melhor de {match.bestOfSets} sets</Text>
+        {/* Team names + sets won */}
+        <View style={s.teamsHeader}>
+          <View style={s.teamHeaderCol}>
+            <TeamAvatar avatarUrl={match.teamA?.avatarUrl} name={cleanName(match.teamA?.name)} size={48} />
+            <Text style={s.teamHeaderName} numberOfLines={1}>{cleanName(match.teamA?.name)}</Text>
+            <Text style={s.setsWon}>Sets: {setsWonA}</Text>
           </View>
-        )}
-
-        {/* Scoreboard */}
-        <View style={s.scoreboard}>
-          <View style={s.teamCol}>
-            <TeamAvatar avatarUrl={match.teamA?.avatarUrl} name={match.teamA?.name?.replace('[Seed T] ', '') ?? 'TBD'} size={64} />
-            <Text style={s.teamName} numberOfLines={1}>{match.teamA?.name?.replace('[Seed T] ', '') ?? 'TBD'}</Text>
-            <Text style={s.teamScore}>{isLive && currentSet ? currentSet.scoreA : match.scoreTeamA}</Text>
-            {match.bestOfSets && match.bestOfSets > 1 && (
-              <Text style={s.setsWonText}>{match.scoreTeamA} sets</Text>
-            )}
+          <View style={s.vsCol}>
+            <Text style={s.vsText}>VS</Text>
           </View>
-
-          <View style={s.scoreDivider}>
-            <Text style={s.vsText}>×</Text>
-          </View>
-
-          <View style={s.teamCol}>
-            <TeamAvatar avatarUrl={match.teamB?.avatarUrl} name={match.teamB?.name?.replace('[Seed T] ', '') ?? 'TBD'} size={64} />
-            <Text style={s.teamName} numberOfLines={1}>{match.teamB?.name?.replace('[Seed T] ', '') ?? 'TBD'}</Text>
-            <Text style={s.teamScore}>{isLive && currentSet ? currentSet.scoreB : match.scoreTeamB}</Text>
-            {match.bestOfSets && match.bestOfSets > 1 && (
-              <Text style={s.setsWonText}>{match.scoreTeamB} sets</Text>
-            )}
+          <View style={[s.teamHeaderCol, { alignItems: 'flex-end' }]}>
+            <TeamAvatar avatarUrl={match.teamB?.avatarUrl} name={cleanName(match.teamB?.name)} size={48} />
+            <Text style={[s.teamHeaderName, { textAlign: 'right' }]} numberOfLines={1}>{cleanName(match.teamB?.name)}</Text>
+            <Text style={s.setsWon}>Sets: {setsWonB}</Text>
           </View>
         </View>
 
-        {/* Sets */}
-        {match.sets && match.sets.length > 0 && (
-          <View style={s.setsRow}>
-            {match.sets.map((set) => (
-              <View key={set.id} style={s.setBadge}>
-                <Text style={s.setLabel}>SET {set.setNumber}</Text>
-                <Text style={s.setScore}>{set.scoreA} × {set.scoreB}</Text>
+        {/* Score boxes */}
+        {(isLive || isFinished) && (
+          <View style={s.scoreBoxes}>
+            <View style={s.scoreBox}>
+              <TouchableOpacity style={s.scoreTapArea} onPress={() => handlePoint('A')} activeOpacity={0.7}>
+                <Text style={s.scoreValue}>{scoreA}</Text>
+              </TouchableOpacity>
+              <View style={s.scoreBtnRow}>
+                <TouchableOpacity style={s.minusBtn} onPress={() => handleRemovePoint('A')} activeOpacity={0.7}>
+                  <Ionicons name="remove" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+                <View style={s.scoreBtnDivider} />
+                <TouchableOpacity style={s.plusBtn} onPress={() => handlePoint('A')} activeOpacity={0.7}>
+                  <Ionicons name="add" size={18} color={colors.primary} />
+                </TouchableOpacity>
               </View>
-            ))}
+            </View>
+            <View style={s.scoreBox}>
+              <TouchableOpacity style={s.scoreTapArea} onPress={() => handlePoint('B')} activeOpacity={0.7}>
+                <Text style={s.scoreValue}>{scoreB}</Text>
+              </TouchableOpacity>
+              <View style={s.scoreBtnRow}>
+                <TouchableOpacity style={s.minusBtn} onPress={() => handleRemovePoint('B')} activeOpacity={0.7}>
+                  <Ionicons name="remove" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+                <View style={s.scoreBtnDivider} />
+                <TouchableOpacity style={s.plusBtn} onPress={() => handlePoint('B')} activeOpacity={0.7}>
+                  <Ionicons name="add" size={18} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         )}
 
-        {/* Status badge */}
-        {isFinished && (
-          <View style={s.finishedBanner}>
-            <Ionicons name="trophy" size={20} color={colors.primaryGlow} />
-            <Text style={s.finishedText}>
-              {match.winnerId
-                ? `Vencedor: ${match.winnerId === match.teamAId ? match.teamA?.name?.replace('[Seed T] ', '') : match.teamB?.name?.replace('[Seed T] ', '')}`
-                : 'Partida encerrada'}
-            </Text>
+        {/* Sets chips */}
+        {match.sets && match.sets.length > 0 && (
+          <View style={s.setsCard}>
+            <Text style={s.setsCardTitle}>SETS</Text>
+            <View style={s.setsChips}>
+              {match.sets.map((set) => {
+                const isActive = isLive && set.setNumber === currentSetNum;
+                const isSelected = selectedSet === set.setNumber;
+                const isSetFinished = set.scoreA !== set.scoreB;
+                return (
+                  <TouchableOpacity
+                    key={set.id}
+                    style={[
+                      s.setChip,
+                      isActive && s.setChipLive,
+                      isSelected && !isActive && s.setChipSelected,
+                      isSetFinished && !isActive && s.setChipFinished,
+                    ]}
+                    onPress={() => setSelectedSet(set.setNumber)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      s.setChipText,
+                      isActive && s.setChipTextLive,
+                      isSelected && !isActive && s.setChipTextSelected,
+                      isSetFinished && !isActive && s.setChipTextActive,
+                    ]}>
+                      {set.setNumber}: {set.scoreA}–{set.scoreB}
+                    </Text>
+                    {isActive && <View style={s.liveChipDot} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* Winner banner */}
+        {isFinished && match.winnerId && (
+          <View style={s.winnerBanner}>
+            <Ionicons name="trophy" size={24} color={colors.primaryLight} />
+            <View>
+              <Text style={s.winnerLabel}>VENCEDOR</Text>
+              <Text style={s.winnerName}>
+                {match.winnerId === match.teamAId ? cleanName(match.teamA?.name) : cleanName(match.teamB?.name)}
+              </Text>
+            </View>
           </View>
         )}
 
         {/* Referee controls */}
         {canReferee && !isFinished && (
-          <View style={s.controls}>
-            <Text style={s.controlsTitle}>
-              CONTROLES DO ÁRBITRO
-            </Text>
+          <View style={s.controlsCard}>
+            <Text style={s.controlsTitle}>CONTROLES DO ÁRBITRO</Text>
 
             {isScheduled && (
-              <TouchableOpacity style={s.startBtn} onPress={handleStart} disabled={actionLoading}>
-                <LinearGradient
-                  colors={[colors.primary, colors.primaryGlow]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={s.startGradient}
-                >
-                  {actionLoading ? (
-                    <ActivityIndicator color={colors.text} />
-                  ) : (
-                    <>
-                      <Ionicons name="play" size={20} color={colors.text} />
-                      <Text style={s.startText}>INICIAR PARTIDA</Text>
-                    </>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
+              <ChevronButton
+                variant="primary"
+                size="lg"
+                fullWidth
+                onPress={handleStart}
+                disabled={actionLoading}
+                icon={<Ionicons name="play" size={16} color="#FFFFFF" />}
+              >
+                {actionLoading ? 'INICIANDO...' : 'INICIAR PARTIDA'}
+              </ChevronButton>
             )}
 
             {isLive && (
               <>
-                {/* Point buttons */}
-                <View style={s.pointRow}>
-                  <View style={s.teamPointCol}>
-                    <Text style={s.pointLabel} numberOfLines={1}>{match.teamA?.name?.replace('[Seed T] ', '') ?? 'Time A'}</Text>
-                    <View style={s.pointBtnRow}>
-                      <TouchableOpacity style={s.pointBtnMinus} onPress={() => handleRemovePoint('A')} activeOpacity={0.7}>
-                        <Text style={s.pointMinusText}>-1</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={s.pointBtnPlus} onPress={() => handlePoint('A')} activeOpacity={0.7}>
-                        <LinearGradient
-                          colors={['rgba(109,46,192,0.3)', 'rgba(157,115,230,0.3)']}
-                          style={s.pointPlusGradient}
-                        >
-                          <Text style={s.pointPlusText}>+1</Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  <View style={s.teamPointCol}>
-                    <Text style={s.pointLabel} numberOfLines={1}>{match.teamB?.name?.replace('[Seed T] ', '') ?? 'Time B'}</Text>
-                    <View style={s.pointBtnRow}>
-                      <TouchableOpacity style={s.pointBtnMinus} onPress={() => handleRemovePoint('B')} activeOpacity={0.7}>
-                        <Text style={s.pointMinusText}>-1</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={s.pointBtnPlus} onPress={() => handlePoint('B')} activeOpacity={0.7}>
-                        <LinearGradient
-                          colors={['rgba(109,46,192,0.3)', 'rgba(157,115,230,0.3)']}
-                          style={s.pointPlusGradient}
-                        >
-                          <Text style={s.pointPlusText}>+1</Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Action row */}
-                <View style={s.actionRow}>
-                  <TouchableOpacity style={s.actionBtn} onPress={handleFinishSet}>
-                    <Ionicons name="checkmark-done" size={18} color={colors.primaryGlow} />
-                    <Text style={s.actionText}>Finalizar Set</Text>
+                {/* Action chips */}
+                <View style={s.actionChips}>
+                  <TouchableOpacity style={s.actionChip} activeOpacity={0.7}>
+                    <Ionicons name="time-outline" size={18} color={colors.primary} />
+                    <Text style={s.actionChipText}>Timeout</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={s.actionBtn} onPress={handleFinish}>
-                    <Ionicons name="stop" size={18} color={colors.error} />
-                    <Text style={[s.actionText, { color: colors.error }]}>Finalizar</Text>
+                  <TouchableOpacity style={s.actionChip} activeOpacity={0.7}>
+                    <Ionicons name="swap-horizontal-outline" size={18} color={colors.primary} />
+                    <Text style={s.actionChipText}>Subst.</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={s.actionChip} onPress={() => {
+                    Alert.alert('W.O.', 'Qual time vence por W.O.?', [
+                      { text: 'Cancelar', style: 'cancel' },
+                      { text: cleanName(match.teamA?.name), onPress: () => handleWalkover('A') },
+                      { text: cleanName(match.teamB?.name), onPress: () => handleWalkover('B') },
+                    ]);
+                  }} activeOpacity={0.7}>
+                    <Ionicons name="trophy-outline" size={18} color={colors.primary} />
+                    <Text style={s.actionChipText}>W.O.</Text>
                   </TouchableOpacity>
                 </View>
 
-                <View style={s.actionRow}>
-                  <TouchableOpacity style={s.actionBtn} onPress={() => handleWalkover('A')}>
-                    <Text style={s.actionText}>W.O. Time A</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.actionBtn} onPress={() => handleWalkover('B')}>
-                    <Text style={s.actionText}>W.O. Time B</Text>
-                  </TouchableOpacity>
+                {/* Finish buttons */}
+                <View style={s.finishRow}>
+                  <ChevronButton
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    onPress={handleFinishSet}
+                    icon={<Ionicons name="checkmark-done" size={16} color="#FFFFFF" />}
+                  >
+                    ENCERRAR SET
+                  </ChevronButton>
                 </View>
+                <TouchableOpacity style={s.finishMatchBtn} onPress={handleFinish} activeOpacity={0.7}>
+                  <Ionicons name="stop-circle-outline" size={18} color={colors.textMuted} />
+                  <Text style={s.finishMatchText}>FINALIZAR PARTIDA</Text>
+                </TouchableOpacity>
               </>
             )}
           </View>
         )}
 
-        {/* Event timeline (newest first) */}
+        {/* Event timeline */}
         {displayEvents.length > 0 && (
           <View style={s.timeline}>
             <Text style={s.timelineTitle}>TIMELINE</Text>
-            {displayEvents.map((ev, i) => (
-              <View key={i} style={s.timelineItem}>
-                <View style={[
-                  s.timelineDot,
-                  ev.type === 'SIDE_SWITCH' && { backgroundColor: '#FF9800' },
-                  ev.type === 'MATCH_START' && { backgroundColor: colors.primary },
-                  ev.type === 'MATCH_FINISH' && { backgroundColor: colors.success },
-                  ev.type === 'SET_FINISH' && { backgroundColor: colors.primary },
-                  ev.type === 'WALKOVER' && { backgroundColor: colors.error },
-                ]} />
-                <Text style={s.timelineText}>
-                  {ev.type === 'POINT' && `Ponto Time ${ev.team === 'A' ? (match.teamA?.name?.replace('[Seed T] ', '') ?? 'A') : (match.teamB?.name?.replace('[Seed T] ', '') ?? 'B')}`}
-                  {ev.type === 'SIDE_SWITCH' && `TROCA DE LADOS`}
-                  {ev.type === 'SET_FINISH' && `Set ${ev.setNumber} finalizado (${ev.scoreA} × ${ev.scoreB})`}
-                  {ev.type === 'MATCH_START' && 'Partida iniciada'}
-                  {ev.type === 'MATCH_FINISH' && 'Partida encerrada'}
-                  {ev.type === 'WALKOVER' && `W.O. - Time ${ev.team === 'A' ? (match.teamA?.name?.replace('[Seed T] ', '') ?? 'A') : (match.teamB?.name?.replace('[Seed T] ', '') ?? 'B')} venceu`}
-                </Text>
-              </View>
-            ))}
+            <View style={s.timelineList}>
+              {displayEvents.map((ev, i) => {
+                const isPoint = ev.type === 'POINT';
+                const isStart = ev.type === 'MATCH_START';
+                const isMatchEnd = ev.type === 'MATCH_FINISH';
+                const isSetEnd = ev.type === 'SET_FINISH';
+
+                return (
+                  <View key={i} style={s.timelineItem}>
+                    <View style={[
+                      s.tlDot,
+                      isPoint && { backgroundColor: colors.primary },
+                      isStart && { backgroundColor: colors.success },
+                      isMatchEnd && { backgroundColor: colors.success },
+                      isSetEnd && { backgroundColor: colors.primaryLight },
+                      ev.type === 'SIDE_SWITCH' && { backgroundColor: '#FF9800' },
+                      ev.type === 'WALKOVER' && { backgroundColor: colors.error },
+                    ]} />
+                    <Text style={s.tlText}>
+                      {ev.type === 'POINT' && `Ponto ${ev.team === 'A' ? cleanName(match.teamA?.name) : cleanName(match.teamB?.name)}`}
+                      {ev.type === 'SIDE_SWITCH' && 'TROCA DE LADOS'}
+                      {ev.type === 'SET_FINISH' && `Set ${ev.setNumber} finalizado (${ev.scoreA} × ${ev.scoreB})`}
+                      {ev.type === 'MATCH_START' && 'Partida iniciada'}
+                      {ev.type === 'MATCH_FINISH' && 'Partida encerrada'}
+                      {ev.type === 'WALKOVER' && `W.O. — ${ev.team === 'A' ? cleanName(match.teamA?.name) : cleanName(match.teamB?.name)} venceu`}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
           </View>
         )}
 
@@ -468,137 +531,205 @@ export default function LiveMatchScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  header: {
+
+  // Top bar
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
-    gap: spacing.md,
   },
-  backBtn: { padding: 4 },
-  headerTitle: { flex: 1, fontSize: 20, fontFamily: fonts.title.display, color: colors.text, letterSpacing: 2 },
+  backBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  topCenter: { alignItems: 'center', gap: 4 },
+  topTitle: { fontSize: typography.sizes.md, fontFamily: fonts.text.regular, color: colors.textMuted },
+  matchLabel: { fontFamily: fonts.title.regular, fontSize: typography.sizes.subtitle, color: colors.text, letterSpacing: 0.5 },
   liveBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(255,68,68,0.15)',
-    paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10,
+    backgroundColor: 'rgba(224,69,69,0.1)',
+    paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8,
   },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF4444' },
-  liveText: { fontSize: 10, fontFamily: fonts.text.semiBold, color: '#FF4444', letterSpacing: 1.5 },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#E04545' },
+  liveText: { fontSize: 10, fontFamily: fonts.text.semiBold, color: '#E04545', letterSpacing: 1.5 },
+  finishedBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(31,184,122,0.1)',
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+  },
+  finishedBadgeText: { fontSize: 10, fontFamily: fonts.text.semiBold, color: colors.success, letterSpacing: 1 },
+  setIndicator: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.primaryTint,
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+  },
+  setIndicatorText: { fontSize: 11, fontFamily: fonts.text.semiBold, color: colors.primary, letterSpacing: 0.5 },
 
-  content: { paddingHorizontal: spacing.xl },
+  content: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
 
-  // Best of sets indicator
-  bestOfRow: { alignItems: 'center', marginBottom: spacing.md },
-  bestOfText: { fontSize: 12, fontFamily: fonts.text.semiBold, color: colors.primaryGlow, letterSpacing: 1.5 },
-  setsWonText: { fontSize: 11, fontFamily: fonts.text.medium, color: colors.textMuted, marginTop: 2 },
-
-  // Scoreboard
-  scoreboard: {
+  // Teams header
+  teamsHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  teamHeaderCol: { flex: 1, gap: spacing.xs },
+  teamHeaderName: { fontFamily: fonts.title.regular, fontSize: typography.sizes.heading, color: colors.text, letterSpacing: 0.4 },
+  setsWon: { fontSize: 11, fontFamily: fonts.text.medium, color: colors.textMuted },
+  vsCol: { paddingHorizontal: spacing.md },
+  vsText: { fontFamily: fonts.title.regular, fontSize: typography.sizes.subtitle, color: colors.textMuted },
+
+  // Score boxes
+  scoreBoxes: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.xl },
+  scoreBox: {
+    flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-    padding: spacing.xl,
-    alignItems: 'center',
-    marginBottom: spacing.lg,
+    borderColor: '#EDEDF0',
+    overflow: 'hidden',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  teamCol: { flex: 1, alignItems: 'center', gap: spacing.sm },
-  teamName: { fontSize: 14, fontFamily: fonts.text.semiBold, color: colors.textSecondary, textAlign: 'center' },
-  teamScore: { fontSize: 52, fontFamily: fonts.title.display, color: colors.text, letterSpacing: 1 },
-  scoreDivider: { paddingHorizontal: spacing.md },
-  vsText: { fontSize: 20, fontFamily: fonts.text.regular, color: colors.textMuted },
-
-  // Sets
-  setsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-  setBadge: {
+  scoreTapArea: {
+    paddingVertical: spacing.xl,
+    alignItems: 'center',
+  },
+  scoreValue: {
+    fontFamily: fonts.title.regular,
+    fontSize: 72,
+    color: colors.text,
+    lineHeight: 80,
+    letterSpacing: 2,
+  },
+  scoreBtnRow: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#EDEDF0',
+  },
+  minusBtn: {
     flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-    padding: spacing.md,
+    paddingVertical: spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  setLabel: { fontSize: 9, fontFamily: fonts.text.semiBold, color: colors.textMuted, letterSpacing: 1.5 },
-  setScore: { fontSize: 18, fontFamily: fonts.title.display, color: colors.text, letterSpacing: 1 },
+  plusBtn: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreBtnDivider: { width: 1, backgroundColor: '#EDEDF0' },
 
-  // Finished
-  finishedBanner: {
+  // Sets card
+  setsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: '#EDEDF0',
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  setsCardTitle: { fontFamily: fonts.title.regular, fontSize: 14, color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.md },
+  setsChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  setChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.xl,
+    backgroundColor: colors.primaryTint,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  setChipLive: { backgroundColor: 'rgba(224,69,69,0.1)', borderWidth: 1, borderColor: 'rgba(224,69,69,0.3)' },
+  setChipSelected: { backgroundColor: 'rgba(109,46,192,0.15)', borderWidth: 1, borderColor: 'rgba(109,46,192,0.3)' },
+  setChipFinished: { backgroundColor: colors.primary },
+  setChipText: { fontFamily: fonts.title.regular, fontSize: 13, color: colors.text, letterSpacing: 0.5 },
+  setChipTextLive: { color: '#C0392B' },
+  setChipTextSelected: { color: colors.primary },
+  setChipTextActive: { color: '#FFFFFF' },
+  liveChipDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#E04545' },
+
+  // Winner
+  winnerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    backgroundColor: 'rgba(109,46,192,0.08)',
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: 'rgba(109,46,192,0.2)',
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
+  },
+  winnerLabel: { fontSize: 10, fontFamily: fonts.text.semiBold, color: colors.textMuted, letterSpacing: 1 },
+  winnerName: { fontFamily: fonts.title.regular, fontSize: typography.sizes.heading, color: colors.primary, letterSpacing: 0.5 },
+
+  // Controls
+  controlsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: '#EDEDF0',
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
+    gap: spacing.lg,
+  },
+  controlsTitle: {
+    fontSize: typography.sizes.md, fontFamily: fonts.text.semiBold,
+    color: colors.textMuted, letterSpacing: typography.letterSpacing.medium,
+  },
+
+  // Action chips
+  actionChips: { flexDirection: 'row', gap: spacing.md },
+  actionChip: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: colors.primaryTint,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(109,46,192,0.15)',
+    paddingVertical: spacing.md,
+  },
+  actionChipText: { fontSize: 11, fontFamily: fonts.text.medium, color: colors.primary },
+
+  // Finish
+  finishRow: { marginBottom: spacing.sm },
+  finishMatchBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(109,46,192,0.1)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(109,46,192,0.2)',
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  finishedText: { fontSize: 14, fontFamily: fonts.text.semiBold, color: colors.primaryGlow },
+  finishMatchText: { fontSize: typography.sizes.md, fontFamily: fonts.text.semiBold, color: colors.textMuted, letterSpacing: 0.5 },
 
-  // Controls
-  controls: {
+  // Timeline
+  timeline: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-    padding: spacing.lg,
+    borderColor: '#EDEDF0',
+    padding: spacing.xl,
     marginBottom: spacing.lg,
-    gap: spacing.md,
   },
-  controlsTitle: {
-    fontSize: 12, fontFamily: fonts.text.semiBold, color: colors.textMuted, letterSpacing: 2,
+  timelineTitle: {
+    fontSize: typography.sizes.heading, fontFamily: fonts.title.regular,
+    color: colors.text, letterSpacing: typography.letterSpacing.medium, marginBottom: spacing.lg,
   },
-
-  startBtn: { borderRadius: 14, overflow: 'hidden' },
-  startGradient: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: spacing.sm, paddingVertical: spacing.lg,
-  },
-  startText: { fontSize: 14, letterSpacing: 2, color: colors.text, fontFamily: fonts.text.semiBold },
-
-  pointRow: { flexDirection: 'row', gap: spacing.md },
-  teamPointCol: { flex: 1, gap: spacing.sm, alignItems: 'center' },
-  pointBtnRow: { flexDirection: 'row', gap: spacing.sm },
-  pointBtnMinus: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    paddingVertical: spacing.lg, borderRadius: 12,
-    backgroundColor: 'rgba(255,77,77,0.1)', borderWidth: 1, borderColor: 'rgba(255,77,77,0.2)',
-  },
-  pointMinusText: { fontSize: 20, fontFamily: fonts.title.display, color: colors.error },
-  pointBtnPlus: { flex: 1, borderRadius: 12, overflow: 'hidden' },
-  pointPlusGradient: {
-    alignItems: 'center', justifyContent: 'center',
-    paddingVertical: spacing.lg,
-    borderWidth: 1, borderColor: 'rgba(109,46,192,0.3)', borderRadius: 12,
-  },
-  pointPlusText: { fontSize: 20, fontFamily: fonts.title.display, color: colors.primaryGlow, letterSpacing: 1 },
-  pointLabel: { fontSize: 11, fontFamily: fonts.text.medium, color: colors.textSecondary },
-
-  actionRow: { flexDirection: 'row', gap: spacing.md },
-  actionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    paddingVertical: spacing.md,
-  },
-  actionText: { fontSize: 12, fontFamily: fonts.text.medium, color: colors.textSecondary },
-
-  // Timeline
-  timeline: { marginBottom: spacing.lg },
-  timelineTitle: { fontSize: 14, fontFamily: fonts.title.display, color: colors.text, letterSpacing: 2, marginBottom: spacing.md },
-  timelineItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
-  timelineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
-  timelineText: { fontSize: 12, fontFamily: fonts.text.regular, color: colors.textSecondary },
+  timelineList: { gap: spacing.md },
+  timelineItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  tlDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
+  tlText: { fontSize: typography.sizes.md, fontFamily: fonts.text.regular, color: colors.textSecondary, flex: 1 },
 
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

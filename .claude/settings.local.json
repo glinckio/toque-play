@@ -17,7 +17,8 @@
       "Bash(node -e ':*)",
       "Bash(node:*)",
       "Bash(find:*)",
-      "Bash(npx expo:*)"
+      "Bash(npx expo:*)",
+      "WebSearch"
     ]
   }
 }

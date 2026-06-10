@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateMemberDto {
@@ -6,4 +6,9 @@ export class UpdateMemberDto {
   @IsBoolean()
   @IsOptional()
   isCaptain?: boolean;
+
+  @ApiPropertyOptional({ description: 'Posicao do jogador (levantador, ponteiro, oposto, central, libero)' })
+  @IsString()
+  @IsOptional()
+  position?: string;
 }

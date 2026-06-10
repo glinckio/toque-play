@@ -13,13 +13,13 @@ export declare class BracketsController {
         };
         matches: ({
             teamA: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
             teamB: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
             sets: {
@@ -33,22 +33,25 @@ export declare class BracketsController {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
         } & {
             id: string;
+            status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             position: number;
             round: number;
-            bestOfSets: number | null;
             bracketId: string | null;
             friendlyId: string | null;
-            status: import(".prisma/client").$Enums.MatchStatus;
             scheduledAt: Date | null;
             group: number | null;
             label: string | null;
@@ -61,14 +64,12 @@ export declare class BracketsController {
             refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
         })[];
     } & {
         id: string;
         tournamentId: string;
-        categoryId: string;
         type: import(".prisma/client").$Enums.BracketType;
+        categoryId: string;
     }) | null>;
     getBracket(tournamentId: string, categoryId?: string): Promise<{
         rounds: Record<number, any[]>;
@@ -81,13 +82,13 @@ export declare class BracketsController {
         };
         matches: ({
             teamA: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
             teamB: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
             sets: {
@@ -101,22 +102,25 @@ export declare class BracketsController {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
         } & {
             id: string;
+            status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             position: number;
             round: number;
-            bestOfSets: number | null;
             bracketId: string | null;
             friendlyId: string | null;
-            status: import(".prisma/client").$Enums.MatchStatus;
             scheduledAt: Date | null;
             group: number | null;
             label: string | null;
@@ -129,12 +133,10 @@ export declare class BracketsController {
             refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
         })[];
         id: string;
         tournamentId: string;
-        categoryId: string;
         type: import(".prisma/client").$Enums.BracketType;
+        categoryId: string;
     }[]>;
 }

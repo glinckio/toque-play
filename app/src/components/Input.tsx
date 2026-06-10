@@ -1,23 +1,30 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native';
+import {
+  View,
+  TextInput,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  type ViewStyle,
+  type TextInputProps,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { radius } from '../theme/radius';
-import { fonts } from '../theme';
+import { fonts } from '../theme/fonts';
 
-interface InputProps {
+interface InputProps extends TextInputProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
   label?: string;
   secureTextEntry?: boolean;
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   error?: string;
+  helper?: string;
   style?: ViewStyle;
 }
 
@@ -27,41 +34,50 @@ export default function Input({
   placeholder,
   label,
   secureTextEntry,
-  autoCapitalize,
-  keyboardType,
   leftIcon,
   rightIcon,
   error,
+  helper,
   style,
+  ...rest
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const isPassword = !!secureTextEntry;
 
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.inputWrapper, !!error && styles.inputError]}>
+      <View
+        style={[
+          styles.inputWrapper,
+          !!leftIcon && { paddingLeft: spacing.md },
+          isFocused && styles.inputFocused,
+          !!error && styles.inputError,
+        ]}
+      >
         {!!leftIcon && <View style={styles.leftIconContainer}>{leftIcon}</View>}
         <TextInput
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.textPlaceholder}
           secureTextEntry={isPassword && !showPassword}
-          autoCapitalize={autoCapitalize}
-          keyboardType={keyboardType}
-          style={[styles.input, !!leftIcon && { paddingLeft: spacing.sm }]}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          style={styles.input}
+          {...rest}
         />
         {isPassword && (
           <TouchableOpacity
             style={styles.rightIconContainer}
-            onPress={() => setShowPassword(prev => !prev)}
+            onPress={() => setShowPassword((prev) => !prev)}
             activeOpacity={0.7}
           >
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-              size={22}
-              color={colors.textMuted}
+              size={20}
+              color={colors.textPlaceholder}
             />
           </TouchableOpacity>
         )}
@@ -70,6 +86,7 @@ export default function Input({
         )}
       </View>
       {!!error && <Text style={styles.error}>{error}</Text>}
+      {!!helper && !error && <Text style={styles.helper}>{helper}</Text>}
     </View>
   );
 }
@@ -79,35 +96,34 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   label: {
-    color: colors.textSecondary,
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-    letterSpacing: typography.letterSpacing.wide,
-    textTransform: 'uppercase',
-    fontFamily: fonts.text.medium
+    fontFamily: fonts.form.medium,
+    fontSize: typography.sizes.input,
+    color: colors.textDefault,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.inputBackground,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    height: 48,
+  },
+  inputFocused: {
+    backgroundColor: '#FFFFFF',
+    borderBottomColor: colors.primary,
   },
   input: {
     flex: 1,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    height: '100%',
+    paddingHorizontal: spacing.lg,
+    fontFamily: fonts.form.regular,
+    fontSize: typography.sizes.input,
     color: colors.text,
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.medium,
-    fontFamily: fonts.text.regular
   },
   inputError: {
-    borderColor: colors.error,
+    borderBottomColor: colors.error,
   },
   leftIconContainer: {
-    paddingLeft: spacing.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -117,7 +133,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   error: {
+    fontFamily: fonts.text.regular,
+    fontSize: typography.sizes.md,
     color: colors.error,
-    fontSize: typography.sizes.sm,
+  },
+  helper: {
+    fontFamily: fonts.text.regular,
+    fontSize: typography.sizes.md,
+    color: colors.textMuted,
   },
 });

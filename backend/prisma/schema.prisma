@@ -202,6 +202,7 @@ model TeamMember {
   cpf        String?
   isGuest    Boolean          @default(false)
   isCaptain  Boolean          @default(false)
+  position   String?
 
   @@unique([teamId, userId])
   @@index([teamId])
@@ -281,6 +282,7 @@ model TournamentCategory {
   bestOfSets            Int              @default(3)
   semifinalBestOfSets   Int?
   finalBestOfSets       Int?
+  tiebreakScore         Int?
   startTime    DateTime?
   registrationPrice    Decimal?  @db.Decimal(10, 2)
   registrationDeadline DateTime?
@@ -403,8 +405,9 @@ model Match {
   status      MatchStatus @default(SCHEDULED)
   scheduledAt DateTime?
   group       Int?
-  bestOfSets  Int?
-  label       String?
+  bestOfSets    Int?
+  tiebreakScore Int?
+  label         String?
 
   teamAId     String?
   teamA       Team?       @relation("MatchTeamA", fields: [teamAId], references: [id])

@@ -6,18 +6,18 @@ export declare class NotificationsController {
     registerToken(userId: string, dto: RegisterTokenDto): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         token: string;
+        userId: string;
         platform: string;
     }>;
     removeToken(userId: string, token: string): Promise<void>;
-    findMine(userId: string, page?: string, limit?: string): Promise<{
+    findMine(userId: string, page?: string, limit?: string, unread?: string): Promise<{
         data: {
             id: string;
             createdAt: Date;
-            userId: string;
             type: string;
             title: string;
+            userId: string;
             body: string;
             referenceId: string | null;
             read: boolean;
@@ -33,9 +33,9 @@ export declare class NotificationsController {
     markAsRead(notificationId: string, userId: string): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         type: string;
         title: string;
+        userId: string;
         body: string;
         referenceId: string | null;
         read: boolean;

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts } from '../../../theme/fonts';
+import { typography } from '../../../theme/typography';
 import { radius } from '../../../theme/radius';
 import { BracketType } from '../../../types/tournament';
 import Input from '../../../components/Input';
@@ -91,7 +92,7 @@ export default function BracketTypeSelector({
                   <Ionicons
                     name={option.icon}
                     size={22}
-                    color={isSelected ? colors.primaryGlow : colors.textMuted}
+                    color={isSelected ? colors.primary : colors.textMuted}
                   />
                   <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
                     {option.label}
@@ -190,23 +191,27 @@ export default function BracketTypeSelector({
 const styles = StyleSheet.create({
   container: { gap: spacing.md },
   sectionTitle: {
-    fontSize: 16,
-    fontFamily: fonts.title.display,
+    fontSize: typography.sizes.heading,
+    fontFamily: fonts.title.regular,
     color: colors.text,
-    letterSpacing: 2,
+    letterSpacing: typography.letterSpacing.medium,
   },
   optionWrapper: { marginBottom: spacing.sm },
   optionCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-    padding: spacing.lg,
+    padding: spacing.xl,
     gap: spacing.sm,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 2,
   },
   optionCardSelected: {
     borderColor: colors.primary,
-    backgroundColor: 'rgba(109,46,192,0.06)',
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1,
   },
   optionHeader: {
     flexDirection: 'row',
@@ -219,50 +224,53 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   optionLabel: {
-    fontSize: 16,
+    fontSize: typography.sizes.button,
     fontFamily: fonts.text.semiBold,
     color: colors.textSecondary,
   },
   optionLabelSelected: {
-    color: colors.primaryGlow,
+    color: colors.primary,
   },
   optionDesc: {
-    fontSize: 12,
+    fontSize: typography.sizes.md,
     fontFamily: fonts.text.regular,
     color: colors.textMuted,
     lineHeight: 18,
   },
   exampleBox: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 10,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: radius.lg,
     padding: spacing.md,
     marginTop: spacing.sm,
   },
   exampleLabel: {
-    fontSize: 9,
+    fontSize: typography.sizes.md,
     fontFamily: fonts.text.semiBold,
-    color: colors.primaryGlow,
-    letterSpacing: 2,
+    color: colors.primary,
+    letterSpacing: typography.letterSpacing.medium,
     marginBottom: 4,
   },
   exampleText: {
-    fontSize: 12,
+    fontSize: typography.sizes.md,
     fontFamily: fonts.text.regular,
     color: colors.textSecondary,
   },
   extraFields: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-    padding: spacing.lg,
-    gap: spacing.lg,
+    padding: spacing.xl,
+    gap: spacing.xl,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 2,
   },
   fieldLabel: {
-    fontSize: 9,
+    fontSize: typography.sizes.md,
     fontFamily: fonts.text.semiBold,
     color: colors.textMuted,
-    letterSpacing: 2,
+    letterSpacing: typography.letterSpacing.medium,
   },
   fieldRow: {
     flexDirection: 'row',
@@ -271,7 +279,7 @@ const styles = StyleSheet.create({
   },
   fieldHalf: { flex: 1 },
   fieldOr: {
-    fontSize: 12,
+    fontSize: typography.sizes.md,
     fontFamily: fonts.text.medium,
     color: colors.textMuted,
     marginTop: 16,

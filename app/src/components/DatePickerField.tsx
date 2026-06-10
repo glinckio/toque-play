@@ -127,6 +127,6 @@ const s = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)',
   },
   modalCancel: { fontSize: 14, fontFamily: fonts.text.semiBold, color: colors.textMuted },
-  modalConfirm: { fontSize: 14, fontFamily: fonts.text.bold, color: colors.primaryGlow },
+  modalConfirm: { fontSize: 14, fontFamily: fonts.text.bold, color: colors.primaryLight },
   iosPicker: { height: 200 },
 });

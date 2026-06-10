@@ -14,6 +14,7 @@ const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 class UpdateMemberDto {
     isCaptain;
+    position;
 }
 exports.UpdateMemberDto = UpdateMemberDto;
 __decorate([
@@ -22,4 +23,10 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateMemberDto.prototype, "isCaptain", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Posicao do jogador (levantador, ponteiro, oposto, central, libero)' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateMemberDto.prototype, "position", void 0);
 //# sourceMappingURL=update-member.dto.js.map

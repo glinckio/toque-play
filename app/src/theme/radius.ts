@@ -1,6 +1,10 @@
 export const radius = {
-  sm: 12,
-  input: 10,
-  button: 10,
-  card: 28,
+  xs: 6,
+  sm: 8,
+  md: 10,
+  lg: 12,
+  xl: 14,
+  card: 16,
+  section: 32,
+  full: 9999,
 } as const;

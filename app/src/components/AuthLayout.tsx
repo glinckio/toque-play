@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { ScrollView, KeyboardAvoidingView, Platform, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { ReactNode } from 'react';
 import { colors } from '../theme/colors';
@@ -10,10 +10,11 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="light-content" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.container}
+        style={styles.body}
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -29,6 +30,10 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: colors.primary,
+  },
+  body: {
     flex: 1,
     backgroundColor: colors.background,
   },

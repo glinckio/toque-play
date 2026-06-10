@@ -15,10 +15,11 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import { tournamentService } from '../../services/tournament';
 import { BracketResponse, Match, RankingResponse } from '../../types/match';
 import { BracketType } from '../../types/tournament';
@@ -30,6 +31,9 @@ import PlayoffBracket from './components/PlayoffBracket';
 import StandingsTable from './components/StandingsTable';
 import GroupOverview from './components/GroupOverview';
 import GroupTable from './components/GroupTable';
+import HeroHeader from '../../components/HeroHeader';
+import TabBar from '../../components/TabBar';
+import ChevronButton from '../../components/ChevronButton';
 
 type Nav = NativeStackNavigationProp<TournamentStackParamList, 'BracketView'>;
 type Route = RouteProp<TournamentStackParamList, 'BracketView'>;
@@ -103,16 +107,13 @@ export default function BracketScreen() {
       ? allMatches.filter((m) => m.group === null || m.group === undefined)
       : [];
 
-    // Only show elimination matches that have at least one team assigned
     const visibleElimination = eMatches.filter((m) => m.teamAId || m.teamBId);
     const hasVisibleElim = visibleElimination.length > 0;
 
-    // For MatchList: show group matches + visible elimination matches (interleaved)
     const visible = isElimination
-      ? allMatches // for pure elimination, show all
-      : [...gMatches, ...visibleElimination]; // for groups+elim, hide TBD
+      ? allMatches
+      : [...gMatches, ...visibleElimination];
 
-    // Build tabs based on bracket type
     const tabList: { key: TabKey; label: string }[] = [];
     if (isRoundRobin) {
       tabList.push({ key: 'matches', label: 'Jogos' });
@@ -143,7 +144,6 @@ export default function BracketScreen() {
   const isElimination = bracketType === BracketType.SINGLE_ELIMINATION || bracketType === BracketType.DOUBLE_ELIMINATION;
   const isGroupsThenElimination = bracketType === BracketType.GROUPS_THEN_ELIMINATION;
 
-  // Bracket objects for sub-components
   const groupBracket = isGroupsThenElimination && brackets[0]
     ? [{ ...brackets[0], matches: groupMatches, type: BracketType.ROUND_ROBIN as BracketType }]
     : [];
@@ -154,12 +154,7 @@ export default function BracketScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.root} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={styles.title}>CHAVES</Text>
-        </View>
+        <HeroHeader title="CHAVES" watermark="BRACKET" onBack={() => navigation.goBack()} rounded />
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -167,32 +162,20 @@ export default function BracketScreen() {
     );
   }
 
-  // Auto-select first tab if current tab not available
   const currentTab = tabs.find(t => t.key === activeTab) ? activeTab : (tabs[0]?.key ?? 'matches');
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.title}>CHAVES</Text>
-      </View>
+      <HeroHeader title="CHAVES" watermark="BRACKET" onBack={() => navigation.goBack()} rounded />
 
       {tabs.length > 1 && (
-        <View style={styles.tabBar}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.tab, currentTab === tab.key && styles.tabActive]}
-              onPress={() => setActiveTab(tab.key)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.tabLabel, currentTab === tab.key && styles.tabLabelActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.tabWrap}>
+          <TabBar
+            tabs={tabs.map((t) => ({ key: t.key, label: t.label }))}
+            activeTab={currentTab}
+            onTabChange={(key) => setActiveTab(key as TabKey)}
+            variant="underline"
+          />
         </View>
       )}
 
@@ -201,26 +184,30 @@ export default function BracketScreen() {
         <View style={styles.codeModal}>
           <View style={styles.codeModalCard}>
             <View style={styles.codeModalIcon}>
-              <Ionicons name="lock-closed" size={40} color={colors.primaryGlow} />
+              <Ionicons name="lock-closed" size={40} color={colors.primary} />
             </View>
             <Text style={styles.codeModalTitle}>CÓDIGO DO ÁRBITRO</Text>
             <Text style={styles.codeModalDesc}>
               Informe o código fornecido pelo organizador para liberar o acesso ao chaveamento.
             </Text>
-            <TextInput
-              style={styles.codeModalInput}
-              value={codeInput}
-              onChangeText={setCodeInput}
-              placeholder="ABC123"
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              maxLength={6}
-              autoFocus
-              textAlign="center"
-            />
-            <TouchableOpacity
-              style={styles.codeModalBtn}
+            <View style={styles.codeInputWrap}>
+              <TextInput
+                style={styles.codeInput}
+                value={codeInput}
+                onChangeText={setCodeInput}
+                placeholder="ABC123"
+                placeholderTextColor={colors.textPlaceholder}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={6}
+                autoFocus
+                textAlign="center"
+              />
+            </View>
+            <ChevronButton
+              variant="primary"
+              size="lg"
+              fullWidth
               onPress={async () => {
                 if (codeInput.trim().length < 6) return;
                 setCodeLoading(true);
@@ -236,49 +223,32 @@ export default function BracketScreen() {
                 }
               }}
               disabled={codeLoading || codeInput.trim().length < 6}
-              activeOpacity={0.8}
+              icon={<Ionicons name="unlock-outline" size={16} color="#FFFFFF" />}
             >
-              <LinearGradient
-                colors={[colors.primary, colors.primaryGlow]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.codeModalBtnGradient, (codeLoading || codeInput.trim().length < 6) && { opacity: 0.4 }]}
-              >
-                {codeLoading ? (
-                  <ActivityIndicator color={colors.text} />
-                ) : (
-                  <>
-                    <Ionicons name="unlock-outline" size={20} color={colors.text} />
-                    <Text style={styles.codeModalBtnText}>LIBERAR ACESSO</Text>
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+              {codeLoading ? 'VERIFICANDO...' : 'LIBERAR ACESSO'}
+            </ChevronButton>
             <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: spacing.lg }}>
-              <Text style={{ color: colors.textMuted, fontSize: 13, fontFamily: fonts.text.regular }}>Voltar</Text>
+              <Text style={{ color: colors.textMuted, fontSize: typography.sizes.body, fontFamily: fonts.text.regular }}>Voltar</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-      {/* Normal bracket content — hidden behind code modal if not confirmed */}
+      {/* Normal bracket content */}
       {!isInvitedNotConfirmed && (
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Grupos: visual overview with team cards */}
         {currentTab === 'groups' && isGroupsThenElimination && (
           <GroupOverview brackets={groupBracket} />
         )}
 
-        {/* Jogos: match list */}
         {currentTab === 'matches' && (
           <MatchList matches={visibleMatches} tournamentId={tournamentId} isReferee={isReferee} />
         )}
 
-        {/* Classificação: standings table */}
         {currentTab === 'standings' && (isRoundRobin || isGroupsThenElimination) && (
           <GroupTable brackets={isGroupsThenElimination ? groupBracket : brackets} />
         )}
@@ -286,7 +256,6 @@ export default function BracketScreen() {
           <StandingsTable ranking={ranking} />
         )}
 
-        {/* Finais: playoff bracket (only when teams are assigned) */}
         {currentTab === 'playoffs' && isElimination && (
           <PlayoffBracket brackets={brackets} />
         )}
@@ -303,25 +272,17 @@ export default function BracketScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  tabWrap: {
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
     marginBottom: spacing.md,
   },
-  backBtn: { marginRight: spacing.md },
-  title: { fontSize: 28, fontFamily: fonts.title.display, color: colors.text, letterSpacing: 3 },
-  tabBar: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.lg,
-  },
+  content: { paddingHorizontal: spacing.xl },
+  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Code modal
   codeModal: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5,6,10,0.95)',
+    backgroundColor: 'rgba(20,10,30,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,
@@ -329,83 +290,48 @@ const styles = StyleSheet.create({
   codeModalCard: {
     width: '85%',
     backgroundColor: colors.surface,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(109,46,192,0.2)',
+    borderRadius: radius.section,
     padding: spacing.xxl,
     alignItems: 'center',
   },
   codeModalIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(109,46,192,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
     marginBottom: spacing.xl,
   },
   codeModalTitle: {
-    fontFamily: fonts.title.display,
-    fontSize: 24,
+    fontFamily: fonts.title.regular,
+    fontSize: typography.sizes.display,
     color: colors.text,
-    letterSpacing: 3,
+    letterSpacing: typography.letterSpacing.medium,
     marginBottom: spacing.md,
   },
   codeModalDesc: {
-    fontSize: 14,
+    fontSize: typography.sizes.input,
     fontFamily: fonts.text.regular,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: spacing.xl,
   },
-  codeModalInput: {
+  codeInputWrap: {
     width: '100%',
-    backgroundColor: colors.background,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    color: colors.text,
-    fontFamily: fonts.title.display,
-    fontSize: 36,
-    letterSpacing: 8,
+    backgroundColor: colors.inputBackground,
+    borderRadius: radius.lg,
     marginBottom: spacing.xl,
-  },
-  codeModalBtn: {
-    width: '100%',
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  codeModalBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    height: 56,
     justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.lg,
   },
-  codeModalBtnText: {
-    fontSize: 14,
-    letterSpacing: 2,
+  codeInput: {
     color: colors.text,
-    fontFamily: fonts.text.semiBold,
+    fontFamily: fonts.title.regular,
+    fontSize: 32,
+    letterSpacing: 4,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: 0,
+    margin: 0,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabActive: { borderBottomColor: colors.primary },
-  tabLabel: {
-    fontSize: 12,
-    fontFamily: fonts.text.medium,
-    color: colors.textMuted,
-    letterSpacing: 1,
-  },
-  tabLabelActive: { color: colors.primaryGlow, fontFamily: fonts.text.semiBold },
-  content: { paddingHorizontal: spacing.xl },
-  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

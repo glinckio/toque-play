@@ -15,13 +15,13 @@ export declare class MatchesController {
         status: import(".prisma/client").$Enums.MatchStatus;
         startedAt: Date | null;
         teamA: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         teamB: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         sets: {
@@ -47,22 +47,22 @@ export declare class MatchesController {
     }): Promise<{
         refereeId: string;
         bracket: {
+            id: string;
             tournament: {
-                name: string;
                 id: string;
+                name: string;
                 ownerId: string;
             };
-            id: string;
             tournamentId: string;
         } | null;
         teamA: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         teamB: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         sets: {
@@ -73,17 +73,20 @@ export declare class MatchesController {
             scoreB: number;
         }[];
         winner: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         id: string;
+        status: import(".prisma/client").$Enums.MatchStatus;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        bestOfSets: number | null;
+        tiebreakScore: number | null;
         position: number;
         round: number;
-        bestOfSets: number | null;
         bracketId: string | null;
         friendlyId: string | null;
-        status: import(".prisma/client").$Enums.MatchStatus;
         scheduledAt: Date | null;
         group: number | null;
         label: string | null;
@@ -95,8 +98,6 @@ export declare class MatchesController {
         winnerId: string | null;
         startedAt: Date | null;
         finishedAt: Date | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }>;
     findOne(matchId: string, userId: string): Promise<{
         bracket: {
@@ -108,13 +109,13 @@ export declare class MatchesController {
             categoryFormat: string | null;
         } | null;
         teamA: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         teamB: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         sets: {
@@ -128,35 +129,38 @@ export declare class MatchesController {
             id: string;
             matchId: string;
             setNumber: number;
-            scoredBy: string;
             timestamp: Date;
+            scoredBy: string;
         }[];
         matchEvents: {
-            team: string | null;
             id: string;
-            type: import(".prisma/client").$Enums.MatchEventType;
             createdAt: Date;
+            type: import(".prisma/client").$Enums.MatchEventType;
+            team: string | null;
+            teamId: string | null;
             matchId: string;
             setNumber: number | null;
             scoreA: number | null;
             scoreB: number | null;
-            teamId: string | null;
             playerOutId: string | null;
             playerInId: string | null;
             createdBy: string;
         }[];
         winner: {
-            name: string;
             id: string;
+            name: string;
         } | null;
     } & {
         id: string;
+        status: import(".prisma/client").$Enums.MatchStatus;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        bestOfSets: number | null;
+        tiebreakScore: number | null;
         position: number;
         round: number;
-        bestOfSets: number | null;
         bracketId: string | null;
         friendlyId: string | null;
-        status: import(".prisma/client").$Enums.MatchStatus;
         scheduledAt: Date | null;
         group: number | null;
         label: string | null;
@@ -169,8 +173,6 @@ export declare class MatchesController {
         refereeId: string | null;
         startedAt: Date | null;
         finishedAt: Date | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }>;
     getTimeline(matchId: string): Promise<any[]>;
     generateRefereeCode(matchId: string, userId: string): Promise<{
@@ -179,23 +181,26 @@ export declare class MatchesController {
     }>;
     startMatch(matchId: string, userId: string): Promise<{
         teamA: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         teamB: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
     } & {
         id: string;
+        status: import(".prisma/client").$Enums.MatchStatus;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        bestOfSets: number | null;
+        tiebreakScore: number | null;
         position: number;
         round: number;
-        bestOfSets: number | null;
         bracketId: string | null;
         friendlyId: string | null;
-        status: import(".prisma/client").$Enums.MatchStatus;
         scheduledAt: Date | null;
         group: number | null;
         label: string | null;
@@ -208,18 +213,16 @@ export declare class MatchesController {
         refereeId: string | null;
         startedAt: Date | null;
         finishedAt: Date | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }>;
     registerPoint(matchId: string, userId: string, dto: PointDto): Promise<({
         teamA: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         teamB: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         sets: {
@@ -230,17 +233,20 @@ export declare class MatchesController {
             scoreB: number;
         }[];
         winner: {
-            name: string;
             id: string;
+            name: string;
         } | null;
     } & {
         id: string;
+        status: import(".prisma/client").$Enums.MatchStatus;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        bestOfSets: number | null;
+        tiebreakScore: number | null;
         position: number;
         round: number;
-        bestOfSets: number | null;
         bracketId: string | null;
         friendlyId: string | null;
-        status: import(".prisma/client").$Enums.MatchStatus;
         scheduledAt: Date | null;
         group: number | null;
         label: string | null;
@@ -253,19 +259,17 @@ export declare class MatchesController {
         refereeId: string | null;
         startedAt: Date | null;
         finishedAt: Date | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }) | {
         setFinished: boolean;
         currentSetNumber: number;
         teamA?: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null | undefined;
         teamB?: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null | undefined;
         sets?: {
@@ -276,12 +280,15 @@ export declare class MatchesController {
             scoreB: number;
         }[] | undefined;
         id?: string | undefined;
+        status?: import(".prisma/client").$Enums.MatchStatus | undefined;
+        refereeCode?: string | null | undefined;
+        refereeCodeExpiresAt?: Date | null | undefined;
+        bestOfSets?: number | null | undefined;
+        tiebreakScore?: number | null | undefined;
         position?: number | undefined;
         round?: number | undefined;
-        bestOfSets?: number | null | undefined;
         bracketId?: string | null | undefined;
         friendlyId?: string | null | undefined;
-        status?: import(".prisma/client").$Enums.MatchStatus | undefined;
         scheduledAt?: Date | null | undefined;
         group?: number | null | undefined;
         label?: string | null | undefined;
@@ -294,17 +301,18 @@ export declare class MatchesController {
         refereeId?: string | null | undefined;
         startedAt?: Date | null | undefined;
         finishedAt?: Date | null | undefined;
-        refereeCode?: string | null | undefined;
-        refereeCodeExpiresAt?: Date | null | undefined;
     } | null>;
     removePoint(matchId: string, userId: string, dto: PointDto): Promise<{
         id: string;
+        status: import(".prisma/client").$Enums.MatchStatus;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        bestOfSets: number | null;
+        tiebreakScore: number | null;
         position: number;
         round: number;
-        bestOfSets: number | null;
         bracketId: string | null;
         friendlyId: string | null;
-        status: import(".prisma/client").$Enums.MatchStatus;
         scheduledAt: Date | null;
         group: number | null;
         label: string | null;
@@ -317,18 +325,16 @@ export declare class MatchesController {
         refereeId: string | null;
         startedAt: Date | null;
         finishedAt: Date | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     } | null>;
     finishSet(matchId: string, userId: string, dto: SetFinishDto): Promise<({
         teamA: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         teamB: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         sets: {
@@ -340,12 +346,15 @@ export declare class MatchesController {
         }[];
     } & {
         id: string;
+        status: import(".prisma/client").$Enums.MatchStatus;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        bestOfSets: number | null;
+        tiebreakScore: number | null;
         position: number;
         round: number;
-        bestOfSets: number | null;
         bracketId: string | null;
         friendlyId: string | null;
-        status: import(".prisma/client").$Enums.MatchStatus;
         scheduledAt: Date | null;
         group: number | null;
         label: string | null;
@@ -358,32 +367,33 @@ export declare class MatchesController {
         refereeId: string | null;
         startedAt: Date | null;
         finishedAt: Date | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }) | null>;
     finishMatch(matchId: string, userId: string): Promise<{
         teamA: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         teamB: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         winner: {
-            name: string;
             id: string;
+            name: string;
         } | null;
     } & {
         id: string;
+        status: import(".prisma/client").$Enums.MatchStatus;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        bestOfSets: number | null;
+        tiebreakScore: number | null;
         position: number;
         round: number;
-        bestOfSets: number | null;
         bracketId: string | null;
         friendlyId: string | null;
-        status: import(".prisma/client").$Enums.MatchStatus;
         scheduledAt: Date | null;
         group: number | null;
         label: string | null;
@@ -396,32 +406,33 @@ export declare class MatchesController {
         refereeId: string | null;
         startedAt: Date | null;
         finishedAt: Date | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }>;
     declareWalkover(matchId: string, userId: string, dto: WalkoverDto): Promise<{
         teamA: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         teamB: {
-            name: string;
             id: string;
+            name: string;
             avatarUrl: string | null;
         } | null;
         winner: {
-            name: string;
             id: string;
+            name: string;
         } | null;
     } & {
         id: string;
+        status: import(".prisma/client").$Enums.MatchStatus;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        bestOfSets: number | null;
+        tiebreakScore: number | null;
         position: number;
         round: number;
-        bestOfSets: number | null;
         bracketId: string | null;
         friendlyId: string | null;
-        status: import(".prisma/client").$Enums.MatchStatus;
         scheduledAt: Date | null;
         group: number | null;
         label: string | null;
@@ -434,33 +445,31 @@ export declare class MatchesController {
         refereeId: string | null;
         startedAt: Date | null;
         finishedAt: Date | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }>;
     registerTimeout(matchId: string, userId: string, dto: TimeoutDto): Promise<{
-        team: string | null;
         id: string;
-        type: import(".prisma/client").$Enums.MatchEventType;
         createdAt: Date;
+        type: import(".prisma/client").$Enums.MatchEventType;
+        team: string | null;
+        teamId: string | null;
         matchId: string;
         setNumber: number | null;
         scoreA: number | null;
         scoreB: number | null;
-        teamId: string | null;
         playerOutId: string | null;
         playerInId: string | null;
         createdBy: string;
     }>;
     registerSubstitution(matchId: string, userId: string, dto: SubstitutionDto): Promise<{
-        team: string | null;
         id: string;
-        type: import(".prisma/client").$Enums.MatchEventType;
         createdAt: Date;
+        type: import(".prisma/client").$Enums.MatchEventType;
+        team: string | null;
+        teamId: string | null;
         matchId: string;
         setNumber: number | null;
         scoreA: number | null;
         scoreB: number | null;
-        teamId: string | null;
         playerOutId: string | null;
         playerInId: string | null;
         createdBy: string;

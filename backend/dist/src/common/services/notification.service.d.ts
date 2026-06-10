@@ -15,9 +15,9 @@ export declare class NotificationService implements OnModuleInit {
     }): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         type: string;
         title: string;
+        userId: string;
         body: string;
         referenceId: string | null;
         read: boolean;
@@ -30,9 +30,9 @@ export declare class NotificationService implements OnModuleInit {
     }): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         type: string;
         title: string;
+        userId: string;
         body: string;
         referenceId: string | null;
         read: boolean;
@@ -40,9 +40,9 @@ export declare class NotificationService implements OnModuleInit {
     createNotification(userId: string, title: string, body: string, type: string, referenceId?: string): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         type: string;
         title: string;
+        userId: string;
         body: string;
         referenceId: string | null;
         read: boolean;

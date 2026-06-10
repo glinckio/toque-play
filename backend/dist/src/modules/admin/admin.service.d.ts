@@ -37,14 +37,14 @@ export declare class AdminService {
     }>;
     listTournaments(query: QueryAdminTournamentsDto): Promise<{
         data: ({
+            _count: {
+                registrations: number;
+                brackets: number;
+            };
             owner: {
                 id: string;
                 email: string;
                 name: string;
-            };
-            _count: {
-                registrations: number;
-                brackets: number;
             };
         } & {
             id: string;
@@ -54,11 +54,11 @@ export declare class AdminService {
             updatedAt: Date;
             description: string | null;
             ownerId: string;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
             imageUrl: string | null;
             eventType: import(".prisma/client").$Enums.TournamentEventType;
             isPublished: boolean;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
         })[];
         total: number;
         page: number;
@@ -78,11 +78,11 @@ export declare class AdminService {
     getLogs(query: QueryLogsDto): Promise<{
         id: string;
         createdAt: Date;
+        message: string;
+        metadata: import("@prisma/client/runtime/library").JsonValue | null;
         level: string;
         source: string | null;
-        message: string;
         stack: string | null;
-        metadata: import("@prisma/client/runtime/library").JsonValue | null;
     }[]>;
     getMonitoring(): Promise<{
         activeMatches: number;

@@ -1,54 +1,53 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import AppHeader from '../../components/AppHeader';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import { useAuthStore } from '../../stores/authStore';
+import HeroHeader from '../../components/HeroHeader';
+import type { RootStackParamList } from '../../navigation/types';
 
-const MENU_ITEMS = [
-  { icon: 'person-outline', label: 'Editar Perfil', screen: 'EditProfile' },
-  { icon: 'trophy-outline', label: 'Meus Torneios', screen: 'MyTournaments' },
-  { icon: 'clipboard-outline', label: 'Minhas Inscrições', screen: 'MyRegistrations' },
-  { icon: 'flash-outline', label: 'Meus Amistosos', screen: 'MyFriendlies' },
-  { icon: 'settings-outline', label: 'Configurações', screen: 'Settings' },
+type RootNav = NativeStackNavigationProp<RootStackParamList>;
+
+const MANAGEMENT_ITEMS = [
+  { icon: 'shield-outline', label: 'Meus times', screen: 'Teams' as const },
+  { icon: 'trophy-outline', label: 'Meus torneios', screen: 'MyTournaments' as const },
+  { icon: 'clipboard-outline', label: 'Minhas inscrições', screen: 'MyRegistrations' as const },
+  { icon: 'flash-outline', label: 'Meus amistosos', screen: 'Friendly' as const },
+  { icon: 'eye-outline', label: 'Minhas arbitragens', screen: 'MyReferees' as const },
 ];
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const rootNav = useNavigation<RootNav>();
 
   return (
     <View style={styles.root}>
-      <AppHeader title="PERFIL" showAvatar={false} />
+      <HeroHeader
+        title="PERFIL"
+        watermark="PERFIL"
+        rounded
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Profile card */}
-        <View style={styles.profileCard}>
+        {/* User card */}
+        <View style={styles.userCard}>
           <View style={styles.avatarCircle}>
-            <LinearGradient
-              colors={[colors.primary, colors.primaryGlow]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.avatarGradient}
-            >
-              <Text style={styles.avatarInitial}>
-                {(user?.name ?? 'J').charAt(0).toUpperCase()}
-              </Text>
-            </LinearGradient>
+            <Text style={styles.avatarLetter}>
+              {(user?.name ?? 'J').charAt(0).toUpperCase()}
+            </Text>
           </View>
-          <Text style={styles.profileName}>{user?.name ?? 'Jogador'}</Text>
-          <Text style={styles.profileEmail}>{user?.email ?? ''}</Text>
+          <Text style={styles.userName}>{user?.name ?? 'Jogador'}</Text>
+          <Text style={styles.userEmail}>{user?.email ?? ''}</Text>
           {user?.isEmailVerified && (
             <View style={styles.verifiedBadge}>
               <Ionicons name="checkmark-circle" size={14} color={colors.success} />
@@ -57,23 +56,67 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Menu */}
+        {/* Stats grid */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statLabel}>Times</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statLabel}>Torneios</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statLabel}>Vitórias</Text>
+          </View>
+        </View>
+
+        {/* Management menu */}
+        <Text style={styles.sectionTitle}>GERENCIAMENTO</Text>
         <View style={styles.menu}>
-          {MENU_ITEMS.map((item) => (
-            <TouchableOpacity key={item.screen} style={styles.menuItem} activeOpacity={0.7}>
+          {MANAGEMENT_ITEMS.map((item, i) => (
+            <TouchableOpacity
+              key={i}
+              style={[styles.menuItem, i < MANAGEMENT_ITEMS.length - 1 && styles.menuItemBorder]}
+              activeOpacity={0.7}
+              onPress={() => {
+                if (item.screen === 'Friendly') {
+                  rootNav.navigate('Friendly', { screen: 'MyFriendlies' });
+                } else {
+                  rootNav.navigate(item.screen as any);
+                }
+              }}
+            >
               <View style={styles.menuLeft}>
-                <Ionicons name={item.icon as any} size={20} color={colors.textSecondary} />
+                <View style={styles.menuIcon}>
+                  <Ionicons name={item.icon as any} size={18} color={colors.primary} />
+                </View>
                 <Text style={styles.menuLabel}>{item.label}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Ionicons name="chevron-forward" size={18} color={colors.textPlaceholder} />
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* Account menu */}
+        <Text style={styles.sectionTitle}>CONTA</Text>
+        <View style={styles.menu}>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+            <View style={styles.menuLeft}>
+              <View style={styles.menuIcon}>
+                <Ionicons name="settings-outline" size={18} color={colors.textDefault} />
+              </View>
+              <Text style={styles.menuLabel}>Configurações</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textPlaceholder} />
+          </TouchableOpacity>
         </View>
 
         {/* Logout */}
         <TouchableOpacity style={styles.logoutBtn} onPress={clearAuth} activeOpacity={0.7}>
           <Ionicons name="log-out-outline" size={20} color={colors.error} />
-          <Text style={styles.logoutText}>SAIR</Text>
+          <Text style={styles.logoutText}>Sair da conta</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -84,90 +127,130 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   scrollContent: { paddingHorizontal: spacing.xl, paddingBottom: 120 },
 
-  profileCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.xl,
+  userCard: {
     alignItems: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     marginBottom: spacing.xl,
-    overflow: 'hidden',
   },
   avatarCircle: {
     width: 72,
     height: 72,
-    borderRadius: 22,
-    overflow: 'hidden',
-    marginBottom: spacing.lg,
-  },
-  avatarGradient: {
-    width: 72,
-    height: 72,
+    borderRadius: 24,
+    backgroundColor: colors.primaryTint,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
-  avatarInitial: {
-    fontFamily: fonts.title.display,
+  avatarLetter: {
+    fontFamily: fonts.title.regular,
     fontSize: 32,
+    color: colors.primary,
+    lineHeight: 1,
+  },
+  userName: {
+    fontFamily: fonts.text.bold,
+    fontSize: typography.sizes.button,
     color: colors.text,
   },
-  profileName: {
-    fontFamily: fonts.title.display,
-    fontSize: 24,
-    color: colors.text,
-    letterSpacing: 2,
-  },
-  profileEmail: {
-    fontSize: 13,
+  userEmail: {
+    fontFamily: fonts.text.regular,
+    fontSize: typography.sizes.body,
     color: colors.textMuted,
     marginTop: spacing.xs,
-    fontFamily: fonts.text.regular,
   },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     marginTop: spacing.sm,
-    backgroundColor: 'rgba(76,175,80,0.1)',
+    backgroundColor: 'rgba(31,184,122,0.1)',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    borderRadius: 8,
+    borderRadius: radius.lg,
   },
   verifiedText: {
-    fontSize: 11,
-    color: colors.success,
     fontFamily: fonts.text.semiBold,
-    letterSpacing: 1,
+    fontSize: typography.sizes.md,
+    color: colors.success,
+  },
+
+  statsGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.xxl,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.lg,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    gap: 4,
+    shadowColor: 'rgba(20,10,30,0.06)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statValue: {
+    fontFamily: fonts.title.regular,
+    fontSize: typography.sizes.title,
+    color: colors.text,
+    lineHeight: 1,
+  },
+  statLabel: {
+    fontFamily: fonts.text.medium,
+    fontSize: typography.sizes.md,
+    color: colors.textMuted,
+  },
+
+  sectionTitle: {
+    fontFamily: fonts.text.semiBold,
+    fontSize: typography.sizes.md,
+    color: colors.textPlaceholder,
+    letterSpacing: typography.letterSpacing.extraWide,
+    marginBottom: spacing.md,
   },
 
   menu: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.lg,
     overflow: 'hidden',
+    marginBottom: spacing.xxl,
+    shadowColor: 'rgba(20,10,30,0.06)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
+  },
+  menuItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.03)',
+    borderBottomColor: '#F4EFFA',
   },
   menuLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
+  menuIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   menuLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontFamily: fonts.text.regular,
+    fontFamily: fonts.text.medium,
+    fontSize: typography.sizes.input,
+    color: colors.text,
   },
 
   logoutBtn: {
@@ -175,17 +258,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    marginTop: spacing.xxl,
+    marginTop: spacing.md,
     paddingVertical: spacing.lg,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,77,77,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,77,77,0.15)',
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(224,69,69,0.08)',
   },
   logoutText: {
-    fontSize: 14,
-    color: colors.error,
-    letterSpacing: 2,
     fontFamily: fonts.text.semiBold,
+    fontSize: typography.sizes.input,
+    color: colors.error,
   },
 });

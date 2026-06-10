@@ -18,12 +18,13 @@ export declare class TeamsService {
             } | null;
         } & {
             id: string;
+            userId: string | null;
+            teamId: string;
             guestName: string | null;
             cpf: string | null;
             isGuest: boolean;
             isCaptain: boolean;
-            userId: string | null;
-            teamId: string;
+            position: string | null;
         })[];
     } & {
         id: string;
@@ -50,12 +51,12 @@ export declare class TeamsService {
         ownerId: string;
     })[]>;
     search(query: string, userId: string): Promise<{
-        id: string;
-        name: string;
-        avatarUrl: string | null;
-        sport: string;
+        id: any;
+        name: any;
+        avatarUrl: any;
+        sport: any;
         _count: {
-            members: number;
+            members: any;
         };
     }[]>;
     findOne(teamId: string, userId: string): Promise<{
@@ -74,12 +75,13 @@ export declare class TeamsService {
             } | null;
         } & {
             id: string;
+            userId: string | null;
+            teamId: string;
             guestName: string | null;
             cpf: string | null;
             isGuest: boolean;
             isCaptain: boolean;
-            userId: string | null;
-            teamId: string;
+            position: string | null;
         })[];
     } & {
         id: string;
@@ -101,12 +103,13 @@ export declare class TeamsService {
             } | null;
         } & {
             id: string;
+            userId: string | null;
+            teamId: string;
             guestName: string | null;
             cpf: string | null;
             isGuest: boolean;
             isCaptain: boolean;
-            userId: string | null;
-            teamId: string;
+            position: string | null;
         })[];
     } & {
         id: string;
@@ -129,12 +132,13 @@ export declare class TeamsService {
             } | null;
         } & {
             id: string;
+            userId: string | null;
+            teamId: string;
             guestName: string | null;
             cpf: string | null;
             isGuest: boolean;
             isCaptain: boolean;
-            userId: string | null;
-            teamId: string;
+            position: string | null;
         })[];
     } & {
         id: string;

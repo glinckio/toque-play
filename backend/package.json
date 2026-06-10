@@ -21,9 +21,6 @@
     "db:migrate": "npx prisma migrate dev",
     "db:migrate:prod": "npx prisma migrate deploy",
     "db:seed": "npx prisma db seed",
-    "db:seed:dupla-teams": "npx ts-node prisma/seed-dupla-teams.ts",
-    "db:seed:tournaments": "npx ts-node prisma/seed-tournaments.ts",
-    "db:seed:friendlies": "npx ts-node prisma/seed-friendlies.ts",
     "db:reset": "npx prisma migrate reset --force"
   },
   "prisma": {

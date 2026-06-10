@@ -18,6 +18,7 @@ export interface TeamMember {
   userId: string | null;
   isGuest: boolean;
   isCaptain: boolean;
+  position?: string | null;
   guestName?: string | null;
   user?: {
     id: string;

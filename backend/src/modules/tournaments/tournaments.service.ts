@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { NotificationService } from '../../common/services/notification.service';
 import { AppError } from '../../common/errors/app-error';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateStructureDto } from './dto/update-structure.dto';
@@ -22,7 +23,7 @@ const FULL_INCLUDE = {
 
 @Injectable()
 export class TournamentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private notificationService: NotificationService) {}
 
   async create(userId: string, dto: CreateTournamentDto) {
     return this.prisma.tournament.create({
@@ -332,12 +333,27 @@ export class TournamentsService {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) throw AppError.userNotFound();
 
-    return this.prisma.tournamentReferee.upsert({
+    const result = await this.prisma.tournamentReferee.upsert({
       where: { tournamentId_userId: { tournamentId, userId: user.id } },
       update: {},
       create: { tournamentId, userId: user.id },
       include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } },
     });
+
+    // Notify the referee
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      select: { name: true },
+    });
+    await this.notificationService.createNotification(
+      user.id,
+      'Convite de Árbitro',
+      `Você foi adicionado como árbitro do torneio ${tournament?.name ?? ''}.`,
+      'REFEREE_ASSIGNED',
+      tournamentId,
+    );
+
+    return result;
   }
 
   async removeReferee(tournamentId: string, organizerId: string, refereeId: string) {

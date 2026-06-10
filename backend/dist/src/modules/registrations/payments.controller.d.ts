@@ -13,12 +13,24 @@ export declare class PaymentsController {
     handleWebhook(dto: PaymentWebhookDto): Promise<{
         user: {
             id: string;
-            email: string;
             name: string;
+            email: string;
+        };
+        tournament: {
+            id: string;
+            name: string;
+            status: import(".prisma/client").$Enums.TournamentStatus;
         };
         team: {
             id: string;
             name: string;
+        };
+        category: {
+            id: string;
+            type: import(".prisma/client").$Enums.TournamentType;
+            format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
+            registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
         };
         members: ({
             teamMember: {
@@ -29,40 +41,29 @@ export declare class PaymentsController {
                 } | null;
             } & {
                 id: string;
+                userId: string | null;
+                teamId: string;
+                position: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
             };
         } & {
             id: string;
             isCaptain: boolean;
-            teamMemberId: string;
             registrationId: string;
+            teamMemberId: string;
         })[];
-        tournament: {
-            id: string;
-            name: string;
-            status: import(".prisma/client").$Enums.TournamentStatus;
-        };
-        category: {
-            id: string;
-            type: import(".prisma/client").$Enums.TournamentType;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            format: import(".prisma/client").$Enums.TournamentFormat;
-            registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
-        };
     } & {
         id: string;
         status: import(".prisma/client").$Enums.RegistrationStatus;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
-        teamId: string;
         tournamentId: string;
+        userId: string;
         categoryId: string;
+        teamId: string;
         paymentId: string | null;
         paymentStatus: string | null;
         paymentMethod: string | null;

@@ -35,7 +35,7 @@ export const teamService = {
   addGuest: (teamId: string, data: AddGuestDto) =>
     api.post(`/teams/${teamId}/members/guest`, data).then((r) => r.data),
 
-  updateMember: (teamId: string, memberId: string, data: { isCaptain?: boolean }) =>
+  updateMember: (teamId: string, memberId: string, data: { isCaptain?: boolean; position?: string }) =>
     api.patch(`/teams/${teamId}/members/${memberId}`, data).then((r) => r.data),
 
   removeMember: (teamId: string, memberId: string) =>

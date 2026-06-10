@@ -152,7 +152,12 @@ let FriendliesService = class FriendliesService {
             });
         });
         if (resolvedChallengedId) {
-            await this.notificationService.createNotification(resolvedChallengedId, 'Nova Solicitacao de Amistoso', 'Voce recebeu uma solicitacao de amistoso!', 'FRIENDLY_REQUEST', result.id);
+            const requesterName = result?.requester?.name ?? 'Alguém';
+            const requesterTeamName = result?.requesterTeam?.name;
+            const body = requesterTeamName
+                ? `${requesterName} do time ${requesterTeamName} solicitou um amistoso contra o seu time!`
+                : `${requesterName} solicitou um amistoso contra o seu time!`;
+            await this.notificationService.createNotification(resolvedChallengedId, 'Nova Solicitação de Amistoso', body, 'FRIENDLY_REQUEST', result.id);
         }
         if (this.chatService && dto.requesterTeamId && dto.challengedTeamId) {
             await this.chatService.createInterTeamChat(dto.requesterTeamId, dto.challengedTeamId);
@@ -242,7 +247,11 @@ let FriendliesService = class FriendliesService {
                 include: FRIENDLY_INCLUDE,
             });
         });
-        await this.notificationService.createNotification(friendly.requesterId, 'Amistoso Aceito!', 'Sua solicitacao de amistoso foi aceita!', 'FRIENDLY_ACCEPTED', friendlyId);
+        const challengedTeamName = accepted?.challengedTeam?.name;
+        const acceptBody = challengedTeamName
+            ? `O time ${challengedTeamName} aceitou sua solicitação de amistoso!`
+            : 'Sua solicitação de amistoso foi aceita!';
+        await this.notificationService.createNotification(friendly.requesterId, 'Amistoso Aceito!', acceptBody, 'FRIENDLY_ACCEPTED', friendlyId);
         if (this.chatService && accepted?.requesterTeamId && accepted?.challengedTeamId) {
             await this.chatService.createInterTeamChat(accepted.requesterTeamId, accepted.challengedTeamId);
         }

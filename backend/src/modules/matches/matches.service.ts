@@ -78,13 +78,16 @@ export class MatchesService {
         startedAt: now,
       };
 
-      // Backfill bestOfSets from category if not set
+      // Backfill bestOfSets and tiebreakScore from category if not set
       if (!match.bestOfSets && match.bracketId) {
         const category = await tx.tournamentCategory.findFirst({
           where: { brackets: { some: { id: match.bracketId } } },
         });
         if (category) {
           updateData.bestOfSets = category.bestOfSets;
+          if (!match.tiebreakScore && category.tiebreakScore) {
+            updateData.tiebreakScore = category.tiebreakScore;
+          }
         }
       }
 
@@ -203,7 +206,7 @@ export class MatchesService {
     }
 
     const isFriendly = !!match.friendlyId;
-    const setReachedWinningScore = this.isWinningScore(newSetScoreA, newSetScoreB, modality);
+    const setReachedWinningScore = this.isWinningScore(newSetScoreA, newSetScoreB, modality, currentSet.setNumber, match.bestOfSets, match.tiebreakScore);
 
     // For friendly matches: just flag set finished (manual match finish)
     const setFinished = isFriendly && setReachedWinningScore;
@@ -1151,8 +1154,17 @@ export class MatchesService {
     return modality === TournamentModality.BEACH ? 21 : 25;
   }
 
-  private isWinningScore(scoreA: number, scoreB: number, modality: string | undefined): boolean {
-    const threshold = this.getWinningThreshold(modality);
+  private isWinningScore(
+    scoreA: number,
+    scoreB: number,
+    modality: string | undefined,
+    setNumber?: number,
+    bestOfSets?: number | null,
+    tiebreakScore?: number | null,
+  ): boolean {
+    const isTiebreakSet = bestOfSets && bestOfSets > 1 && setNumber === bestOfSets;
+    const defaultThreshold = this.getWinningThreshold(modality);
+    const threshold = isTiebreakSet ? (tiebreakScore ?? 15) : defaultThreshold;
     const diff = Math.abs(scoreA - scoreB);
     return (scoreA >= threshold || scoreB >= threshold) && diff >= 2;
   }

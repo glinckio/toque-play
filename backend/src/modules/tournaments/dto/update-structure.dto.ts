@@ -160,6 +160,24 @@ export class CategoryDto {
   @Min(1)
   bestOfSets?: number;
 
+  @ApiPropertyOptional({ description: 'Melhor de quantos sets na semifinal (se nao informado, usa bestOfSets)' })
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  semifinalBestOfSets?: number;
+
+  @ApiPropertyOptional({ description: 'Melhor de quantos sets na final (se nao informado, usa bestOfSets)' })
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  finalBestOfSets?: number;
+
+  @ApiPropertyOptional({ description: 'Pontuacao do set de desempate/tiebreak (padrao: 15 para quadra, 15 para praia). Se nao informado, usa o score padrao da modalidade.' })
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  tiebreakScore?: number;
+
   @ApiPropertyOptional({ description: 'Horario de inicio' })
   @IsDateString()
   @IsOptional()

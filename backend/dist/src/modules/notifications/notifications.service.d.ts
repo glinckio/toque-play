@@ -5,18 +5,18 @@ export declare class NotificationsService {
     registerToken(userId: string, token: string, platform: string): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         token: string;
+        userId: string;
         platform: string;
     }>;
     removeToken(userId: string, token: string): Promise<void>;
-    findMine(userId: string, page?: number, limit?: number): Promise<{
+    findMine(userId: string, page?: number, limit?: number, unreadOnly?: boolean): Promise<{
         data: {
             id: string;
             createdAt: Date;
-            userId: string;
             type: string;
             title: string;
+            userId: string;
             body: string;
             referenceId: string | null;
             read: boolean;
@@ -32,9 +32,9 @@ export declare class NotificationsService {
     markAsRead(notificationId: string, userId: string): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         type: string;
         title: string;
+        userId: string;
         body: string;
         referenceId: string | null;
         read: boolean;

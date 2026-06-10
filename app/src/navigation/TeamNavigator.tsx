@@ -11,10 +11,9 @@ export default function TeamNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        presentation: 'modal',
       }}
     >
-      <Stack.Screen name="TeamDetail" component={TeamDetailModal} />
+      <Stack.Screen name="TeamDetail" component={TeamDetailModal} options={{ presentation: 'modal' }} />
       <Stack.Screen name="AddMember" component={AddMemberModal} />
     </Stack.Navigator>
   );

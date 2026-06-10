@@ -7,6 +7,8 @@ import { BracketResponse, Match, MatchStatus } from '../../../types/match';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts } from '../../../theme/fonts';
+import { typography } from '../../../theme/typography';
+import { radius } from '../../../theme/radius';
 import type { TournamentStackParamList } from '../../../navigation/types';
 import TeamAvatar from '../../../components/TeamAvatar';
 
@@ -28,13 +30,24 @@ function getRoundLabel(round: number, totalRounds: number): string {
   return ROUND_LABELS[fromFinal] ?? `Rodada ${round}`;
 }
 
+function getStatusColor(status: MatchStatus) {
+  switch (status) {
+    case MatchStatus.IN_PROGRESS: return colors.error;
+    case MatchStatus.FINISHED: return colors.success;
+    case MatchStatus.WALKOVER: return colors.warning;
+    default: return 'transparent';
+  }
+}
+
 export default function PlayoffBracket({ brackets }: Props) {
   const navigation = useNavigation<Nav>();
 
   if (brackets.length === 0) {
     return (
       <View style={styles.empty}>
-        <Ionicons name="git-branch-outline" size={40} color={colors.textMuted} />
+        <View style={styles.emptyIcon}>
+          <Ionicons name="git-branch-outline" size={40} color={colors.textPlaceholder} />
+        </View>
         <Text style={styles.emptyText}>Nenhuma chave gerada</Text>
       </View>
     );
@@ -52,32 +65,51 @@ export default function PlayoffBracket({ brackets }: Props) {
           rounds[m.round].push(m);
         }
 
+        const roundKeys = Object.keys(rounds).map(Number).sort((a, b) => a - b);
+
         return (
           <View key={bracket.id} style={styles.bracketSection}>
             <Text style={styles.bracketTitle}>
               {bracket.category.type === 'MALE' ? 'Masculino' : bracket.category.type === 'FEMALE' ? 'Feminino' : 'Misto'} {bracket.category.format === 'PAIR' ? 'Dupla' : bracket.category.format === 'QUARTET' ? 'Quarteto' : 'Sexteto'}
             </Text>
 
-            {Object.keys(rounds).sort((a, b) => Number(a) - Number(b)).map((roundKey) => {
-              const roundNum = Number(roundKey);
+            {roundKeys.map((roundNum, roundIdx) => {
               const roundMatches = rounds[roundNum];
+              const isFinal = roundNum === maxRound;
+              const isSemifinal = roundNum === maxRound - 1;
+              const isLastRound = roundIdx === roundKeys.length - 1;
+
+              let roundLabel: string;
+              if (isFinal) roundLabel = 'FINAL';
+              else if (isSemifinal) roundLabel = 'SEMIFINAL';
+              else roundLabel = getRoundLabel(roundNum, maxRound).toUpperCase();
 
               return (
                 <View key={roundNum} style={styles.roundSection}>
-                  <Text style={styles.roundTitle}>
-                    {roundNum === maxRound ? 'FINAL (1º e 2º Lugar)' : roundNum === maxRound - 1 ? 'SEMIFINAL' : getRoundLabel(roundNum, maxRound)}
-                  </Text>
-                  {roundMatches.map((match) => {
+                  {/* Round label */}
+                  <View style={styles.roundHeader}>
+                    <View style={styles.roundLabelPill}>
+                      <Text style={styles.roundLabelText}>{roundLabel}</Text>
+                    </View>
+                    {isFinal && <Ionicons name="trophy" size={14} color={colors.primary} />}
+                  </View>
+
+                  {/* Matches */}
+                  {roundMatches.map((match, matchIdx) => {
                     const isTeamAWinner = match.winnerId && match.winnerId === match.teamAId;
                     const isTeamBWinner = match.winnerId && match.winnerId === match.teamBId;
+                    const isLive = match.status === MatchStatus.IN_PROGRESS;
+                    const isDone = match.status === MatchStatus.FINISHED || match.status === MatchStatus.WALKOVER;
+                    const statusColor = getStatusColor(match.status);
+                    const hasTeams = match.teamA && match.teamB;
 
                     return (
                       <TouchableOpacity
                         key={match.id}
-                        style={styles.matchup}
+                        style={[styles.matchCard, isLive && styles.matchCardLive]}
                         activeOpacity={0.7}
                         onPress={() => {
-                          if (match.teamA && match.teamB) {
+                          if (hasTeams) {
                             navigation.navigate('LiveMatch', {
                               matchId: match.id,
                               tournamentId: bracket.tournamentId,
@@ -85,34 +117,85 @@ export default function PlayoffBracket({ brackets }: Props) {
                           }
                         }}
                       >
-                        <View style={[styles.teamRow, isTeamAWinner && styles.winnerRowBg]}>
-                          <TeamAvatar avatarUrl={match.teamA?.avatarUrl} name={match.teamA?.name ?? 'TBD'} size={64} />
+                        {/* Live indicator bar */}
+                        {isLive && <View style={styles.liveBar} />}
+
+                        {/* Team A */}
+                        <View style={[styles.teamRow, isTeamAWinner && styles.winnerRow]}>
+                          {isTeamAWinner && (
+                            <Ionicons name="trophy" size={12} color={colors.primary} style={styles.winnerIcon} />
+                          )}
+                          <TeamAvatar
+                            avatarUrl={match.teamA?.avatarUrl}
+                            name={match.teamA?.name ?? 'TBD'}
+                            size={36}
+                          />
                           <Text
-                            style={[styles.teamName, isTeamAWinner && styles.winnerText]}
+                            style={[styles.teamName, isTeamAWinner && styles.winnerName, !isTeamAWinner && isDone && styles.loserName]}
                             numberOfLines={1}
                           >
-                            {match.teamA?.name ?? 'TBD'}
+                            {match.teamA?.name?.replace('[Seed T] ', '') ?? 'TBD'}
                           </Text>
-                          <Text style={[styles.teamScore, isTeamAWinner && styles.winnerText]}>
-                            {match.status !== MatchStatus.SCHEDULED ? match.scoreTeamA : ''}
+                          <Text style={[styles.teamScore, isTeamAWinner && styles.winnerScore]}>
+                            {isDone || isLive ? match.scoreTeamA : ''}
                           </Text>
                         </View>
-                        <View style={styles.vsLine} />
-                        <View style={[styles.teamRow, isTeamBWinner && styles.winnerRowBg]}>
-                          <TeamAvatar avatarUrl={match.teamB?.avatarUrl} name={match.teamB?.name ?? 'TBD'} size={32} />
+
+                        {/* Divider */}
+                        <View style={styles.divider}>
+                          <View style={styles.dividerLine} />
+                          {hasTeams && (
+                            <Text style={styles.dividerVs}>×</Text>
+                          )}
+                          <View style={styles.dividerLine} />
+                        </View>
+
+                        {/* Team B */}
+                        <View style={[styles.teamRow, isTeamBWinner && styles.winnerRow]}>
+                          {isTeamBWinner && (
+                            <Ionicons name="trophy" size={12} color={colors.primary} style={styles.winnerIcon} />
+                          )}
+                          <TeamAvatar
+                            avatarUrl={match.teamB?.avatarUrl}
+                            name={match.teamB?.name ?? 'TBD'}
+                            size={36}
+                          />
                           <Text
-                            style={[styles.teamName, isTeamBWinner && styles.winnerText]}
+                            style={[styles.teamName, isTeamBWinner && styles.winnerName, !isTeamBWinner && isDone && styles.loserName]}
                             numberOfLines={1}
                           >
-                            {match.teamB?.name ?? 'TBD'}
+                            {match.teamB?.name?.replace('[Seed T] ', '') ?? 'TBD'}
                           </Text>
-                          <Text style={[styles.teamScore, isTeamBWinner && styles.winnerText]}>
-                            {match.status !== MatchStatus.SCHEDULED ? match.scoreTeamB : ''}
+                          <Text style={[styles.teamScore, isTeamBWinner && styles.winnerScore]}>
+                            {isDone || isLive ? match.scoreTeamB : ''}
                           </Text>
                         </View>
+
+                        {/* Status badge for live */}
+                        {isLive && (
+                          <View style={styles.matchStatusBadge}>
+                            <View style={styles.liveDot} />
+                            <Text style={styles.liveLabel}>AO VIVO</Text>
+                          </View>
+                        )}
+                        {isDone && match.winnerId && !isLive && (
+                          <View style={styles.matchStatusBadge}>
+                            <Ionicons name="checkmark-circle" size={12} color={colors.success} />
+                            <Text style={styles.doneLabel}>ENCERRADA</Text>
+                          </View>
+                        )}
                       </TouchableOpacity>
                     );
                   })}
+
+                  {/* Connector to next round */}
+                  {!isLastRound && (
+                    <View style={styles.connectorSection}>
+                      <View style={styles.connectorLine} />
+                      <Ionicons name="chevron-down" size={16} color="rgba(109,46,192,0.3)" />
+                      <View style={styles.connectorLine} />
+                    </View>
+                  )}
                 </View>
               );
             })}
@@ -125,37 +208,130 @@ export default function PlayoffBracket({ brackets }: Props) {
 
 const styles = StyleSheet.create({
   empty: { alignItems: 'center', marginTop: 60, gap: spacing.md },
-  emptyText: { fontSize: 14, fontFamily: fonts.text.regular, color: colors.textMuted },
+  emptyIcon: {
+    width: 80, height: 80, borderRadius: 24,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyText: { fontSize: typography.sizes.input, fontFamily: fonts.text.regular, color: colors.textMuted },
+
   bracketSection: { marginBottom: spacing.lg },
   bracketTitle: {
-    fontSize: 20, fontFamily: fonts.title.display, color: colors.text,
-    letterSpacing: 2, marginBottom: spacing.md,
+    fontSize: typography.sizes.subtitle, fontFamily: fonts.title.regular, color: colors.text,
+    letterSpacing: typography.letterSpacing.medium, marginBottom: spacing.lg,
   },
+
+  // Rounds
   roundSection: { marginBottom: spacing.lg },
-  roundTitle: {
-    fontSize: 12, fontFamily: fonts.text.semiBold, color: colors.textMuted,
-    marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 2,
+  roundHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
-  matchup: {
+  roundLabelPill: {
+    backgroundColor: colors.primaryTint,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+  },
+  roundLabelText: {
+    fontFamily: fonts.title.regular,
+    fontSize: typography.sizes.input,
+    color: colors.primary,
+    letterSpacing: typography.letterSpacing.medium,
+  },
+
+  // Match card
+  matchCard: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    marginBottom: 8,
+    borderRadius: radius.card,
     overflow: 'hidden',
+    marginBottom: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  matchCardLive: {
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderColor: 'rgba(224,69,69,0.3)',
   },
+  liveBar: {
+    height: 3,
+    backgroundColor: colors.error,
+  },
+
+  // Teams
   teamRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
   },
-  winnerRowBg: { backgroundColor: 'rgba(109,46,192,0.12)' },
+  winnerRow: {
+    backgroundColor: 'rgba(109,46,192,0.06)',
+  },
+  winnerIcon: { marginRight: -2 },
   teamName: {
-    flex: 1, fontSize: 14, fontFamily: fonts.text.regular, color: colors.textSecondary,
+    flex: 1,
+    fontSize: typography.sizes.body,
+    fontFamily: fonts.text.medium,
+    color: colors.text,
   },
+  loserName: { color: colors.textMuted, opacity: 0.6 },
+  winnerName: { color: colors.primary, fontFamily: fonts.text.semiBold },
   teamScore: {
-    fontSize: 16, fontFamily: fonts.text.bold, color: colors.text,
-    minWidth: 28, textAlign: 'right',
+    fontSize: typography.sizes.heading,
+    fontFamily: fonts.title.regular,
+    color: colors.text,
+    minWidth: 28,
+    textAlign: 'right',
+    letterSpacing: 1,
   },
-  winnerText: { color: colors.primaryGlow, fontFamily: fonts.text.semiBold },
-  vsLine: { height: 1, backgroundColor: colors.border, marginHorizontal: spacing.lg },
+  winnerScore: { color: colors.primary },
+
+  // Divider
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#F0ECF5' },
+  dividerVs: {
+    fontSize: typography.sizes.md,
+    fontFamily: fonts.text.bold,
+    color: colors.textMuted,
+  },
+
+  // Status badges
+  matchStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: spacing.xs,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderTopWidth: 1,
+    borderTopColor: '#F0ECF5',
+  },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.error },
+  liveLabel: { fontSize: 9, fontFamily: fonts.text.bold, color: colors.error, letterSpacing: 1 },
+  doneLabel: { fontSize: 9, fontFamily: fonts.text.bold, color: colors.success, letterSpacing: 0.5 },
+
+  // Connectors
+  connectorSection: {
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    gap: 0,
+  },
+  connectorLine: {
+    width: 2,
+    height: 8,
+    backgroundColor: 'rgba(109,46,192,0.15)',
+  },
 });

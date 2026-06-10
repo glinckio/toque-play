@@ -54,8 +54,18 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
+      onRehydrateStorage: () => {
+        // Fallback: if hydration doesn't complete in 3s, force it
+        const timer = setTimeout(() => {
+          const current = useAuthStore.getState();
+          if (!current._hasHydrated) {
+            current.setHasHydrated(true);
+          }
+        }, 3000);
+        return (state) => {
+          clearTimeout(timer);
+          state?.setHasHydrated(true);
+        };
       },
     }
   )

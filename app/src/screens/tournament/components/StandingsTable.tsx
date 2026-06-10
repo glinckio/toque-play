@@ -5,6 +5,8 @@ import { RankingResponse } from '../../../types/match';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts } from '../../../theme/fonts';
+import { typography } from '../../../theme/typography';
+import { radius } from '../../../theme/radius';
 
 interface Props {
   ranking: RankingResponse;
@@ -14,7 +16,9 @@ export default function StandingsTable({ ranking }: Props) {
   if (ranking.ranking.length === 0) {
     return (
       <View style={styles.empty}>
-        <Ionicons name="podium-outline" size={40} color={colors.textMuted} />
+        <View style={styles.emptyIcon}>
+          <Ionicons name="podium-outline" size={40} color={colors.textPlaceholder} />
+        </View>
         <Text style={styles.emptyText}>Ranking não disponível</Text>
       </View>
     );
@@ -55,37 +59,46 @@ export default function StandingsTable({ ranking }: Props) {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderRadius: radius.card,
     overflow: 'hidden',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 2,
   },
   headerRow: {
     flexDirection: 'row',
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundSecondary,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
   },
   headerText: {
-    fontSize: 9,
+    fontSize: typography.sizes.md,
     fontFamily: fonts.text.semiBold,
     color: colors.textMuted,
-    letterSpacing: 1.5,
+    letterSpacing: typography.letterSpacing.medium,
   },
   row: {
     flexDirection: 'row',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.04)',
+    borderTopColor: '#F4EFFA',
   },
-  topRow: { backgroundColor: 'rgba(109,46,192,0.08)' },
-  topText: { color: colors.primaryGlow, fontFamily: fonts.text.semiBold },
-  cell: { fontSize: 13, fontFamily: fonts.text.regular, color: colors.textSecondary },
+  topRow: { backgroundColor: colors.primaryTint },
+  topText: { color: colors.primary, fontFamily: fonts.text.semiBold },
+  cell: { fontSize: typography.sizes.input, fontFamily: fonts.text.regular, color: colors.textSecondary },
   cellPos: { width: 36, textAlign: 'center' },
   cellName: { flex: 1 },
   cellStat: { width: 48, textAlign: 'center' },
   cellBold: { fontFamily: fonts.text.bold },
   empty: { alignItems: 'center', marginTop: 60, gap: spacing.md },
-  emptyText: { fontSize: 14, fontFamily: fonts.text.regular, color: colors.textMuted },
+  emptyIcon: {
+    width: 80, height: 80, borderRadius: 24,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyText: { fontSize: typography.sizes.input, fontFamily: fonts.text.regular, color: colors.textMuted },
 });

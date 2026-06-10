@@ -30,8 +30,8 @@ let NotificationsController = class NotificationsController {
     async removeToken(userId, token) {
         return this.notificationsService.removeToken(userId, token);
     }
-    async findMine(userId, page, limit) {
-        return this.notificationsService.findMine(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+    async findMine(userId, page, limit, unread) {
+        return this.notificationsService.findMine(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20, unread === 'true');
     }
     async getUnreadCount(userId) {
         return this.notificationsService.getUnreadCount(userId);
@@ -70,8 +70,9 @@ __decorate([
     __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
     __param(1, (0, common_1.Query)('page')),
     __param(2, (0, common_1.Query)('limit')),
+    __param(3, (0, common_1.Query)('unread')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "findMine", null);
 __decorate([

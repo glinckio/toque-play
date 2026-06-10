@@ -199,6 +199,7 @@ let TeamMembersService = class TeamMembersService {
             where: { id: memberId },
             data: {
                 ...(dto.isCaptain !== undefined && { isCaptain: dto.isCaptain }),
+                ...(dto.position !== undefined && { position: dto.position }),
             },
             include: {
                 user: {

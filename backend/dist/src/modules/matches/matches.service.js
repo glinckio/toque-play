@@ -81,6 +81,9 @@ let MatchesService = class MatchesService {
                 });
                 if (category) {
                     updateData.bestOfSets = category.bestOfSets;
+                    if (!match.tiebreakScore && category.tiebreakScore) {
+                        updateData.tiebreakScore = category.tiebreakScore;
+                    }
                 }
             }
             const m = await tx.match.update({
@@ -178,7 +181,7 @@ let MatchesService = class MatchesService {
             });
         }
         const isFriendly = !!match.friendlyId;
-        const setReachedWinningScore = this.isWinningScore(newSetScoreA, newSetScoreB, modality);
+        const setReachedWinningScore = this.isWinningScore(newSetScoreA, newSetScoreB, modality, currentSet.setNumber, match.bestOfSets, match.tiebreakScore);
         const setFinished = isFriendly && setReachedWinningScore;
         if (!isFriendly && setReachedWinningScore && match.bestOfSets) {
             await this.finishSet(matchId, userId, { setNumber: currentSet.setNumber });
@@ -962,8 +965,10 @@ let MatchesService = class MatchesService {
     getWinningThreshold(modality) {
         return modality === client_1.TournamentModality.BEACH ? 21 : 25;
     }
-    isWinningScore(scoreA, scoreB, modality) {
-        const threshold = this.getWinningThreshold(modality);
+    isWinningScore(scoreA, scoreB, modality, setNumber, bestOfSets, tiebreakScore) {
+        const isTiebreakSet = bestOfSets && bestOfSets > 1 && setNumber === bestOfSets;
+        const defaultThreshold = this.getWinningThreshold(modality);
+        const threshold = isTiebreakSet ? (tiebreakScore ?? 15) : defaultThreshold;
         const diff = Math.abs(scoreA - scoreB);
         return (scoreA >= threshold || scoreB >= threshold) && diff >= 2;
     }
