@@ -12,23 +12,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import { tournamentService } from '../../services/tournament';
 import type { RootStackParamList } from '../../navigation/types';
+import HeroHeader from '../../components/HeroHeader';
+import StatusBadge from '../../components/StatusBadge';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT: '#666',
-  PUBLISHED: '#4CAF50',
-  REGISTRATION_OPEN: '#4CAF50',
-  BRACKET_GENERATED: '#2196F3',
-  IN_PROGRESS: '#FF4444',
-  FINISHED: '#888',
-};
 
 export default function MyRefereesScreen() {
   const navigation = useNavigation<Nav>();
@@ -61,12 +55,13 @@ export default function MyRefereesScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>MINHAS ARBITRAGENS</Text>
-      </View>
+      <HeroHeader
+        title="MINHAS ARBITRAGENS"
+        subtitle={`${tournaments.length} torneio${tournaments.length !== 1 ? 's' : ''}`}
+        watermark="REFEREE"
+        onBack={() => navigation.goBack()}
+        rounded
+      />
 
       {loading ? (
         <View style={s.loader}>
@@ -74,8 +69,10 @@ export default function MyRefereesScreen() {
         </View>
       ) : tournaments.length === 0 ? (
         <View style={s.empty}>
-          <Ionicons name="flag-outline" size={48} color={colors.textMuted} />
-          <Text style={s.emptyText}>Nenhuma arbitragem encontrada</Text>
+          <View style={s.emptyIcon}>
+            <Ionicons name="flag-outline" size={40} color={colors.textPlaceholder} />
+          </View>
+          <Text style={s.emptyTitle}>Nenhuma arbitragem encontrada</Text>
           <Text style={s.emptySub}>Quando um organizador te adicionar como arbitro, aparecera aqui</Text>
         </View>
       ) : (
@@ -96,7 +93,7 @@ export default function MyRefereesScreen() {
             >
               <View style={s.cardHeader}>
                 <View style={s.cardIcon}>
-                  <Ionicons name="flag" size={20} color={colors.primaryGlow} />
+                  <Ionicons name="flag" size={20} color={colors.primary} />
                 </View>
                 <View style={s.cardInfo}>
                   <Text style={s.cardName}>{t.name}</Text>
@@ -106,7 +103,7 @@ export default function MyRefereesScreen() {
                     </Text>
                   )}
                 </View>
-                <View style={[s.statusDot, { backgroundColor: STATUS_COLORS[t.status] ?? '#888' }]} />
+                <StatusBadge status={t.status} size="sm" />
               </View>
             </TouchableOpacity>
           ))}
@@ -119,40 +116,44 @@ export default function MyRefereesScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    gap: spacing.md,
-  },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 20, fontFamily: fonts.title.display, color: colors.text, letterSpacing: 2, flex: 1 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xxl, gap: spacing.md },
-  emptyText: { fontSize: 16, fontFamily: fonts.text.semiBold, color: colors.textMuted, textAlign: 'center' },
-  emptySub: { fontSize: 13, fontFamily: fonts.text.regular, color: colors.textMuted, textAlign: 'center', lineHeight: 18 },
-  list: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
+  emptyIcon: {
+    width: 80, height: 80, borderRadius: 24,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    fontFamily: fonts.title.regular, fontSize: typography.sizes.heading,
+    color: colors.text, letterSpacing: typography.letterSpacing.medium,
+  },
+  emptySub: {
+    fontFamily: fonts.text.regular, fontSize: typography.sizes.body,
+    color: colors.textMuted, textAlign: 'center', lineHeight: 18,
+  },
+  list: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderRadius: radius.card,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(109,46,192,0.1)',
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardInfo: { flex: 1 },
-  cardName: { fontSize: 14, color: colors.text, fontFamily: fonts.text.semiBold },
-  cardMeta: { fontSize: 12, color: colors.textMuted, fontFamily: fonts.text.regular, marginTop: 2 },
-  statusDot: { width: 10, height: 10, borderRadius: 5 },
+  cardName: { fontSize: typography.sizes.input, color: colors.text, fontFamily: fonts.text.semiBold },
+  cardMeta: { fontSize: typography.sizes.md, color: colors.textMuted, fontFamily: fonts.text.regular, marginTop: 2 },
 });

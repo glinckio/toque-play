@@ -6,9 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -17,9 +15,14 @@ import type { RouteProp } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import { registrationService } from '../../services/registration';
 import type { TournamentStackParamList } from '../../navigation/types';
 import { RegistrationStatus } from '../../types/registration';
+import HeroHeader from '../../components/HeroHeader';
+import ChevronButton from '../../components/ChevronButton';
+import { useDialogStore } from '../../stores/dialogStore';
 
 type Nav = NativeStackNavigationProp<TournamentStackParamList, 'RegistrationSummary'>;
 type Route = RouteProp<TournamentStackParamList, 'RegistrationSummary'>;
@@ -34,6 +37,7 @@ export default function RegistrationSummary() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { registrationId } = route.params;
+  const dialog = useDialogStore();
 
   const [registration, setRegistration] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -54,7 +58,7 @@ export default function RegistrationSummary() {
     if (!registration) return;
 
     if (registration.status === RegistrationStatus.PENDING_CONFIRMATION) {
-      Alert.alert('Sucesso', 'Inscrição registrada! Aguardando confirmação do organizador.');
+      dialog.success('Inscrição registrada! Aguardando confirmação do organizador.');
       navigation.goBack();
       return;
     }
@@ -64,7 +68,7 @@ export default function RegistrationSummary() {
       const { url } = await registrationService.createCheckout(registrationId);
       navigation.push('PaymentWebView', { checkoutUrl: url, registrationId });
     } catch {
-      Alert.alert('Erro', 'Não foi possível iniciar o pagamento');
+      dialog.error('Não foi possível iniciar o pagamento');
     } finally {
       setPaying(false);
     }
@@ -73,31 +77,25 @@ export default function RegistrationSummary() {
   if (loading) {
     return (
       <SafeAreaView style={styles.root} edges={['top']}>
-        <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 80 }} />
+        <HeroHeader title="RESUMO" watermark="SUMMARY" onBack={() => navigation.goBack()} rounded />
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
       </SafeAreaView>
     );
   }
 
   const isFree = !registration?.category?.registrationPrice;
-  const stage = registration?.tournament?.stages?.[0];
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>RESUMO</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <HeroHeader title="RESUMO" watermark="SUMMARY" onBack={() => navigation.goBack()} rounded />
 
       <View style={styles.content}>
         {/* Success icon for free */}
         {isFree && (
           <View style={styles.iconCircle}>
-            <LinearGradient colors={[colors.primary, colors.primaryGlow]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.iconGradient}>
-              <Ionicons name="checkmark" size={32} color={colors.text} />
-            </LinearGradient>
+            <Ionicons name="checkmark" size={32} color={colors.primary} />
           </View>
         )}
 
@@ -133,19 +131,28 @@ export default function RegistrationSummary() {
         </View>
 
         {/* Action */}
-        {isFree ? (
-          <TouchableOpacity style={styles.ctaBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-            <LinearGradient colors={[colors.primary, colors.primaryGlow]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaGradient}>
-              <Text style={styles.ctaText}>CONCLUIR</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.ctaBtn} onPress={handlePayment} disabled={paying} activeOpacity={0.8}>
-            <LinearGradient colors={[colors.primary, colors.primaryGlow]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaGradient}>
-              {paying ? <ActivityIndicator color={colors.text} size="small" /> : <Text style={styles.ctaText}>PAGAR</Text>}
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
+        <View style={{ marginTop: spacing.xxl }}>
+          {isFree ? (
+            <ChevronButton
+              variant="primary"
+              size="lg"
+              fullWidth
+              onPress={() => navigation.goBack()}
+            >
+              CONCLUIR
+            </ChevronButton>
+          ) : (
+            <ChevronButton
+              variant="primary"
+              size="lg"
+              fullWidth
+              onPress={handlePayment}
+              disabled={paying}
+            >
+              {paying ? 'PROCESSANDO...' : 'PAGAR'}
+            </ChevronButton>
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -153,40 +160,29 @@ export default function RegistrationSummary() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-  },
-  headerTitle: { fontFamily: fonts.title.display, fontSize: 22, color: colors.text, letterSpacing: 2 },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
 
   iconCircle: {
-    width: 72, height: 72, borderRadius: 22, overflow: 'hidden',
+    width: 72, height: 72, borderRadius: 22,
     alignSelf: 'center', marginBottom: spacing.xxl,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
   },
-  iconGradient: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center' },
 
   infoCard: {
     backgroundColor: colors.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderRadius: radius.card,
     padding: spacing.xl,
-    marginBottom: spacing.xxl,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 2,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm },
-  rowLabel: { fontSize: 13, color: colors.textMuted, fontFamily: fonts.text.regular },
-  rowValue: { fontSize: 14, color: colors.text, fontFamily: fonts.text.semiBold, flex: 1, textAlign: 'right' },
-  priceValue: { color: colors.primaryGlow, fontSize: 18, fontFamily: fonts.title.display },
-  rowDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.04)' },
-
-  ctaBtn: { borderRadius: 14, overflow: 'hidden' },
-  ctaGradient: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: spacing.lg, gap: spacing.sm,
-  },
-  ctaText: { fontSize: 14, letterSpacing: 2, color: colors.text, fontFamily: fonts.text.semiBold },
+  rowLabel: { fontSize: typography.sizes.body, color: colors.textMuted, fontFamily: fonts.text.regular },
+  rowValue: { fontSize: typography.sizes.input, color: colors.text, fontFamily: fonts.text.semiBold, flex: 1, textAlign: 'right' },
+  priceValue: { color: colors.primary, fontSize: typography.sizes.display, fontFamily: fonts.title.regular },
+  rowDivider: { height: 1, backgroundColor: '#F4EFFA' },
 });

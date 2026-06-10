@@ -11,10 +11,10 @@ export declare class PaymentsController {
         received: boolean;
     }>;
     handleWebhook(dto: PaymentWebhookDto): Promise<{
-        user: {
+        tournament: {
             id: string;
-            email: string;
             name: string;
+            status: import(".prisma/client").$Enums.TournamentStatus;
         };
         team: {
             id: string;
@@ -29,43 +29,44 @@ export declare class PaymentsController {
                 } | null;
             } & {
                 id: string;
+                teamId: string;
+                userId: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
+                positions: import(".prisma/client").$Enums.VolleyballPosition[];
             };
         } & {
             id: string;
             isCaptain: boolean;
-            teamMemberId: string;
             registrationId: string;
+            teamMemberId: string;
         })[];
-        tournament: {
+        user: {
             id: string;
             name: string;
-            status: import(".prisma/client").$Enums.TournamentStatus;
+            email: string;
         };
         category: {
             id: string;
             type: import(".prisma/client").$Enums.TournamentType;
-            modality: import(".prisma/client").$Enums.TournamentModality;
             format: import(".prisma/client").$Enums.TournamentFormat;
+            modality: import(".prisma/client").$Enums.TournamentModality;
             registrationPrice: import("@prisma/client/runtime/library").Decimal | null;
         };
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.RegistrationStatus;
+        tournamentId: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         teamId: string;
-        tournamentId: string;
-        categoryId: string;
+        userId: string;
+        status: import(".prisma/client").$Enums.RegistrationStatus;
         paymentId: string | null;
         paymentStatus: string | null;
         paymentMethod: string | null;
         paidAt: Date | null;
+        categoryId: string;
     }>;
 }

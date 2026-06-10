@@ -1,4 +1,5 @@
 export type AuthStackParamList = {
+  Splash: undefined;
   Login: undefined;
   Register: undefined;
   VerifyEmail: { email: string };
@@ -12,6 +13,7 @@ export type MainTabParamList = {
   Explore: undefined;
   Teams: undefined;
   Notifications: undefined;
+  Profile: undefined;
 };
 
 export type TournamentStackParamList = {
@@ -27,7 +29,14 @@ export type TournamentStackParamList = {
 
 export type TeamStackParamList = {
   TeamDetail: { teamId: string };
-  AddMember: { teamId: string };
+  AddMember: {
+    teamId: string;
+    memberId?: string;
+    isGuest?: boolean;
+    guestName?: string;
+    memberName?: string;
+    positions?: import('../types/team').VolleyballPosition[];
+  };
 };
 
 export type FriendlyStackParamList = {
@@ -46,4 +55,8 @@ export type RootStackParamList = {
   MyReferees: undefined;
   MyTournaments: undefined;
   MyRegistrations: undefined;
+  MyTeams: undefined;
+  MyFriendlies: undefined;
+  CreateSheet: undefined;
+  EditProfile: undefined;
 };

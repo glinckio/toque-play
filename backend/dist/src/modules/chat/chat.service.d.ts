@@ -9,16 +9,6 @@ export declare class ChatService {
             name: string;
             avatarUrl: string | null;
         } | null;
-        teamA: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        teamB: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
         messages: ({
             sender: {
                 id: string;
@@ -32,11 +22,21 @@ export declare class ChatService {
             chatId: string;
             senderId: string;
         })[];
+        teamA: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        teamB: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
     } & {
         id: string;
+        type: import(".prisma/client").$Enums.ChatType;
         createdAt: Date;
         updatedAt: Date;
-        type: import(".prisma/client").$Enums.ChatType;
         teamId: string | null;
         teamAId: string | null;
         teamBId: string | null;
@@ -75,9 +75,9 @@ export declare class ChatService {
     }>;
     validateAccess(chatId: string, userId: string): Promise<{
         id: string;
+        type: import(".prisma/client").$Enums.ChatType;
         createdAt: Date;
         updatedAt: Date;
-        type: import(".prisma/client").$Enums.ChatType;
         teamId: string | null;
         teamAId: string | null;
         teamBId: string | null;
@@ -85,18 +85,18 @@ export declare class ChatService {
     private isUserInChat;
     createIntraTeamChat(teamId: string): Promise<{
         id: string;
+        type: import(".prisma/client").$Enums.ChatType;
         createdAt: Date;
         updatedAt: Date;
-        type: import(".prisma/client").$Enums.ChatType;
         teamId: string | null;
         teamAId: string | null;
         teamBId: string | null;
     }>;
     createInterTeamChat(teamAId: string, teamBId: string): Promise<{
         id: string;
+        type: import(".prisma/client").$Enums.ChatType;
         createdAt: Date;
         updatedAt: Date;
-        type: import(".prisma/client").$Enums.ChatType;
         teamId: string | null;
         teamAId: string | null;
         teamBId: string | null;

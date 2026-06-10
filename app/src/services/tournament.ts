@@ -68,4 +68,21 @@ export const tournamentService = {
 
   cancel: (id: string) =>
     api.delete(`/tournaments/${id}`).then((r) => r.data),
+
+  getBanners: () =>
+    api.get<string[]>('/tournaments/banners').then((r) => r.data),
+
+  uploadCover: (id: string, uri: string) => {
+    const formData = new FormData();
+    const filename = uri.split('/').pop() ?? 'cover.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : 'image/jpeg';
+    formData.append('file', { uri: uri.startsWith('file://') ? uri : `file://${uri}`, name: filename, type } as any);
+    return api.post(`/tournaments/${id}/cover`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data);
+  },
+
+  setBannerUrl: (id: string, imageUrl: string) =>
+    api.patch(`/tournaments/${id}/banner-url`, { imageUrl }).then((r) => r.data),
 };

@@ -6,11 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -19,194 +17,208 @@ import type { RouteProp } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import { teamService } from '../../services/team';
+import { VOLLEYBALL_POSITIONS, POSITION_LABELS, type VolleyballPosition } from '../../types/team';
 import type { TeamStackParamList } from '../../navigation/types';
+import HeroHeader from '../../components/HeroHeader';
+import ChevronButton from '../../components/ChevronButton';
+import TabBar from '../../components/TabBar';
+import { useDialogStore } from '../../stores/dialogStore';
 
 type Nav = NativeStackNavigationProp<TeamStackParamList, 'AddMember'>;
 type Route = RouteProp<TeamStackParamList, 'AddMember'>;
 
-type Tab = 'member' | 'guest';
-
 export default function AddMemberModal() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const { teamId } = route.params;
+  const { teamId, memberId, isGuest, guestName: initialGuestName, memberName, positions: initialPositions } = route.params;
+  const dialog = useDialogStore();
 
-  const [tab, setTab] = useState<Tab>('member');
+  const isEditMode = !!memberId;
+
+  const [tab, setTab] = useState('email');
   const [email, setEmail] = useState('');
-  const [guestName, setGuestName] = useState('');
+  const [guestName, setGuestName] = useState(initialGuestName ?? '');
+  const [positions, setPositions] = useState<VolleyballPosition[]>(initialPositions ?? []);
   const [submitting, setSubmitting] = useState(false);
+
+  const togglePosition = (pos: VolleyballPosition) => {
+    setPositions((prev) => (prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]));
+  };
 
   const handleAddMember = async () => {
     const trimmed = email.trim();
-    if (!trimmed) {
-      Alert.alert('Atenção', 'Informe o e-mail.');
-      return;
-    }
+    if (!trimmed) { dialog.warning('Informe o e-mail.'); return; }
     setSubmitting(true);
     try {
-      await teamService.addMember(teamId, { email: trimmed });
-      Alert.alert('Sucesso', 'Membro adicionado!');
+      await teamService.addMember(teamId, { email: trimmed, positions });
+      dialog.success('Convite enviado!');
       navigation.goBack();
     } catch (e: any) {
       const msg = e?.response?.data?.message || 'Não foi possível adicionar.';
-      Alert.alert('Erro', typeof msg === 'string' ? msg : 'Não foi possível adicionar.');
-    } finally {
-      setSubmitting(false);
-    }
+      dialog.error(typeof msg === 'string' ? msg : 'Não foi possível adicionar.');
+    } finally { setSubmitting(false); }
   };
 
   const handleAddGuest = async () => {
     const trimmed = guestName.trim();
-    if (!trimmed) {
-      Alert.alert('Atenção', 'Informe o nome.');
-      return;
-    }
+    if (!trimmed) { dialog.warning('Informe o nome.'); return; }
     setSubmitting(true);
     try {
-      await teamService.addGuest(teamId, { guestName: trimmed });
-      Alert.alert('Sucesso', 'Convidado adicionado!');
+      await teamService.addGuest(teamId, { guestName: trimmed, positions });
+      dialog.success('Convidado adicionado!');
       navigation.goBack();
     } catch (e: any) {
       const msg = e?.response?.data?.message || 'Não foi possível adicionar.';
-      Alert.alert('Erro', typeof msg === 'string' ? msg : 'Não foi possível adicionar.');
-    } finally {
-      setSubmitting(false);
-    }
+      dialog.error(typeof msg === 'string' ? msg : 'Não foi possível adicionar.');
+    } finally { setSubmitting(false); }
   };
+
+  const handleSaveEdit = async () => {
+    if (!memberId) return;
+    if (isGuest && !guestName.trim()) { dialog.warning('Informe o nome.'); return; }
+    setSubmitting(true);
+    try {
+      await teamService.updateMember(teamId, memberId, {
+        positions,
+        ...(isGuest ? { guestName: guestName.trim() } : {}),
+      });
+      dialog.success('Alterações salvas!');
+      navigation.goBack();
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || 'Não foi possível salvar.';
+      dialog.error(typeof msg === 'string' ? msg : 'Não foi possível salvar.');
+    } finally { setSubmitting(false); }
+  };
+
+  const onSubmit = isEditMode ? handleSaveEdit : (tab === 'email' ? handleAddMember : handleAddGuest);
+  const submitDisabled = isEditMode
+    ? (isGuest ? !guestName.trim() : false) || submitting
+    : (tab === 'email' ? !email.trim() : !guestName.trim()) || submitting;
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
+      <HeroHeader
+        title={isEditMode ? 'EDITAR MEMBRO' : 'ADICIONAR MEMBRO'}
+        watermark={isEditMode ? 'EDIT' : 'ADD'}
+        onBack={() => navigation.goBack()}
+        rounded
+      />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>ADICIONAR MEMBRO</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabRow}>
-        <TouchableOpacity
-          style={[styles.tab, tab === 'member' && styles.tabActive]}
-          onPress={() => setTab('member')}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="mail-outline"
-            size={16}
-            color={tab === 'member' ? colors.primaryGlow : colors.textMuted}
-          />
-          <Text style={[styles.tabText, tab === 'member' && styles.tabTextActive]}>
-            POR E-MAIL
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, tab === 'guest' && styles.tabActive]}
-          onPress={() => setTab('guest')}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="person-outline"
-            size={16}
-            color={tab === 'guest' ? colors.primaryGlow : colors.textMuted}
-          />
-          <Text style={[styles.tabText, tab === 'guest' && styles.tabTextActive]}>
-            CONVIDADO
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Form */}
-      <View style={styles.form}>
-        {tab === 'member' ? (
-          <>
-            <Text style={styles.label}>E-mail do jogador</Text>
-            <View style={styles.inputWrap}>
-              <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
-              <TextInput
-                style={styles.input}
-                placeholder="email@exemplo.com"
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="done"
+        <View style={styles.content}>
+          {!isEditMode && (
+            <View style={styles.tabContainer}>
+              <TabBar
+                tabs={[
+                  { key: 'email', label: 'Por e-mail' },
+                  { key: 'guest', label: 'Convidado' },
+                ]}
+                activeTab={tab}
+                onTabChange={setTab}
+                variant="pill"
               />
             </View>
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleAddMember}
-              disabled={!email.trim() || submitting}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={[colors.primary, colors.primaryGlow]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[
-                  styles.submitGradient,
-                  (!email.trim() || submitting) && styles.submitDisabled,
-                ]}
-              >
-                {submitting ? (
-                  <ActivityIndicator color={colors.text} size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="person-add-outline" size={18} color={colors.text} />
-                    <Text style={styles.submitText}>ADICIONAR</Text>
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <Text style={styles.label}>Nome do convidado</Text>
-            <View style={styles.inputWrap}>
-              <Ionicons name="person-outline" size={18} color={colors.textMuted} />
-              <TextInput
-                style={styles.input}
-                placeholder="Nome completo"
-                placeholderTextColor={colors.textMuted}
-                value={guestName}
-                onChangeText={setGuestName}
-                autoCapitalize="words"
-                returnKeyType="done"
-              />
+          )}
+
+          {isEditMode ? (
+            isGuest ? (
+              <>
+                <Text style={styles.label}>Nome do convidado</Text>
+                <View style={styles.inputWrap}>
+                  <Ionicons name="person-outline" size={16} color={colors.textPlaceholder} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nome completo"
+                    placeholderTextColor={colors.textPlaceholder}
+                    value={guestName}
+                    onChangeText={setGuestName}
+                    autoCapitalize="words"
+                    returnKeyType="done"
+                  />
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.label}>Atleta</Text>
+                <View style={styles.readonlyField}>
+                  <Ionicons name="person-outline" size={16} color={colors.textMuted} />
+                  <Text style={styles.readonlyText} numberOfLines={1}>{memberName ?? 'Atleta'}</Text>
+                </View>
+              </>
+            )
+          ) : tab === 'email' ? (
+            <>
+              <Text style={styles.label}>E-mail do jogador</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="mail-outline" size={16} color={colors.textPlaceholder} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="email@exemplo.com"
+                  placeholderTextColor={colors.textPlaceholder}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                />
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.label}>Nome do convidado</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="person-outline" size={16} color={colors.textPlaceholder} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nome completo"
+                  placeholderTextColor={colors.textPlaceholder}
+                  value={guestName}
+                  onChangeText={setGuestName}
+                  autoCapitalize="words"
+                  returnKeyType="done"
+                />
+              </View>
+            </>
+          )}
+
+          {/* Positions picker (multi-select) */}
+          <View style={styles.positionSection}>
+            <Text style={styles.label}>Posições ({positions.length})</Text>
+            <View style={styles.positionRow}>
+              {VOLLEYBALL_POSITIONS.map((pos) => {
+                const active = positions.includes(pos);
+                return (
+                  <TouchableOpacity
+                    key={pos}
+                    style={[styles.positionPill, active && styles.positionPillActive]}
+                    onPress={() => togglePosition(pos)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.positionPillText, active && styles.positionPillTextActive]}>
+                      {POSITION_LABELS[pos]}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleAddGuest}
-              disabled={!guestName.trim() || submitting}
-              activeOpacity={0.8}
+          </View>
+
+          <View style={{ marginTop: spacing.xl }}>
+            <ChevronButton
+              variant="primary"
+              size="lg"
+              fullWidth
+              onPress={onSubmit}
+              disabled={submitDisabled}
+              icon={<Ionicons name={isEditMode ? 'save-outline' : 'person-add-outline'} size={16} color="#FFFFFF" />}
             >
-              <LinearGradient
-                colors={[colors.primary, colors.primaryGlow]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[
-                  styles.submitGradient,
-                  (!guestName.trim() || submitting) && styles.submitDisabled,
-                ]}
-              >
-                {submitting ? (
-                  <ActivityIndicator color={colors.text} size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="person-add-outline" size={18} color={colors.text} />
-                    <Text style={styles.submitText}>ADICIONAR</Text>
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+              {submitting ? 'SALVANDO...' : isEditMode ? 'SALVAR' : 'ADICIONAR'}
+            </ChevronButton>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -214,98 +226,66 @@ export default function AddMemberModal() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-  },
-  headerTitle: {
-    fontFamily: fonts.title.display,
-    fontSize: 22,
-    color: colors.text,
-    letterSpacing: 2,
-  },
-
-  // Tabs
-  tabRow: {
-    flexDirection: 'row',
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.xl,
-    gap: spacing.sm,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: spacing.md,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  tabActive: {
-    borderColor: 'rgba(157,115,230,0.3)',
-    backgroundColor: 'rgba(109,46,192,0.1)',
-  },
-  tabText: {
-    fontSize: 11,
-    letterSpacing: 2,
-    color: colors.textMuted,
-    fontFamily: fonts.text.semiBold,
-  },
-  tabTextActive: {
-    color: colors.primaryGlow,
-  },
-
-  // Form
-  form: { paddingHorizontal: spacing.xl },
+  content: { paddingHorizontal: spacing.xl, paddingTop: spacing.xxl },
+  tabContainer: { marginBottom: spacing.xxl },
   label: {
-    fontSize: 12,
-    letterSpacing: 1.5,
-    color: colors.textMuted,
-    fontFamily: fonts.text.semiBold,
+    fontFamily: fonts.form.medium,
+    fontSize: typography.sizes.input,
+    color: colors.textDefault,
     marginBottom: spacing.sm,
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: colors.inputBackground,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    height: 48,
     paddingHorizontal: spacing.md,
-    height: 52,
     gap: spacing.sm,
-    marginBottom: spacing.xl,
   },
   input: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: fonts.text.regular,
+    flex: 1, color: colors.text, fontSize: typography.sizes.input,
+    fontFamily: fonts.form.regular, paddingVertical: 0,
   },
-
-  submitBtn: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  submitGradient: {
+  readonlyField: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.inputBackground,
+    height: 48,
+    paddingHorizontal: spacing.md,
     gap: spacing.sm,
-    paddingVertical: spacing.lg,
+    borderRadius: radius.md,
   },
-  submitDisabled: { opacity: 0.4 },
-  submitText: {
-    fontSize: 14,
-    letterSpacing: 2,
-    color: colors.text,
+  readonlyText: {
+    flex: 1,
     fontFamily: fonts.text.semiBold,
+    fontSize: typography.sizes.input,
+    color: colors.text,
+  },
+  positionSection: {
+    marginTop: spacing.xl,
+  },
+  positionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  positionPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.lg,
+    backgroundColor: colors.inputBackground,
+  },
+  positionPillActive: {
+    backgroundColor: colors.primary,
+  },
+  positionPillText: {
+    fontFamily: fonts.text.medium,
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+  },
+  positionPillTextActive: {
+    color: '#FFFFFF',
   },
 });

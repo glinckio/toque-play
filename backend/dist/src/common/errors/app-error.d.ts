@@ -42,6 +42,8 @@ export declare const AppError: {
     sponsorNotFound: () => HttpException;
     circuitRequiresStages: () => HttpException;
     tournamentTooCloseToEdit: () => HttpException;
+    tournamentNotInProgress: () => HttpException;
+    tournamentHasPendingMatches: () => HttpException;
     stageDateTooSoon: () => HttpException;
     stageNotFound: () => HttpException;
     registrationNotFound: () => HttpException;

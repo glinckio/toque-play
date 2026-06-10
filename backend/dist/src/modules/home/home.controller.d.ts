@@ -3,14 +3,19 @@ export declare class HomeController {
     private readonly homeService;
     constructor(homeService: HomeService);
     getDashboard(userId: string): Promise<{
-        upcomingTournaments: any[];
-        popularTournaments: {
-            id: string;
-            name: string;
-            startDate: string;
-            city: string;
-            modality: import(".prisma/client").$Enums.TournamentModality;
-            registrationCount: number;
+        upcomingTournaments: {
+            id: any;
+            name: any;
+            startDate: any;
+            city: any;
+            street: any;
+            number: any;
+            neighborhood: any;
+            state: any;
+            location: string;
+            modality: any;
+            registrationCount: any;
+            isRegistered: boolean;
         }[];
         pendingFriendlies: {
             id: string;
@@ -21,6 +26,27 @@ export declare class HomeController {
             status: import(".prisma/client").$Enums.FriendlyStatus;
         }[];
         acceptedFriendlies: ({
+            match: {
+                id: string;
+                status: import(".prisma/client").$Enums.MatchStatus;
+                scoreTeamA: number;
+                scoreTeamB: number;
+                teamA: {
+                    id: string;
+                    name: string;
+                } | null;
+                teamB: {
+                    id: string;
+                    name: string;
+                } | null;
+                sets: {
+                    id: string;
+                    matchId: string;
+                    setNumber: number;
+                    scoreA: number;
+                    scoreB: number;
+                }[];
+            } | null;
             requester: {
                 id: string;
                 name: string;
@@ -41,54 +67,33 @@ export declare class HomeController {
                 name: string;
                 avatarUrl: string | null;
             } | null;
-            match: {
-                id: string;
-                status: import(".prisma/client").$Enums.MatchStatus;
-                teamA: {
-                    id: string;
-                    name: string;
-                } | null;
-                teamB: {
-                    id: string;
-                    name: string;
-                } | null;
-                scoreTeamA: number;
-                scoreTeamB: number;
-                sets: {
-                    id: string;
-                    matchId: string;
-                    setNumber: number;
-                    scoreA: number;
-                    scoreB: number;
-                }[];
-            } | null;
         } & {
             id: string;
+            modality: string | null;
+            startTime: Date | null;
+            description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             status: import(".prisma/client").$Enums.FriendlyStatus;
             latitude: number | null;
             longitude: number | null;
-            createdAt: Date;
-            updatedAt: Date;
-            description: string | null;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            date: Date;
+            address: string | null;
+            city: string | null;
+            state: string | null;
+            regionRadius: number | null;
             title: string | null;
+            categoryFormat: string | null;
+            scoreTeamA: number | null;
+            scoreTeamB: number | null;
+            matchId: string | null;
             requesterId: string;
             requesterTeamId: string | null;
             challengedId: string | null;
             challengedTeamId: string | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
             addressNumber: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
-            scoreTeamA: number | null;
-            scoreTeamB: number | null;
-            modality: string | null;
-            categoryFormat: string | null;
-            matchId: string | null;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
         })[];
         unreadNotifications: number;
     }>;

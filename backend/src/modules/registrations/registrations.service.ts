@@ -4,6 +4,7 @@ import { Queue } from 'bull';
 import { PrismaService } from '../../common/prisma.service';
 import { AppError } from '../../common/errors/app-error';
 import { StripeService } from '../../common/services/stripe.service';
+import { NotificationService } from '../../common/services/notification.service';
 import { TournamentsService } from '../tournaments/tournaments.service';
 import { RegisterTeamDto } from './dto/register-team.dto';
 import { PaymentsGateway } from './payments.gateway';
@@ -38,6 +39,7 @@ export class RegistrationsService {
     private prisma: PrismaService,
     private tournamentsService: TournamentsService,
     private stripeService: StripeService,
+    private notificationService: NotificationService,
     @InjectQueue('registration-expiry') private expiryQueue: Queue,
   ) {}
 
@@ -201,11 +203,26 @@ export class RegistrationsService {
       throw AppError.paymentRequired();
     }
 
-    return this.prisma.registration.update({
+    const updated = await this.prisma.registration.update({
       where: { id: regId },
       data: { status: RegistrationStatus.CONFIRMED },
       include: REGISTRATION_INCLUDE,
     });
+
+    // Notify all registered athletes
+    const memberUserIds = updated.members
+      .map((m: any) => m.teamMember?.user?.id)
+      .filter((id: string | null | undefined): id is string => !!id && id !== userId);
+    if (memberUserIds.length > 0) {
+      await this.notificationService.sendToUsers(memberUserIds, {
+        title: 'Inscrição Confirmada!',
+        body: `Sua inscrição no torneio "${updated.tournament.name}" foi confirmada.`,
+        type: 'REGISTRATION_CONFIRMED',
+        referenceId: tournamentId,
+      });
+    }
+
+    return updated;
   }
 
   async rejectRegistration(tournamentId: string, regId: string, userId: string) {
@@ -310,7 +327,21 @@ export class RegistrationsService {
           paidAt: new Date(),
           status: RegistrationStatus.CONFIRMED,
         },
+        include: REGISTRATION_INCLUDE,
       });
+
+      // Notify registered athletes
+      const memberUserIds = reg.members
+        .map((m: any) => m.teamMember?.user?.id)
+        .filter((id: string | null | undefined): id is string => !!id);
+      if (memberUserIds.length > 0) {
+        await this.notificationService.sendToUsers(memberUserIds, {
+          title: 'Pagamento Confirmado!',
+          body: `Sua inscrição no torneio "${reg.tournament.name}" foi confirmada.`,
+          type: 'REGISTRATION_CONFIRMED',
+          referenceId: reg.tournamentId,
+        });
+      }
 
       // Notify via socket
       if (this.paymentsGateway) {

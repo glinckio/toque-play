@@ -19,16 +19,19 @@ const app_error_1 = require("../../common/errors/app-error");
 const matches_gateway_1 = require("./matches.gateway");
 const ranking_service_1 = require("../ranking/ranking.service");
 const brackets_service_1 = require("../brackets/brackets.service");
+const notification_service_1 = require("../../common/services/notification.service");
 const client_1 = require("@prisma/client");
 let MatchesService = class MatchesService {
     prisma;
     matchesGateway;
     rankingService;
+    notificationService;
     bracketsService;
-    constructor(prisma, matchesGateway, rankingService, bracketsService) {
+    constructor(prisma, matchesGateway, rankingService, notificationService, bracketsService) {
         this.prisma = prisma;
         this.matchesGateway = matchesGateway;
         this.rankingService = rankingService;
+        this.notificationService = notificationService;
         this.bracketsService = bracketsService;
     }
     emitMatchEvent(match, event, data) {
@@ -81,6 +84,9 @@ let MatchesService = class MatchesService {
                 });
                 if (category) {
                     updateData.bestOfSets = category.bestOfSets;
+                    if (!match.tiebreakScore && category.tiebreakScore) {
+                        updateData.tiebreakScore = category.tiebreakScore;
+                    }
                 }
             }
             const m = await tx.match.update({
@@ -178,7 +184,7 @@ let MatchesService = class MatchesService {
             });
         }
         const isFriendly = !!match.friendlyId;
-        const setReachedWinningScore = this.isWinningScore(newSetScoreA, newSetScoreB, modality);
+        const setReachedWinningScore = this.isWinningScore(newSetScoreA, newSetScoreB, modality, currentSet.setNumber, match.bestOfSets, match.tiebreakScore);
         const setFinished = isFriendly && setReachedWinningScore;
         if (!isFriendly && setReachedWinningScore && match.bestOfSets) {
             await this.finishSet(matchId, userId, { setNumber: currentSet.setNumber });
@@ -360,6 +366,17 @@ let MatchesService = class MatchesService {
             scoreB: setToFinish.scoreB,
             sets: updatedSets,
         });
+        const teamIds = [match.teamAId, match.teamBId].filter(Boolean);
+        const teamUserIds = (await Promise.all(teamIds.map((tid) => this.notificationService.getTeamMemberUserIds(tid)))).flat();
+        const uniqueUserIds = [...new Set(teamUserIds.filter((id) => id !== userId))];
+        if (uniqueUserIds.length > 0) {
+            await this.notificationService.sendToUsers(uniqueUserIds, {
+                title: 'Set Encerrado',
+                body: `Set ${dto.setNumber} encerrado! Placar: ${setToFinish.scoreA} x ${setToFinish.scoreB}`,
+                type: 'MATCH_SET',
+                referenceId: matchId,
+            });
+        }
         return this.prisma.match.findUnique({
             where: { id: matchId },
             include: {
@@ -445,6 +462,20 @@ let MatchesService = class MatchesService {
         await this.rankingService.updateStatsAfterMatch(matchId);
         await this.bracketsService.checkAndAdvanceGroupTeams(matchId).catch(() => { });
         await this.bracketsService.checkAndAdvanceRoundRobinTeams(matchId).catch(() => { });
+        const matchTeamIds = [updated.teamA?.id, updated.teamB?.id].filter(Boolean);
+        const matchTeamUserIds = (await Promise.all(matchTeamIds.map((tid) => this.notificationService.getTeamMemberUserIds(tid)))).flat();
+        const matchUniqueUserIds = [...new Set(matchTeamUserIds.filter((id) => id !== userId))];
+        if (matchUniqueUserIds.length > 0) {
+            const winnerName = updated.winner?.name;
+            await this.notificationService.sendToUsers(matchUniqueUserIds, {
+                title: 'Partida Encerrada',
+                body: winnerName
+                    ? `Partida finalizada! Vencedor: ${winnerName} (${match.scoreTeamA} x ${match.scoreTeamB})`
+                    : `Partida finalizada! Placar: ${match.scoreTeamA} x ${match.scoreTeamB}`,
+                type: 'MATCH_FINISH',
+                referenceId: matchId,
+            });
+        }
         return updated;
     }
     async declareWalkover(matchId, userId, dto) {
@@ -962,8 +993,10 @@ let MatchesService = class MatchesService {
     getWinningThreshold(modality) {
         return modality === client_1.TournamentModality.BEACH ? 21 : 25;
     }
-    isWinningScore(scoreA, scoreB, modality) {
-        const threshold = this.getWinningThreshold(modality);
+    isWinningScore(scoreA, scoreB, modality, setNumber, bestOfSets, tiebreakScore) {
+        const isTiebreakSet = bestOfSets && bestOfSets > 1 && setNumber === bestOfSets;
+        const defaultThreshold = this.getWinningThreshold(modality);
+        const threshold = isTiebreakSet ? (tiebreakScore ?? 15) : defaultThreshold;
         const diff = Math.abs(scoreA - scoreB);
         return (scoreA >= threshold || scoreB >= threshold) && diff >= 2;
     }
@@ -985,10 +1018,11 @@ let MatchesService = class MatchesService {
 exports.MatchesService = MatchesService;
 exports.MatchesService = MatchesService = __decorate([
     (0, common_1.Injectable)(),
-    __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => brackets_service_1.BracketsService))),
+    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => brackets_service_1.BracketsService))),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         matches_gateway_1.MatchesGateway,
         ranking_service_1.RankingService,
+        notification_service_1.NotificationService,
         brackets_service_1.BracketsService])
 ], MatchesService);
 //# sourceMappingURL=matches.service.js.map

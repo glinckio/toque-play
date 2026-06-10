@@ -1,6 +1,5 @@
 export interface DashboardData {
   upcomingTournaments: TournamentPreview[];
-  popularTournaments: TournamentPreview[];
   pendingFriendlies: FriendlyPreview[];
   acceptedFriendlies: AcceptedFriendly[];
   unreadNotifications: number;
@@ -11,8 +10,10 @@ export interface TournamentPreview {
   name: string;
   startDate: string;
   city: string;
+  location?: string;
   modality: string;
   registrationCount: number;
+  isRegistered?: boolean;
 }
 
 export interface FriendlyPreview {

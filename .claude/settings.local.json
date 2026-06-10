@@ -17,7 +17,15 @@
       "Bash(node -e ':*)",
       "Bash(node:*)",
       "Bash(find:*)",
-      "Bash(npx expo:*)"
+      "Bash(npx expo:*)",
+      "WebSearch",
+      "Bash(sort -t':' -k2 -n)",
+      "Bash(sort -t':' -k2 -n -r)",
+      "Bash(pnpm --filter backend tsc --noEmit)",
+      "Bash(pnpm --filter app tsc --noEmit)",
+      "Bash(ls .env*)",
+      "Bash(ls src/navigation/*.tsx)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }

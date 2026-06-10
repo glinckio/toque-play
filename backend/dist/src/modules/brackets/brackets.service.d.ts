@@ -17,13 +17,13 @@ export declare class BracketsService {
         };
         matches: ({
             teamA: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
             teamB: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
             sets: {
@@ -37,23 +37,27 @@ export declare class BracketsService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
+            status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
             position: number;
             round: number;
-            bestOfSets: number | null;
-            bracketId: string | null;
+            refereeId: string | null;
             friendlyId: string | null;
-            status: import(".prisma/client").$Enums.MatchStatus;
-            scheduledAt: Date | null;
+            bracketId: string | null;
             group: number | null;
             label: string | null;
             teamAId: string | null;
@@ -62,20 +66,18 @@ export declare class BracketsService {
             scoreTeamB: number;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
         })[];
     } & {
         id: string;
         tournamentId: string;
-        categoryId: string;
         type: import(".prisma/client").$Enums.BracketType;
+        categoryId: string;
     }) | null>;
     private generateSingleElimination;
     private advanceTeamToNextMatch;
+    private generateDoubleElimination;
     private generateRoundRobin;
     private generateGroupsThenElimination;
     checkAndAdvanceGroupTeams(matchId: string): Promise<void>;
@@ -92,13 +94,13 @@ export declare class BracketsService {
         };
         matches: ({
             teamA: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
             teamB: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
             sets: {
@@ -112,23 +114,27 @@ export declare class BracketsService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
-                name: string;
                 id: string;
+                name: string;
                 avatarUrl: string | null;
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
+            status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
             position: number;
             round: number;
-            bestOfSets: number | null;
-            bracketId: string | null;
+            refereeId: string | null;
             friendlyId: string | null;
-            status: import(".prisma/client").$Enums.MatchStatus;
-            scheduledAt: Date | null;
+            bracketId: string | null;
             group: number | null;
             label: string | null;
             teamAId: string | null;
@@ -137,16 +143,13 @@ export declare class BracketsService {
             scoreTeamB: number;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
         })[];
         id: string;
         tournamentId: string;
-        categoryId: string;
         type: import(".prisma/client").$Enums.BracketType;
+        categoryId: string;
     }[]>;
     private groupByRound;
 }

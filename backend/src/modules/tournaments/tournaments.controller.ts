@@ -10,6 +10,8 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TournamentsService } from './tournaments.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
@@ -39,7 +42,6 @@ export class TournamentsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles('ORGANIZADOR', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Criar torneio (rascunho)' })
   @ApiResponse({ status: 201, description: 'Torneio criado como DRAFT' })
   async create(
@@ -143,6 +145,15 @@ export class TournamentsController {
     return this.tournamentsService.startTournament(id, userId);
   }
 
+  @Patch(':id/complete')
+  @ApiOperation({ summary: 'Finalizar torneio (muda status para FINISHED)' })
+  async completeTournament(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.tournamentsService.completeTournament(id, userId);
+  }
+
   @Post(':id/generate-referee-code')
   @ApiOperation({ summary: 'Gerar código de arbitro para o torneio' })
   async generateRefereeCode(
@@ -197,6 +208,33 @@ export class TournamentsController {
     @CurrentUser('id') userId: string,
   ) {
     return this.tournamentsService.saveAsDraft(id, userId);
+  }
+
+  @Get('banners')
+  @ApiOperation({ summary: 'Listar banners padrão disponíveis' })
+  async getBanners() {
+    return this.tournamentsService.getBanners();
+  }
+
+  @Post(':id/cover')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @ApiOperation({ summary: 'Upload de imagem de capa do torneio' })
+  async uploadCover(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.tournamentsService.uploadCover(id, userId, file);
+  }
+
+  @Patch(':id/banner-url')
+  @ApiOperation({ summary: 'Definir URL de banner padrão para o torneio' })
+  async setBannerUrl(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body('imageUrl') imageUrl: string,
+  ) {
+    return this.tournamentsService.setBannerUrl(id, userId, imageUrl);
   }
 
   @Get('mine')

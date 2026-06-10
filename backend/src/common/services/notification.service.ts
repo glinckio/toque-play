@@ -101,6 +101,30 @@ export class NotificationService implements OnModuleInit {
     });
   }
 
+  /** Get all registered athlete user IDs for a tournament (via RegistrationMember → TeamMember → User, excluding guests) */
+  async getRegisteredAthleteUserIds(tournamentId: string): Promise<string[]> {
+    const members = await this.prisma.registrationMember.findMany({
+      where: {
+        registration: {
+          tournamentId,
+          status: { notIn: ['CANCELLED', 'REJECTED'] },
+        },
+        teamMember: { isGuest: false, userId: { not: null } },
+      },
+      select: { teamMember: { select: { userId: true } } },
+    });
+    return [...new Set(members.map((m: { teamMember: { userId: string | null } }) => m.teamMember.userId).filter(Boolean) as string[])];
+  }
+
+  /** Get all non-guest member user IDs for a team */
+  async getTeamMemberUserIds(teamId: string): Promise<string[]> {
+    const members = await this.prisma.teamMember.findMany({
+      where: { teamId, isGuest: false, userId: { not: null } },
+      select: { userId: true },
+    });
+    return [...new Set(members.map((m: { userId: string | null }) => m.userId).filter(Boolean) as string[])];
+  }
+
   private async sendPushNotification(tokens: string[], payload: { title: string; body: string; type: string; referenceId?: string }, deepLink?: string) {
     try {
       const message: admin.messaging.MulticastMessage = {
@@ -134,15 +158,20 @@ export class NotificationService implements OnModuleInit {
       case 'TOURNAMENT':
       case 'BRACKET_GENERATED':
       case 'REGISTRATION':
+      case 'REGISTRATION_CONFIRMED':
+      case 'TOURNAMENT_STARTED':
+      case 'TOURNAMENT_COMPLETED':
         return `toqueplay://tournament/${referenceId}`;
       case 'MATCH':
       case 'MATCH_START':
       case 'MATCH_FINISH':
+      case 'MATCH_SET':
         return `toqueplay://match/${referenceId}`;
       case 'CHAT':
       case 'CHAT_MESSAGE':
         return `toqueplay://chat/${referenceId}`;
       case 'FRIENDLY':
+      case 'FRIENDLY_REJECTED':
         return `toqueplay://friendly/${referenceId}`;
       case 'TEAM_INVITE':
         return `toqueplay://team-invitation/${referenceId}`;
@@ -162,12 +191,17 @@ export class NotificationService implements OnModuleInit {
       case 'MATCH':
       case 'MATCH_START':
       case 'MATCH_FINISH':
+      case 'MATCH_SET':
         return 'matches';
       case 'FRIENDLY':
+      case 'FRIENDLY_REJECTED':
         return 'friendlies';
       case 'TOURNAMENT':
       case 'BRACKET_GENERATED':
       case 'REGISTRATION':
+      case 'REGISTRATION_CONFIRMED':
+      case 'TOURNAMENT_STARTED':
+      case 'TOURNAMENT_COMPLETED':
         return 'tournaments';
       default:
         return 'tournaments';

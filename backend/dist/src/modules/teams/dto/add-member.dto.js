@@ -12,11 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AddMemberDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
+const client_1 = require("@prisma/client");
 const is_cpf_decorator_1 = require("../../../common/decorators/is-cpf.decorator");
 class AddMemberDto {
     email;
     cpf;
     isCaptain;
+    positions;
 }
 exports.AddMemberDto = AddMemberDto;
 __decorate([
@@ -35,4 +37,15 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], AddMemberDto.prototype, "isCaptain", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Posicoes do atleta',
+        enum: client_1.VolleyballPosition,
+        isArray: true,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsEnum)(client_1.VolleyballPosition, { each: true }),
+    __metadata("design:type", Array)
+], AddMemberDto.prototype, "positions", void 0);
 //# sourceMappingURL=add-member.dto.js.map

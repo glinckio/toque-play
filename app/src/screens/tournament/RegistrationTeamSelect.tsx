@@ -7,9 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -18,6 +16,8 @@ import type { RouteProp } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import { tournamentService } from '../../services/tournament';
 import { teamService } from '../../services/team';
 import type { TournamentStackParamList } from '../../navigation/types';
@@ -25,6 +25,8 @@ import type { Team, TeamMember } from '../../types/team';
 import { memberCount } from '../../utils/team';
 import TeamAvatar from '../../components/TeamAvatar';
 import type { Tournament } from '../../types/tournament';
+import HeroHeader from '../../components/HeroHeader';
+import { useDialogStore } from '../../stores/dialogStore';
 
 type Nav = NativeStackNavigationProp<TournamentStackParamList, 'RegistrationTeamSelect'>;
 type Route = RouteProp<TournamentStackParamList, 'RegistrationTeamSelect'>;
@@ -33,6 +35,7 @@ export default function RegistrationTeamSelect() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { tournamentId } = route.params;
+  const dialog = useDialogStore();
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -51,7 +54,6 @@ export default function RegistrationTeamSelect() {
         setTeams(tm);
         if (t.categories?.length === 1) setSelectedCategory(t.categories[0].id);
 
-        // Fetch members for each team
         const membersMap: Record<string, TeamMember[]> = {};
         await Promise.all(
           tm.map(async (team) => {
@@ -85,7 +87,7 @@ export default function RegistrationTeamSelect() {
 
   const handleSelect = (team: Team) => {
     if (!selectedCategory) {
-      Alert.alert('Atenção', 'Selecione uma categoria');
+      dialog.warning('Selecione uma categoria');
       return;
     }
     const cat = getCategory();
@@ -102,7 +104,10 @@ export default function RegistrationTeamSelect() {
   if (loading) {
     return (
       <SafeAreaView style={styles.root} edges={['top']}>
-        <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 80 }} />
+        <HeroHeader title="INSCRIÇÃO" watermark="SIGN UP" onBack={() => navigation.goBack()} rounded />
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
       </SafeAreaView>
     );
   }
@@ -111,13 +116,7 @@ export default function RegistrationTeamSelect() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>INSCREVER TIME</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <HeroHeader title="INSCREVER TIME" watermark="SIGN UP" onBack={() => navigation.goBack()} rounded />
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.tournamentName}>{tournament?.name}</Text>
@@ -145,7 +144,9 @@ export default function RegistrationTeamSelect() {
 
         {teams.length === 0 ? (
           <View style={styles.emptySection}>
-            <Ionicons name="shield-outline" size={40} color={colors.textMuted} />
+            <View style={styles.emptyIcon}>
+              <Ionicons name="shield-outline" size={40} color={colors.textPlaceholder} />
+            </View>
             <Text style={styles.emptyText}>Você precisa criar uma equipe primeiro</Text>
           </View>
         ) : (
@@ -170,7 +171,7 @@ export default function RegistrationTeamSelect() {
                       {!compat.ok && ` — ${compat.reason}`}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={compat.ok ? colors.textMuted : colors.disabled} />
+                  <Ionicons name="chevron-forward" size={18} color={compat.ok ? colors.textPlaceholder : colors.disabled} />
                 </TouchableOpacity>
               );
             })}
@@ -183,51 +184,64 @@ export default function RegistrationTeamSelect() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-  },
-  headerTitle: { fontFamily: fonts.title.display, fontSize: 22, color: colors.text, letterSpacing: 2 },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 40 },
-  tournamentName: { fontSize: 16, color: colors.textSecondary, fontFamily: fonts.text.semiBold, marginBottom: spacing.xl },
+  tournamentName: {
+    fontSize: typography.sizes.button,
+    color: colors.textSecondary,
+    fontFamily: fonts.text.semiBold,
+    marginBottom: spacing.xl,
+    marginTop: spacing.lg,
+  },
 
   catRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xl, flexWrap: 'wrap' },
   catChip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderRadius: radius.lg,
+    backgroundColor: colors.inputBackground,
   },
-  catChipActive: { backgroundColor: 'rgba(109,46,192,0.15)', borderColor: 'rgba(157,115,230,0.3)' },
-  catChipText: { fontSize: 12, color: colors.textMuted, fontFamily: fonts.text.medium },
-  catChipTextActive: { color: colors.primaryGlow },
+  catChipActive: { backgroundColor: colors.primaryTint, borderWidth: 1, borderColor: colors.primary },
+  catChipText: { fontSize: typography.sizes.md, color: colors.textMuted, fontFamily: fonts.text.medium },
+  catChipTextActive: { color: colors.primary },
 
-  sectionTitle: { fontFamily: fonts.title.display, fontSize: 18, color: colors.text, letterSpacing: 2, marginBottom: spacing.lg },
-  emptySection: { alignItems: 'center', paddingTop: spacing.hero, gap: spacing.md },
-  emptyText: { fontSize: 13, color: colors.textMuted, fontFamily: fonts.text.regular },
+  sectionTitle: {
+    fontFamily: fonts.title.regular,
+    fontSize: typography.sizes.heading,
+    color: colors.text,
+    letterSpacing: typography.letterSpacing.medium,
+    marginBottom: spacing.lg,
+  },
+  emptySection: { alignItems: 'center', paddingTop: 60, gap: spacing.md },
+  emptyIcon: {
+    width: 80, height: 80, borderRadius: 24,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyText: {
+    fontSize: typography.sizes.body,
+    color: colors.textMuted,
+    fontFamily: fonts.text.regular,
+  },
 
   teamList: { gap: spacing.md },
   teamCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderRadius: radius.card,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     gap: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 2,
   },
   teamCardDisabled: { opacity: 0.5 },
-  teamAvatar: { width: 40, height: 40, borderRadius: 12, overflow: 'hidden' },
-  teamAvatarGradient: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  teamAvatarInitial: { fontFamily: fonts.title.display, fontSize: 18, color: colors.text },
   teamInfo: { flex: 1 },
-  teamName: { fontSize: 14, color: colors.text, fontFamily: fonts.text.semiBold },
-  teamMeta: { fontSize: 12, color: colors.textMuted, fontFamily: fonts.text.regular, marginTop: 2 },
+  teamName: { fontSize: typography.sizes.input, color: colors.text, fontFamily: fonts.text.semiBold },
+  teamMeta: { fontSize: typography.sizes.md, color: colors.textMuted, fontFamily: fonts.text.regular, marginTop: 2 },
 });

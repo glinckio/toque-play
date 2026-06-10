@@ -12,8 +12,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateMemberDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
+const client_1 = require("@prisma/client");
 class UpdateMemberDto {
     isCaptain;
+    positions;
+    guestName;
 }
 exports.UpdateMemberDto = UpdateMemberDto;
 __decorate([
@@ -22,4 +25,22 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateMemberDto.prototype, "isCaptain", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Posicoes do atleta',
+        enum: client_1.VolleyballPosition,
+        isArray: true,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsEnum)(client_1.VolleyballPosition, { each: true }),
+    __metadata("design:type", Array)
+], UpdateMemberDto.prototype, "positions", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Nome do convidado (apenas para guests)' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(100),
+    __metadata("design:type", String)
+], UpdateMemberDto.prototype, "guestName", void 0);
 //# sourceMappingURL=update-member.dto.js.map

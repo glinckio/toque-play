@@ -1,20 +1,17 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
 import type { AuthStackParamList } from '../../navigation/types';
 import AuthLayout from '../../components/AuthLayout';
 import Input from '../../components/Input';
-import Button from '../../components/Button';
+import HeroHeader from '../../components/HeroHeader';
+import ChevronButton from '../../components/ChevronButton';
 import { authService } from '../../services/auth';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
@@ -31,195 +28,132 @@ export default function ForgotPasswordScreen() {
       await authService.forgotPassword(email);
       setSent(true);
     } catch {
-      // Always show success to prevent email enumeration
       setSent(true);
     } finally {
       setLoading(false);
     }
   };
 
+  if (sent) {
+    return (
+      <AuthLayout>
+        <HeroHeader title="E-MAIL ENVIADO" watermark="OK" rounded />
+        <View style={styles.sentContent}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="checkmark-circle" size={64} color={colors.success} />
+          </View>
+          <Text style={styles.sentTitle}>Verifique sua caixa de entrada</Text>
+          <Text style={styles.sentSubtitle}>
+            Siga as instruções para redefinir sua senha.
+          </Text>
+          <ChevronButton
+            variant="primary"
+            size="lg"
+            fullWidth
+            onPress={() => navigation.navigate('Login')}
+          >
+            Voltar ao Login
+          </ChevronButton>
+        </View>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout>
-      <LinearGradient
-        colors={['rgba(109,46,192,0.08)', 'transparent']}
-        locations={[0.4, 1]}
-        style={StyleSheet.absoluteFillObject}
+      <HeroHeader
+        title="RECUPERAR SENHA"
+        subtitle="Informe seu e-mail e enviaremos um link para redefinir sua senha."
+        watermark="SENHA"
+        rounded
       />
 
-      <View style={styles.content}>
+      <View style={styles.form}>
+        <Input
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="seu@email.com"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          leftIcon={<Ionicons name="mail-outline" size={16} color={colors.textPlaceholder} />}
+        />
 
-        {/* ─── Card ──────────────────────────── */}
-        <View style={styles.card}>
-          <View style={styles.cardGlowBar} />
-
-          {!sent ? (
-            <>
-              {/* Icon */}
-              <View style={styles.iconCircle}>
-                <LinearGradient
-                  colors={[colors.primary, colors.primaryGlow]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.iconGradient}
-                >
-                  <Ionicons name="key" size={28} color={colors.text} />
-                </LinearGradient>
-              </View>
-
-              <Text style={styles.cardTitle}>RECUPERAR SENHA</Text>
-              <Text style={styles.cardSubtitle}>
-                Informe seu e-mail e enviaremos um link para redefinir sua senha.
-              </Text>
-
-              <Input
-                label="E-MAIL"
-                value={email}
-                onChangeText={setEmail}
-                placeholder="seu@email.com"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                leftIcon={
-                  <Ionicons
-                    name="mail-outline"
-                    size={18}
-                    color={colors.textMuted}
-                  />
-                }
-              />
-
-              <Button
-                title={loading ? 'ENVIANDO...' : 'ENVIAR LINK'}
-                onPress={handleSend}
-                disabled={email.length === 0 || loading}
-                style={{ marginTop: spacing.xl }}
-              />
-            </>
-          ) : (
-            <>
-              {/* Sent state */}
-              <View style={styles.iconCircle}>
-                <LinearGradient
-                  colors={[colors.primary, colors.primaryGlow]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.iconGradient}
-                >
-                  <Ionicons name="checkmark" size={32} color={colors.text} />
-                </LinearGradient>
-              </View>
-
-              <Text style={styles.cardTitle}>E-MAIL ENVIADO</Text>
-              <Text style={styles.cardSubtitle}>
-                Verifique sua caixa de entrada e siga as instruções para
-                redefinir sua senha.
-              </Text>
-
-              <Button
-                title="VOLTAR AO LOGIN"
-                onPress={() => navigation.navigate('Login')}
-                style={{ marginTop: spacing.xl }}
-              />
-            </>
-          )}
+        <View style={styles.buttonRow}>
+          <ChevronButton
+            variant="primary"
+            size="lg"
+            fullWidth
+            onPress={handleSend}
+            disabled={email.length === 0 || loading}
+          >
+            {loading ? 'ENVIANDO...' : 'ENVIAR LINK'}
+          </ChevronButton>
         </View>
+      </View>
 
-        {/* ─── Footer ───────────────────────── */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Lembrou a senha?{' '}
-            <Text
-              style={styles.footerLink}
-              onPress={() => navigation.navigate('Login')}
-            >
-              Entrar
-            </Text>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          Lembrou a senha?{' '}
+          <Text style={styles.footerLink} onPress={() => navigation.navigate('Login')}>
+            Entrar
           </Text>
-        </View>
+        </Text>
       </View>
     </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    justifyContent: 'center',
+  form: {
     paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.section,
   },
-
-  card: {
-    backgroundColor: 'rgba(10,10,16,0.75)',
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(157,115,230,0.12)',
-    paddingVertical: spacing.xxl,
+  buttonRow: {
+    marginTop: spacing.xl,
+  },
+  sentContent: {
     paddingHorizontal: spacing.xl,
-    overflow: 'hidden',
+    paddingTop: spacing.hero,
+    alignItems: 'center',
   },
-  cardGlowBar: {
-    position: 'absolute',
-    top: 0,
-    left: '15%',
-    right: '15%',
-    height: 2,
-    backgroundColor: colors.primaryGlow,
-    borderRadius: 2,
-    shadowColor: colors.primaryGlow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-  },
-
   iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: 'rgba(109,46,192,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(157,115,230,0.2)',
+    width: 96,
+    height: 96,
+    borderRadius: 28,
+    backgroundColor: colors.primaryTint,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
-  iconGradient: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  cardTitle: {
-    fontFamily: fonts.title.display,
-    fontSize: 32,
-    lineHeight: 34,
+  sentTitle: {
+    fontFamily: fonts.title.regular,
+    fontSize: typography.sizes.heading,
     color: colors.text,
+    letterSpacing: typography.letterSpacing.medium,
     textAlign: 'center',
-    letterSpacing: 3,
+    marginBottom: spacing.sm,
   },
-  cardSubtitle: {
-    fontSize: 14,
+  sentSubtitle: {
+    fontFamily: fonts.text.regular,
+    fontSize: typography.sizes.input,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 20,
-    marginTop: spacing.md,
     marginBottom: spacing.xxl,
-    fontFamily: fonts.text.regular,
   },
-
   footer: {
-    marginTop: spacing.xl,
+    marginTop: 'auto',
     alignItems: 'center',
+    paddingBottom: spacing.section,
   },
   footerText: {
     color: colors.textMuted,
-    fontSize: 14,
+    fontSize: typography.sizes.body,
     fontFamily: fonts.text.regular,
   },
   footerLink: {
-    color: colors.primaryGlow,
-    fontWeight: '600',
-    fontFamily: fonts.text.semiBold,
+    color: colors.primary,
+    fontFamily: fonts.text.bold,
   },
 });

@@ -20,6 +20,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir acesso para escolher fotos de perfil.",
+          "cameraPermission": "Permitir acesso à câmera para tirar foto de perfil."
+        }
+      ]
+    ]
   }
 }

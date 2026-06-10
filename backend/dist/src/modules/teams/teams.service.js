@@ -72,29 +72,25 @@ let TeamsService = class TeamsService {
         });
     }
     async search(query, userId) {
-        const where = {
-            AND: [
-                { ownerId: { not: userId } },
-                {
-                    OR: [
-                        { name: { contains: query, mode: 'insensitive' } },
-                        { description: { contains: query, mode: 'insensitive' } },
-                    ],
-                },
-            ],
-        };
-        return this.prisma.team.findMany({
-            where,
-            select: {
-                id: true,
-                name: true,
-                avatarUrl: true,
-                sport: true,
-                _count: { select: { members: true } },
-            },
-            orderBy: { name: 'asc' },
-            take: 20,
-        });
+        if (!query || query.trim().length === 0)
+            return [];
+        const pattern = `%${query}%`;
+        return this.prisma.$queryRaw `
+      SELECT id, name, "avatarUrl", sport,
+        (SELECT COUNT(*) FROM "TeamMember" tm WHERE tm."teamId" = "Team".id)::int AS "memberCount"
+      FROM "Team"
+      WHERE "ownerId" != ${userId}
+        AND (unaccent(name) ILIKE unaccent(${pattern})
+          OR unaccent(COALESCE(description, '')) ILIKE unaccent(${pattern}))
+      ORDER BY name ASC
+      LIMIT 20
+    `.then((rows) => rows.map((r) => ({
+            id: r.id,
+            name: r.name,
+            avatarUrl: r.avatarUrl,
+            sport: r.sport,
+            _count: { members: r.memberCount },
+        })));
     }
     async findOne(teamId, userId) {
         const team = await this.prisma.team.findUnique({

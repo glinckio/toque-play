@@ -11,26 +11,26 @@ export declare class UsersController {
     constructor(usersService: UsersService);
     getProfile(userId: string): Promise<{
         id: string;
-        email: string;
         name: string;
         avatarUrl: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string;
         phone: string | null;
         bio: string | null;
         isFirstAccess: boolean;
         notificationPreferences: import("@prisma/client/runtime/library").JsonValue;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     updateProfile(userId: string, dto: UpdateUserDto): Promise<{
         id: string;
-        email: string;
         name: string;
         avatarUrl: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string;
         phone: string | null;
         bio: string | null;
         isFirstAccess: boolean;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     updateLocation(userId: string, dto: UpdateLocationDto): Promise<{
         id: string;
@@ -46,6 +46,18 @@ export declare class UsersController {
         tournaments: boolean;
     }>;
     updateNotificationPreferences(userId: string, dto: NotificationPreferencesDto): Promise<Record<string, boolean>>;
+    uploadAvatar(userId: string, file: Express.Multer.File): Promise<{
+        id: string;
+        name: string;
+        avatarUrl: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string;
+        phone: string | null;
+        bio: string | null;
+        isFirstAccess: boolean;
+        notificationPreferences: import("@prisma/client/runtime/library").JsonValue;
+    }>;
     getUserStats(userId: string): Promise<{
         user: {
             id: string;
@@ -63,10 +75,10 @@ export declare class UsersController {
         byTournament: {
             tournament: {
                 id: string;
-                name: string;
                 _count: {
                     registrations: number;
                 };
+                name: string;
                 stages: {
                     date: Date;
                 }[];

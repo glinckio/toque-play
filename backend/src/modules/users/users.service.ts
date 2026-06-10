@@ -2,6 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { NotificationPreferencesDto } from './dto/notification-preferences.dto';
+import { StorageService } from '../storage/storage.service';
+import { AppError } from '../../common/errors/app-error';
+
+const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE = 5 * 1024 * 1024;
 
 const DEFAULT_NOTIFICATION_PREFS = {
   messages: true,
@@ -13,7 +18,10 @@ const DEFAULT_NOTIFICATION_PREFS = {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storage: StorageService,
+  ) {}
 
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -121,6 +129,40 @@ export class UsersService {
     if (!user) return false;
     const prefs: Record<string, boolean> = { ...DEFAULT_NOTIFICATION_PREFS, ...((user.notificationPreferences as Record<string, boolean>) || {}) };
     return prefs[category] !== false;
+  }
+
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (!ALLOWED_MIMES.includes(file.mimetype)) throw AppError.invalidFileType();
+    if (file.size > MAX_SIZE) throw AppError.fileTooLarge();
+
+    if (user.avatarUrl) {
+      const oldKey = this.storage.extractKeyFromUrl(user.avatarUrl);
+      if (oldKey) await this.storage.deleteFile(oldKey);
+    }
+
+    const ext = file.originalname.split('.').pop() ?? 'jpg';
+    const key = `users/${userId}/avatar-${Date.now()}.${ext}`;
+    const avatarUrl = await this.storage.uploadFile(file.buffer, key, file.mimetype);
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        phone: true,
+        bio: true,
+        isFirstAccess: true,
+        notificationPreferences: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   async getUserStats(userId: string) {

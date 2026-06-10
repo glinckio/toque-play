@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const platform_express_1 = require("@nestjs/platform-express");
 const class_validator_1 = require("class-validator");
 const users_service_1 = require("./users.service");
 const update_user_dto_1 = require("./dto/update-user.dto");
@@ -62,6 +63,9 @@ let UsersController = class UsersController {
     }
     async updateNotificationPreferences(userId, dto) {
         return this.usersService.updateNotificationPreferences(userId, dto);
+    }
+    async uploadAvatar(userId, file) {
+        return this.usersService.uploadAvatar(userId, file);
     }
     async getUserStats(userId) {
         return this.usersService.getUserStats(userId);
@@ -111,6 +115,17 @@ __decorate([
     __metadata("design:paramtypes", [String, notification_preferences_dto_1.NotificationPreferencesDto]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateNotificationPreferences", null);
+__decorate([
+    (0, common_1.Post)('me/avatar'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Upload de avatar do usuário' }),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', { limits: { fileSize: 5 * 1024 * 1024 } })),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(1, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "uploadAvatar", null);
 __decorate([
     (0, common_1.Get)(':id/stats'),
     (0, swagger_1.ApiOperation)({ summary: 'Buscar estatísticas de um atleta' }),

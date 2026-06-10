@@ -8,6 +8,7 @@ import type {
   UpdateTeamDto,
   AddMemberDto,
   AddGuestDto,
+  VolleyballPosition,
 } from '../types/team';
 
 export const teamService = {
@@ -35,8 +36,11 @@ export const teamService = {
   addGuest: (teamId: string, data: AddGuestDto) =>
     api.post(`/teams/${teamId}/members/guest`, data).then((r) => r.data),
 
-  updateMember: (teamId: string, memberId: string, data: { isCaptain?: boolean }) =>
-    api.patch(`/teams/${teamId}/members/${memberId}`, data).then((r) => r.data),
+  updateMember: (
+    teamId: string,
+    memberId: string,
+    data: { isCaptain?: boolean; positions?: VolleyballPosition[]; guestName?: string },
+  ) => api.patch(`/teams/${teamId}/members/${memberId}`, data).then((r) => r.data),
 
   removeMember: (teamId: string, memberId: string) =>
     api.delete(`/teams/${teamId}/members/${memberId}`),

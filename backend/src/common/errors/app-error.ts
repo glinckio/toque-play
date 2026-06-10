@@ -159,6 +159,12 @@ export const AppError = {
   tournamentTooCloseToEdit: () =>
     withCode(BadRequestException, TournamentsErrorCode.TOURNAMENT_TOO_CLOSE_TO_EDIT),
 
+  tournamentNotInProgress: () =>
+    withCode(BadRequestException, TournamentsErrorCode.TOURNAMENT_NOT_IN_PROGRESS),
+
+  tournamentHasPendingMatches: () =>
+    withCode(BadRequestException, TournamentsErrorCode.TOURNAMENT_HAS_PENDING_MATCHES),
+
   stageDateTooSoon: () =>
     withCode(BadRequestException, TournamentsErrorCode.STAGE_DATE_TOO_SOON),
 

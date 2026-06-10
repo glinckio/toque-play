@@ -10,12 +10,12 @@ export declare class NotificationsService {
         platform: string;
     }>;
     removeToken(userId: string, token: string): Promise<void>;
-    findMine(userId: string, page?: number, limit?: number): Promise<{
+    findMine(userId: string, page?: number, limit?: number, unreadOnly?: boolean): Promise<{
         data: {
             id: string;
+            type: string;
             createdAt: Date;
             userId: string;
-            type: string;
             title: string;
             body: string;
             referenceId: string | null;
@@ -31,9 +31,9 @@ export declare class NotificationsService {
     }>;
     markAsRead(notificationId: string, userId: string): Promise<{
         id: string;
+        type: string;
         createdAt: Date;
         userId: string;
-        type: string;
         title: string;
         body: string;
         referenceId: string | null;

@@ -19,22 +19,12 @@ let HomeService = class HomeService {
         this.prisma = prisma;
     }
     async getDashboard(userId) {
-        const [upcomingRaw, popularRaw, friendliesRaw, acceptedFriendlies, unreadNotifications,] = await Promise.all([
+        const [upcomingTournaments, friendliesRaw, acceptedFriendlies, unreadNotifications,] = await Promise.all([
             this.getUpcomingTournaments(userId),
-            this.getPopularNearby(userId),
             this.getPendingFriendlies(userId),
             this.getAcceptedFriendlies(userId),
             this.getUnreadCount(userId),
         ]);
-        const upcomingTournaments = upcomingRaw;
-        const popularTournaments = popularRaw.map((t) => ({
-            id: t.id,
-            name: t.name,
-            startDate: t.stages[0]?.date?.toISOString() ?? '',
-            city: t.stages[0]?.city ?? '',
-            modality: t.categories[0]?.modality ?? '',
-            registrationCount: t._count.registrations,
-        }));
         const pendingFriendlies = friendliesRaw.map((f) => ({
             id: f.id,
             title: f.title,
@@ -45,48 +35,65 @@ let HomeService = class HomeService {
         }));
         return {
             upcomingTournaments,
-            popularTournaments,
             pendingFriendlies,
             acceptedFriendlies,
             unreadNotifications,
         };
     }
     async getUpcomingTournaments(userId) {
-        const statusFilter = { in: [client_1.TournamentStatus.PUBLISHED, client_1.TournamentStatus.REGISTRATION_OPEN, client_1.TournamentStatus.REGISTRATION_CLOSED, client_1.TournamentStatus.BRACKET_GENERATED, client_1.TournamentStatus.IN_PROGRESS] };
+        const activeStatus = { in: [client_1.TournamentStatus.PUBLISHED, client_1.TournamentStatus.REGISTRATION_OPEN, client_1.TournamentStatus.REGISTRATION_CLOSED, client_1.TournamentStatus.BRACKET_GENERATED, client_1.TournamentStatus.IN_PROGRESS] };
+        const discoverableStatus = { in: [client_1.TournamentStatus.PUBLISHED, client_1.TournamentStatus.REGISTRATION_OPEN, client_1.TournamentStatus.REGISTRATION_CLOSED] };
+        const select = {
+            id: true,
+            name: true,
+            stages: { select: { date: true, street: true, number: true, neighborhood: true, city: true, state: true }, orderBy: { date: 'asc' } },
+            categories: { select: { modality: true }, take: 1 },
+            _count: { select: { registrations: true } },
+        };
         const [registrations, created] = await Promise.all([
             this.prisma.registration.findMany({
                 where: {
                     userId,
                     status: { in: [client_1.RegistrationStatus.CONFIRMED, client_1.RegistrationStatus.PENDING_CONFIRMATION] },
-                    tournament: { status: statusFilter },
+                    tournament: { status: activeStatus },
                 },
-                select: {
-                    tournament: {
-                        select: {
-                            id: true,
-                            name: true,
-                            stages: { select: { date: true, street: true, number: true, neighborhood: true, city: true, state: true }, orderBy: { date: 'asc' } },
-                            categories: { select: { modality: true }, take: 1 },
-                            _count: { select: { registrations: true } },
-                        },
-                    },
-                },
-                take: 5,
+                select: { tournament: { select } },
+                take: 20,
             }),
             this.prisma.tournament.findMany({
-                where: { ownerId: userId, status: statusFilter },
-                select: {
-                    id: true,
-                    name: true,
-                    stages: { select: { date: true, street: true, number: true, neighborhood: true, city: true, state: true }, orderBy: { date: 'asc' } },
-                    categories: { select: { modality: true }, take: 1 },
-                    _count: { select: { registrations: true } },
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 5,
+                where: { ownerId: userId, status: activeStatus },
+                select,
+                take: 20,
             }),
         ]);
-        const mapTournament = (t) => {
+        const registeredMap = new Map();
+        for (const r of registrations) {
+            const t = r.tournament;
+            if (!registeredMap.has(t.id))
+                registeredMap.set(t.id, t);
+        }
+        for (const t of created) {
+            if (!registeredMap.has(t.id))
+                registeredMap.set(t.id, t);
+        }
+        const registered = Array.from(registeredMap.values());
+        const others = await this.prisma.tournament.findMany({
+            where: {
+                status: discoverableStatus,
+                id: { notIn: registered.map((t) => t.id) },
+                ownerId: { not: userId },
+            },
+            select,
+            take: 20,
+        });
+        const byDateAsc = (a, b) => {
+            const da = a.stages?.[0]?.date ? new Date(a.stages[0].date).getTime() : Infinity;
+            const db = b.stages?.[0]?.date ? new Date(b.stages[0].date).getTime() : Infinity;
+            return da - db;
+        };
+        registered.sort(byDateAsc);
+        others.sort(byDateAsc);
+        const mapTournament = (t, isRegistered) => {
             const s = t.stages?.[0];
             const addressParts = [s?.street, s?.number].filter(Boolean).join(', ');
             const location = [addressParts, s?.neighborhood, s?.city, s?.state].filter(Boolean).join(s?.neighborhood || addressParts ? ' — ' : '').replace(/ — /, s?.neighborhood && addressParts ? ', ' : ' — ');
@@ -106,64 +113,13 @@ let HomeService = class HomeService {
                 location: fullLocation,
                 modality: t.categories?.[0]?.modality ?? '',
                 registrationCount: t._count?.registrations ?? 0,
+                isRegistered,
             };
         };
-        const seen = new Set();
-        const merged = [];
-        for (const r of registrations) {
-            const t = r.tournament;
-            if (!seen.has(t.id)) {
-                seen.add(t.id);
-                merged.push(mapTournament(t));
-            }
-        }
-        for (const t of created) {
-            if (!seen.has(t.id)) {
-                seen.add(t.id);
-                merged.push(mapTournament(t));
-            }
-        }
-        return merged;
-    }
-    async getPopularNearby(userId) {
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { latitude: true, longitude: true },
-        });
-        if (!user?.latitude || !user?.longitude)
-            return [];
-        const kmPerDegreeLat = 111;
-        const kmPerDegreeLng = 111 * Math.cos((user.latitude * Math.PI) / 180);
-        const radius = 100;
-        const latDelta = radius / kmPerDegreeLat;
-        const lngDelta = radius / kmPerDegreeLng;
-        return this.prisma.tournament.findMany({
-            where: {
-                status: { in: [client_1.TournamentStatus.PUBLISHED, client_1.TournamentStatus.REGISTRATION_OPEN] },
-                stages: {
-                    some: {
-                        latitude: {
-                            gte: user.latitude - latDelta,
-                            lte: user.latitude + latDelta,
-                        },
-                        longitude: {
-                            gte: user.longitude - lngDelta,
-                            lte: user.longitude + lngDelta,
-                        },
-                    },
-                },
-            },
-            select: {
-                id: true,
-                name: true,
-                status: true,
-                stages: { select: { date: true, street: true, number: true, neighborhood: true, city: true, state: true }, orderBy: { date: 'asc' } },
-                categories: { select: { type: true, format: true, modality: true } },
-                _count: { select: { registrations: true } },
-            },
-            orderBy: { registrations: { _count: 'desc' } },
-            take: 5,
-        });
+        return [
+            ...registered.map((t) => mapTournament(t, true)),
+            ...others.map((t) => mapTournament(t, false)),
+        ].slice(0, 5);
     }
     async getPendingFriendlies(userId) {
         const userMemberIds = await this.prisma.teamMember.findMany({

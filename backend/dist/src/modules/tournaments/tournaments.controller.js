@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
-const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const platform_express_1 = require("@nestjs/platform-express");
 const tournaments_service_1 = require("./tournaments.service");
 const create_tournament_dto_1 = require("./dto/create-tournament.dto");
 const update_structure_dto_1 = require("./dto/update-structure.dto");
@@ -61,6 +61,9 @@ let TournamentsController = class TournamentsController {
     async startTournament(id, userId) {
         return this.tournamentsService.startTournament(id, userId);
     }
+    async completeTournament(id, userId) {
+        return this.tournamentsService.completeTournament(id, userId);
+    }
     async generateRefereeCode(id, userId) {
         return this.tournamentsService.generateRefereeCode(id, userId);
     }
@@ -78,6 +81,15 @@ let TournamentsController = class TournamentsController {
     }
     async saveAsDraft(id, userId) {
         return this.tournamentsService.saveAsDraft(id, userId);
+    }
+    async getBanners() {
+        return this.tournamentsService.getBanners();
+    }
+    async uploadCover(id, userId, file) {
+        return this.tournamentsService.uploadCover(id, userId, file);
+    }
+    async setBannerUrl(id, userId, imageUrl) {
+        return this.tournamentsService.setBannerUrl(id, userId, imageUrl);
     }
     async findMine(userId) {
         return this.tournamentsService.findMine(userId);
@@ -116,7 +128,6 @@ exports.TournamentsController = TournamentsController;
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
-    (0, roles_decorator_1.Roles)('ORGANIZADOR', 'SUPER_ADMIN'),
     (0, swagger_1.ApiOperation)({ summary: 'Criar torneio (rascunho)' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Torneio criado como DRAFT' }),
     __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
@@ -220,6 +231,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], TournamentsController.prototype, "startTournament", null);
 __decorate([
+    (0, common_1.Patch)(':id/complete'),
+    (0, swagger_1.ApiOperation)({ summary: 'Finalizar torneio (muda status para FINISHED)' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], TournamentsController.prototype, "completeTournament", null);
+__decorate([
     (0, common_1.Post)(':id/generate-referee-code'),
     (0, swagger_1.ApiOperation)({ summary: 'Gerar código de arbitro para o torneio' }),
     __param(0, (0, common_1.Param)('id')),
@@ -277,6 +297,34 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], TournamentsController.prototype, "saveAsDraft", null);
+__decorate([
+    (0, common_1.Get)('banners'),
+    (0, swagger_1.ApiOperation)({ summary: 'Listar banners padrão disponíveis' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], TournamentsController.prototype, "getBanners", null);
+__decorate([
+    (0, common_1.Post)(':id/cover'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', { limits: { fileSize: 10 * 1024 * 1024 } })),
+    (0, swagger_1.ApiOperation)({ summary: 'Upload de imagem de capa do torneio' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(2, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], TournamentsController.prototype, "uploadCover", null);
+__decorate([
+    (0, common_1.Patch)(':id/banner-url'),
+    (0, swagger_1.ApiOperation)({ summary: 'Definir URL de banner padrão para o torneio' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(2, (0, common_1.Body)('imageUrl')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", Promise)
+], TournamentsController.prototype, "setBannerUrl", null);
 __decorate([
     (0, common_1.Get)('mine'),
     (0, swagger_1.ApiOperation)({ summary: 'Meus torneios' }),

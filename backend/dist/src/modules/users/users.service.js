@@ -12,6 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../common/prisma.service");
+const storage_service_1 = require("../storage/storage.service");
+const app_error_1 = require("../../common/errors/app-error");
+const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE = 5 * 1024 * 1024;
 const DEFAULT_NOTIFICATION_PREFS = {
     messages: true,
     invites: true,
@@ -21,8 +25,10 @@ const DEFAULT_NOTIFICATION_PREFS = {
 };
 let UsersService = class UsersService {
     prisma;
-    constructor(prisma) {
+    storage;
+    constructor(prisma, storage) {
         this.prisma = prisma;
+        this.storage = storage;
     }
     async getProfile(userId) {
         const user = await this.prisma.user.findUnique({
@@ -120,6 +126,39 @@ let UsersService = class UsersService {
         const prefs = { ...DEFAULT_NOTIFICATION_PREFS, ...(user.notificationPreferences || {}) };
         return prefs[category] !== false;
     }
+    async uploadAvatar(userId, file) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user)
+            throw new common_1.NotFoundException('User not found');
+        if (!ALLOWED_MIMES.includes(file.mimetype))
+            throw app_error_1.AppError.invalidFileType();
+        if (file.size > MAX_SIZE)
+            throw app_error_1.AppError.fileTooLarge();
+        if (user.avatarUrl) {
+            const oldKey = this.storage.extractKeyFromUrl(user.avatarUrl);
+            if (oldKey)
+                await this.storage.deleteFile(oldKey);
+        }
+        const ext = file.originalname.split('.').pop() ?? 'jpg';
+        const key = `users/${userId}/avatar-${Date.now()}.${ext}`;
+        const avatarUrl = await this.storage.uploadFile(file.buffer, key, file.mimetype);
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: { avatarUrl },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                avatarUrl: true,
+                phone: true,
+                bio: true,
+                isFirstAccess: true,
+                notificationPreferences: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+        });
+    }
     async getUserStats(userId) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
@@ -172,6 +211,7 @@ let UsersService = class UsersService {
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        storage_service_1.StorageService])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

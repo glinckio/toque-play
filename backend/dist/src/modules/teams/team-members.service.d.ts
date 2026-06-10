@@ -19,16 +19,17 @@ export declare class TeamMembersService {
         };
         invitedUser: {
             id: string;
-            email: string;
             name: string;
             avatarUrl: string | null;
+            email: string;
         };
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.InvitationStatus;
         createdAt: Date;
         updatedAt: Date;
         teamId: string;
+        positions: import(".prisma/client").$Enums.VolleyballPosition[];
+        status: import(".prisma/client").$Enums.InvitationStatus;
         invitedUserId: string;
         invitedById: string;
     }>;
@@ -45,10 +46,11 @@ export declare class TeamMembersService {
         };
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.InvitationStatus;
         createdAt: Date;
         updatedAt: Date;
         teamId: string;
+        positions: import(".prisma/client").$Enums.VolleyballPosition[];
+        status: import(".prisma/client").$Enums.InvitationStatus;
         invitedUserId: string;
         invitedById: string;
     })[]>;
@@ -60,16 +62,17 @@ export declare class TeamMembersService {
         };
         invitedUser: {
             id: string;
-            email: string;
             name: string;
             avatarUrl: string | null;
+            email: string;
         };
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.InvitationStatus;
         createdAt: Date;
         updatedAt: Date;
         teamId: string;
+        positions: import(".prisma/client").$Enums.VolleyballPosition[];
+        status: import(".prisma/client").$Enums.InvitationStatus;
         invitedUserId: string;
         invitedById: string;
     }>;
@@ -81,59 +84,65 @@ export declare class TeamMembersService {
         };
         invitedUser: {
             id: string;
-            email: string;
             name: string;
             avatarUrl: string | null;
+            email: string;
         };
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.InvitationStatus;
         createdAt: Date;
         updatedAt: Date;
         teamId: string;
+        positions: import(".prisma/client").$Enums.VolleyballPosition[];
+        status: import(".prisma/client").$Enums.InvitationStatus;
         invitedUserId: string;
         invitedById: string;
     }>;
     addGuest(teamId: string, ownerId: string, dto: AddGuestDto): Promise<{
         id: string;
+        teamId: string;
+        userId: string | null;
         guestName: string | null;
         cpf: string | null;
         isGuest: boolean;
         isCaptain: boolean;
-        userId: string | null;
-        teamId: string;
+        positions: import(".prisma/client").$Enums.VolleyballPosition[];
     }>;
     findAll(teamId: string, userId: string): Promise<({
         user: {
             id: string;
-            email: string;
             name: string;
             avatarUrl: string | null;
+            email: string;
+            phone: string | null;
         } | null;
     } & {
         id: string;
+        teamId: string;
+        userId: string | null;
         guestName: string | null;
         cpf: string | null;
         isGuest: boolean;
         isCaptain: boolean;
-        userId: string | null;
-        teamId: string;
+        positions: import(".prisma/client").$Enums.VolleyballPosition[];
     })[]>;
     update(teamId: string, memberId: string, ownerId: string, dto: UpdateMemberDto): Promise<{
         user: {
             id: string;
-            email: string;
             name: string;
             avatarUrl: string | null;
+            email: string;
+            phone: string | null;
         } | null;
     } & {
         id: string;
+        teamId: string;
+        userId: string | null;
         guestName: string | null;
         cpf: string | null;
         isGuest: boolean;
         isCaptain: boolean;
-        userId: string | null;
-        teamId: string;
+        positions: import(".prisma/client").$Enums.VolleyballPosition[];
     }>;
     remove(teamId: string, memberId: string, ownerId: string): Promise<void>;
     private checkCpfUnique;

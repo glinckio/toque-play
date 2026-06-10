@@ -87,6 +87,7 @@ export default function DatePickerField({ label, value, onChange, mode, required
                 onChange={handleChange}
                 locale="pt-BR"
                 style={s.iosPicker}
+                textColor={colors.text}
               />
             </View>
           </View>
@@ -110,8 +111,8 @@ const s = StyleSheet.create({
   label: { fontSize: 10, fontFamily: fonts.text.semiBold, color: colors.textMuted, marginBottom: 8, letterSpacing: 1.5 },
   touchable: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: colors.inputBackground, borderRadius: 14,
+    borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
   },
   value: { fontSize: 14, fontFamily: fonts.text.regular, color: colors.text },
@@ -127,6 +128,6 @@ const s = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)',
   },
   modalCancel: { fontSize: 14, fontFamily: fonts.text.semiBold, color: colors.textMuted },
-  modalConfirm: { fontSize: 14, fontFamily: fonts.text.bold, color: colors.primaryGlow },
+  modalConfirm: { fontSize: 14, fontFamily: fonts.text.bold, color: colors.primaryLight },
   iosPicker: { height: 200 },
 });

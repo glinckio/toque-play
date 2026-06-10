@@ -54,11 +54,13 @@ export class NotificationsController {
     @CurrentUser('id') userId: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('unread') unread?: string,
   ) {
     return this.notificationsService.findMine(
       userId,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 20,
+      unread === 'true',
     );
   }
 

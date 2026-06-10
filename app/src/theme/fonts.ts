@@ -1,42 +1,35 @@
 export const fonts = {
   title: {
-    display: 'BebasNeue-Regular',
-    heading: 'Rajdhani-Bold',
+    regular: 'BebasNeue-Regular',
   },
   text: {
-    regular: 'Inter-Regular',
-    medium: 'Inter-Medium',
-    semiBold: 'Inter-SemiBold',
-    bold: 'Inter-Bold',
+    regular: 'Manrope-Regular',
+    medium: 'Manrope-Medium',
+    semiBold: 'Manrope-SemiBold',
+    bold: 'Manrope-Bold',
   },
-  display: {
-    regular: 'SFProDisplay-Regular',
-    medium: 'SFProDisplay-Medium',
-    bold: 'SFProDisplay-Bold',
+  mono: {
+    regular: 'AzeretMono-Regular',
+    bold: 'AzeretMono-Bold',
   },
-  body: {
-    light: 'Rajdhani-Light',
-    regular: 'Rajdhani-Regular',
-    medium: 'Rajdhani-Medium',
-    semiBold: 'Rajdhani-SemiBold',
-    bold: 'Rajdhani-Bold',
+  form: {
+    regular: 'IBMPlexSans-Regular',
+    medium: 'IBMPlexSans-Medium',
+    semiBold: 'IBMPlexSans-SemiBold',
   },
 } as const;
 
 export const fontAssets = {
   fonts: [
     require('../../assets/fonts/Bebas_Neue/BebasNeue-Regular.ttf'),
-    require('../../assets/fonts/Rajdhani/Rajdhani-Light.ttf'),
-    require('../../assets/fonts/Rajdhani/Rajdhani-Regular.ttf'),
-    require('../../assets/fonts/Rajdhani/Rajdhani-Medium.ttf'),
-    require('../../assets/fonts/Rajdhani/Rajdhani-SemiBold.ttf'),
-    require('../../assets/fonts/Rajdhani/Rajdhani-Bold.ttf'),
-    require('../../assets/fonts/Inter/Inter_18pt-Regular.ttf'),
-    require('../../assets/fonts/Inter/Inter_18pt-Medium.ttf'),
-    require('../../assets/fonts/Inter/Inter_18pt-SemiBold.ttf'),
-    require('../../assets/fonts/Inter/Inter_18pt-Bold.ttf'),
-    require('../../assets/fonts/Sf_pro_display/SFPRODISPLAYREGULAR.otf'),
-    require('../../assets/fonts/Sf_pro_display/SFPRODISPLAYMEDIUM.otf'),
-    require('../../assets/fonts/Sf_pro_display/SFPRODISPLAYBOLD.otf'),
+    require('../../assets/fonts/Manrope/Manrope-Regular.ttf'),
+    require('../../assets/fonts/Manrope/Manrope-Medium.ttf'),
+    require('../../assets/fonts/Manrope/Manrope-SemiBold.ttf'),
+    require('../../assets/fonts/Manrope/Manrope-Bold.ttf'),
+    require('../../assets/fonts/Azeret_Mono/AzeretMono-Regular.ttf'),
+    require('../../assets/fonts/Azeret_Mono/AzeretMono-Bold.ttf'),
+    require('../../assets/fonts/IBM_Plex_Sans/IBMPlexSans-Regular.ttf'),
+    require('../../assets/fonts/IBM_Plex_Sans/IBMPlexSans-Medium.ttf'),
+    require('../../assets/fonts/IBM_Plex_Sans/IBMPlexSans-SemiBold.ttf'),
   ],
 };

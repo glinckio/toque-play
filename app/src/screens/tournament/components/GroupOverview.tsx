@@ -6,6 +6,8 @@ import TeamAvatar from '../../../components/TeamAvatar';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts } from '../../../theme/fonts';
+import { typography } from '../../../theme/typography';
+import { radius } from '../../../theme/radius';
 
 interface Props {
   brackets: BracketResponse[];
@@ -53,11 +55,9 @@ export default function GroupOverview({ brackets }: Props) {
   const bracket = brackets[0];
   const matches = bracket.matches;
 
-  // Check if matches have group field
   const hasGroupField = matches.some((m) => m.group !== null && m.group !== undefined);
 
   if (hasGroupField) {
-    // GROUPS_THEN_ELIMINATION: group by match.group
     const groupMap = new Map<number, Match[]>();
     for (const m of matches) {
       const g = m.group ?? 0;
@@ -118,43 +118,46 @@ function getAllTeamsFromMatches(matches: Match[]): { id: string; name: string; a
 const styles = StyleSheet.create({
   groupCard: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderRadius: radius.card,
     marginBottom: spacing.lg,
     overflow: 'hidden',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 2,
   },
   groupHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.md,
   },
   groupLabel: {
-    fontSize: 18,
-    fontFamily: fonts.title.display,
+    fontSize: typography.sizes.heading,
+    fontFamily: fonts.title.regular,
     color: colors.text,
-    letterSpacing: 2,
+    letterSpacing: typography.letterSpacing.medium,
   },
   groupCount: {
-    fontSize: 11,
+    fontSize: typography.sizes.md,
     fontFamily: fonts.text.medium,
     color: colors.textMuted,
-    letterSpacing: 1,
+    letterSpacing: typography.letterSpacing.medium,
   },
   teamsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.xl,
     gap: spacing.sm,
   },
   teamCard: {
     width: '47%',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 12,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: radius.lg,
     padding: spacing.md,
     alignItems: 'center',
     gap: spacing.xs,
@@ -166,16 +169,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   teamName: {
-    fontSize: 12,
+    fontSize: typography.sizes.md,
     fontFamily: fonts.text.semiBold,
     color: colors.text,
     textAlign: 'center',
-    letterSpacing: 0.5,
   },
   teamStats: {
-    fontSize: 10,
+    fontSize: typography.sizes.md,
     fontFamily: fonts.text.medium,
-    color: colors.primaryGlow,
-    letterSpacing: 1,
+    color: colors.primary,
+    letterSpacing: typography.letterSpacing.medium,
   },
 });

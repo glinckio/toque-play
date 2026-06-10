@@ -6,7 +6,16 @@
       "Bash(xcrun simctl:*)",
       "Bash(ipconfig)",
       "Bash(powershell -Command '\\(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notmatch '\\\\''Loopback'\\\\'' } | Select-Object IPAddress, InterfaceAlias\\).PSObject.Properties | ForEach-Object { $_.Value }')",
-      "Bash(powershell -Command 'Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notmatch '\\\\''Loopback'\\\\'' } | Format-Table IPAddress, InterfaceAlias')"
+      "Bash(powershell -Command 'Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notmatch '\\\\''Loopback'\\\\'' } | Format-Table IPAddress, InterfaceAlias')",
+      "Bash(mkdir:*)",
+      "Bash(curl:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node -e \"const fs = require\\('fs'\\); const c = fs.readFileSync\\('src/screens/match/LiveMatchScreen.tsx','utf8'\\); const lines = c.split\\('\\\\n'\\); console.log\\('Total lines:', lines.length\\); console.log\\('Line 529:', JSON.stringify\\(lines[528]\\)\\); console.log\\('Line 530:', JSON.stringify\\(lines[529]\\)\\); console.log\\('Line 531:', JSON.stringify\\(lines[530]\\)\\);\")",
+      "Bash(npx prisma:*)",
+      "Bash(sort -t'\\(' -k1,1 -u)",
+      "Bash(ls:*)",
+      "Bash(npx ts-node:*)"
     ]
   }
 }

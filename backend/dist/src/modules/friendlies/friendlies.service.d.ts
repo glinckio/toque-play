@@ -9,26 +9,6 @@ export declare class FriendliesService {
     constructor(prisma: PrismaService, notificationService: NotificationService);
     setChatService(chatService: any): void;
     create(userId: string, dto: CreateFriendlyDto): Promise<({
-        requester: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        };
-        requesterTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challenged: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challengedTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
         match: ({
             teamA: {
                 id: string;
@@ -49,8 +29,8 @@ export declare class FriendliesService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
                 id: string;
@@ -58,27 +38,48 @@ export declare class FriendliesService {
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
+            position: number;
+            round: number;
+            refereeId: string | null;
+            friendlyId: string | null;
+            bracketId: string | null;
+            group: number | null;
+            label: string | null;
             teamAId: string | null;
             teamBId: string | null;
             scoreTeamA: number;
             scoreTeamB: number;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
-            bracketId: string | null;
-            friendlyId: string | null;
-            round: number;
-            position: number;
-            scheduledAt: Date | null;
-            group: number | null;
-            bestOfSets: number | null;
-            label: string | null;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
         }) | null;
+        requester: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        };
+        requesterTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challenged: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challengedTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
         athletes: ({
             teamMember: {
                 user: {
@@ -88,72 +89,53 @@ export declare class FriendliesService {
                 } | null;
             } & {
                 id: string;
+                teamId: string;
+                userId: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
+                positions: import(".prisma/client").$Enums.VolleyballPosition[];
             };
         } & {
             id: string;
             isCaptain: boolean;
+            teamMemberId: string;
             friendlyId: string;
             side: string;
-            teamMemberId: string;
         })[];
     } & {
         id: string;
+        modality: string | null;
+        startTime: Date | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         status: import(".prisma/client").$Enums.FriendlyStatus;
         latitude: number | null;
         longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        date: Date;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        regionRadius: number | null;
         title: string | null;
+        categoryFormat: string | null;
+        scoreTeamA: number | null;
+        scoreTeamB: number | null;
+        matchId: string | null;
         requesterId: string;
         requesterTeamId: string | null;
         challengedId: string | null;
         challengedTeamId: string | null;
-        date: Date;
-        startTime: Date | null;
-        address: string | null;
         addressNumber: string | null;
-        city: string | null;
-        state: string | null;
-        regionRadius: number | null;
-        scoreTeamA: number | null;
-        scoreTeamB: number | null;
-        modality: string | null;
-        categoryFormat: string | null;
-        matchId: string | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }) | null>;
     accept(friendlyId: string, userId: string, dto: {
         athleteIds: string[];
         captainId?: string;
     }): Promise<({
-        requester: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        };
-        requesterTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challenged: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challengedTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
         match: ({
             teamA: {
                 id: string;
@@ -174,8 +156,8 @@ export declare class FriendliesService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
                 id: string;
@@ -183,27 +165,48 @@ export declare class FriendliesService {
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
+            position: number;
+            round: number;
+            refereeId: string | null;
+            friendlyId: string | null;
+            bracketId: string | null;
+            group: number | null;
+            label: string | null;
             teamAId: string | null;
             teamBId: string | null;
             scoreTeamA: number;
             scoreTeamB: number;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
-            bracketId: string | null;
-            friendlyId: string | null;
-            round: number;
-            position: number;
-            scheduledAt: Date | null;
-            group: number | null;
-            bestOfSets: number | null;
-            label: string | null;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
         }) | null;
+        requester: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        };
+        requesterTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challenged: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challengedTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
         athletes: ({
             teamMember: {
                 user: {
@@ -213,69 +216,50 @@ export declare class FriendliesService {
                 } | null;
             } & {
                 id: string;
+                teamId: string;
+                userId: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
+                positions: import(".prisma/client").$Enums.VolleyballPosition[];
             };
         } & {
             id: string;
             isCaptain: boolean;
+            teamMemberId: string;
             friendlyId: string;
             side: string;
-            teamMemberId: string;
         })[];
     } & {
         id: string;
+        modality: string | null;
+        startTime: Date | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         status: import(".prisma/client").$Enums.FriendlyStatus;
         latitude: number | null;
         longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        date: Date;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        regionRadius: number | null;
         title: string | null;
+        categoryFormat: string | null;
+        scoreTeamA: number | null;
+        scoreTeamB: number | null;
+        matchId: string | null;
         requesterId: string;
         requesterTeamId: string | null;
         challengedId: string | null;
         challengedTeamId: string | null;
-        date: Date;
-        startTime: Date | null;
-        address: string | null;
         addressNumber: string | null;
-        city: string | null;
-        state: string | null;
-        regionRadius: number | null;
-        scoreTeamA: number | null;
-        scoreTeamB: number | null;
-        modality: string | null;
-        categoryFormat: string | null;
-        matchId: string | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }) | null>;
     reject(friendlyId: string, userId: string): Promise<{
-        requester: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        };
-        requesterTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challenged: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challengedTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
         match: ({
             teamA: {
                 id: string;
@@ -296,8 +280,8 @@ export declare class FriendliesService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
                 id: string;
@@ -305,27 +289,48 @@ export declare class FriendliesService {
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
+            position: number;
+            round: number;
+            refereeId: string | null;
+            friendlyId: string | null;
+            bracketId: string | null;
+            group: number | null;
+            label: string | null;
             teamAId: string | null;
             teamBId: string | null;
             scoreTeamA: number;
             scoreTeamB: number;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
-            bracketId: string | null;
-            friendlyId: string | null;
-            round: number;
-            position: number;
-            scheduledAt: Date | null;
-            group: number | null;
-            bestOfSets: number | null;
-            label: string | null;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
         }) | null;
+        requester: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        };
+        requesterTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challenged: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challengedTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
         athletes: ({
             teamMember: {
                 user: {
@@ -335,69 +340,50 @@ export declare class FriendliesService {
                 } | null;
             } & {
                 id: string;
+                teamId: string;
+                userId: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
+                positions: import(".prisma/client").$Enums.VolleyballPosition[];
             };
         } & {
             id: string;
             isCaptain: boolean;
+            teamMemberId: string;
             friendlyId: string;
             side: string;
-            teamMemberId: string;
         })[];
     } & {
         id: string;
+        modality: string | null;
+        startTime: Date | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         status: import(".prisma/client").$Enums.FriendlyStatus;
         latitude: number | null;
         longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        date: Date;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        regionRadius: number | null;
         title: string | null;
+        categoryFormat: string | null;
+        scoreTeamA: number | null;
+        scoreTeamB: number | null;
+        matchId: string | null;
         requesterId: string;
         requesterTeamId: string | null;
         challengedId: string | null;
         challengedTeamId: string | null;
-        date: Date;
-        startTime: Date | null;
-        address: string | null;
         addressNumber: string | null;
-        city: string | null;
-        state: string | null;
-        regionRadius: number | null;
-        scoreTeamA: number | null;
-        scoreTeamB: number | null;
-        modality: string | null;
-        categoryFormat: string | null;
-        matchId: string | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }>;
     cancel(friendlyId: string, userId: string): Promise<{
-        requester: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        };
-        requesterTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challenged: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challengedTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
         match: ({
             teamA: {
                 id: string;
@@ -418,8 +404,8 @@ export declare class FriendliesService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
                 id: string;
@@ -427,27 +413,48 @@ export declare class FriendliesService {
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
+            position: number;
+            round: number;
+            refereeId: string | null;
+            friendlyId: string | null;
+            bracketId: string | null;
+            group: number | null;
+            label: string | null;
             teamAId: string | null;
             teamBId: string | null;
             scoreTeamA: number;
             scoreTeamB: number;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
-            bracketId: string | null;
-            friendlyId: string | null;
-            round: number;
-            position: number;
-            scheduledAt: Date | null;
-            group: number | null;
-            bestOfSets: number | null;
-            label: string | null;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
         }) | null;
+        requester: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        };
+        requesterTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challenged: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challengedTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
         athletes: ({
             teamMember: {
                 user: {
@@ -457,69 +464,50 @@ export declare class FriendliesService {
                 } | null;
             } & {
                 id: string;
+                teamId: string;
+                userId: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
+                positions: import(".prisma/client").$Enums.VolleyballPosition[];
             };
         } & {
             id: string;
             isCaptain: boolean;
+            teamMemberId: string;
             friendlyId: string;
             side: string;
-            teamMemberId: string;
         })[];
     } & {
         id: string;
+        modality: string | null;
+        startTime: Date | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         status: import(".prisma/client").$Enums.FriendlyStatus;
         latitude: number | null;
         longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        date: Date;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        regionRadius: number | null;
         title: string | null;
+        categoryFormat: string | null;
+        scoreTeamA: number | null;
+        scoreTeamB: number | null;
+        matchId: string | null;
         requesterId: string;
         requesterTeamId: string | null;
         challengedId: string | null;
         challengedTeamId: string | null;
-        date: Date;
-        startTime: Date | null;
-        address: string | null;
         addressNumber: string | null;
-        city: string | null;
-        state: string | null;
-        regionRadius: number | null;
-        scoreTeamA: number | null;
-        scoreTeamB: number | null;
-        modality: string | null;
-        categoryFormat: string | null;
-        matchId: string | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }>;
     selectAthletes(friendlyId: string, userId: string, athleteIds: string[]): Promise<({
-        requester: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        };
-        requesterTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challenged: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challengedTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
         match: ({
             teamA: {
                 id: string;
@@ -540,8 +528,8 @@ export declare class FriendliesService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
                 id: string;
@@ -549,27 +537,48 @@ export declare class FriendliesService {
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
+            position: number;
+            round: number;
+            refereeId: string | null;
+            friendlyId: string | null;
+            bracketId: string | null;
+            group: number | null;
+            label: string | null;
             teamAId: string | null;
             teamBId: string | null;
             scoreTeamA: number;
             scoreTeamB: number;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
-            bracketId: string | null;
-            friendlyId: string | null;
-            round: number;
-            position: number;
-            scheduledAt: Date | null;
-            group: number | null;
-            bestOfSets: number | null;
-            label: string | null;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
         }) | null;
+        requester: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        };
+        requesterTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challenged: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challengedTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
         athletes: ({
             teamMember: {
                 user: {
@@ -579,73 +588,54 @@ export declare class FriendliesService {
                 } | null;
             } & {
                 id: string;
+                teamId: string;
+                userId: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
+                positions: import(".prisma/client").$Enums.VolleyballPosition[];
             };
         } & {
             id: string;
             isCaptain: boolean;
+            teamMemberId: string;
             friendlyId: string;
             side: string;
-            teamMemberId: string;
         })[];
     } & {
         id: string;
+        modality: string | null;
+        startTime: Date | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         status: import(".prisma/client").$Enums.FriendlyStatus;
         latitude: number | null;
         longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        date: Date;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        regionRadius: number | null;
         title: string | null;
+        categoryFormat: string | null;
+        scoreTeamA: number | null;
+        scoreTeamB: number | null;
+        matchId: string | null;
         requesterId: string;
         requesterTeamId: string | null;
         challengedId: string | null;
         challengedTeamId: string | null;
-        date: Date;
-        startTime: Date | null;
-        address: string | null;
         addressNumber: string | null;
-        city: string | null;
-        state: string | null;
-        regionRadius: number | null;
-        scoreTeamA: number | null;
-        scoreTeamB: number | null;
-        modality: string | null;
-        categoryFormat: string | null;
-        matchId: string | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }) | null>;
     generateRefereeCode(friendlyId: string, userId: string): Promise<{
         code: string;
     }>;
     enterRefereeCode(userId: string, code: string): Promise<{
         friendly: ({
-            requester: {
-                id: string;
-                name: string;
-                avatarUrl: string | null;
-            };
-            requesterTeam: {
-                id: string;
-                name: string;
-                avatarUrl: string | null;
-            } | null;
-            challenged: {
-                id: string;
-                name: string;
-                avatarUrl: string | null;
-            } | null;
-            challengedTeam: {
-                id: string;
-                name: string;
-                avatarUrl: string | null;
-            } | null;
             match: ({
                 teamA: {
                     id: string;
@@ -666,8 +656,8 @@ export declare class FriendliesService {
                     id: string;
                     matchId: string;
                     setNumber: number;
-                    scoredBy: string;
                     timestamp: Date;
+                    scoredBy: string;
                 }[];
                 winner: {
                     id: string;
@@ -675,27 +665,48 @@ export declare class FriendliesService {
                 } | null;
             } & {
                 id: string;
+                bestOfSets: number | null;
+                tiebreakScore: number | null;
                 status: import(".prisma/client").$Enums.MatchStatus;
+                refereeCode: string | null;
+                refereeCodeExpiresAt: Date | null;
+                scheduledAt: Date | null;
+                position: number;
+                round: number;
+                refereeId: string | null;
+                friendlyId: string | null;
+                bracketId: string | null;
+                group: number | null;
+                label: string | null;
                 teamAId: string | null;
                 teamBId: string | null;
                 scoreTeamA: number;
                 scoreTeamB: number;
-                refereeCode: string | null;
-                refereeCodeExpiresAt: Date | null;
-                bracketId: string | null;
-                friendlyId: string | null;
-                round: number;
-                position: number;
-                scheduledAt: Date | null;
-                group: number | null;
-                bestOfSets: number | null;
-                label: string | null;
                 nextMatchId: string | null;
                 winnerId: string | null;
-                refereeId: string | null;
                 startedAt: Date | null;
                 finishedAt: Date | null;
             }) | null;
+            requester: {
+                id: string;
+                name: string;
+                avatarUrl: string | null;
+            };
+            requesterTeam: {
+                id: string;
+                name: string;
+                avatarUrl: string | null;
+            } | null;
+            challenged: {
+                id: string;
+                name: string;
+                avatarUrl: string | null;
+            } | null;
+            challengedTeam: {
+                id: string;
+                name: string;
+                avatarUrl: string | null;
+            } | null;
             athletes: ({
                 teamMember: {
                     user: {
@@ -705,47 +716,48 @@ export declare class FriendliesService {
                     } | null;
                 } & {
                     id: string;
+                    teamId: string;
+                    userId: string | null;
                     guestName: string | null;
                     cpf: string | null;
                     isGuest: boolean;
                     isCaptain: boolean;
-                    userId: string | null;
-                    teamId: string;
+                    positions: import(".prisma/client").$Enums.VolleyballPosition[];
                 };
             } & {
                 id: string;
                 isCaptain: boolean;
+                teamMemberId: string;
                 friendlyId: string;
                 side: string;
-                teamMemberId: string;
             })[];
         } & {
             id: string;
+            modality: string | null;
+            startTime: Date | null;
+            description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             status: import(".prisma/client").$Enums.FriendlyStatus;
             latitude: number | null;
             longitude: number | null;
-            createdAt: Date;
-            updatedAt: Date;
-            description: string | null;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            date: Date;
+            address: string | null;
+            city: string | null;
+            state: string | null;
+            regionRadius: number | null;
             title: string | null;
+            categoryFormat: string | null;
+            scoreTeamA: number | null;
+            scoreTeamB: number | null;
+            matchId: string | null;
             requesterId: string;
             requesterTeamId: string | null;
             challengedId: string | null;
             challengedTeamId: string | null;
-            date: Date;
-            startTime: Date | null;
-            address: string | null;
             addressNumber: string | null;
-            city: string | null;
-            state: string | null;
-            regionRadius: number | null;
-            scoreTeamA: number | null;
-            scoreTeamB: number | null;
-            modality: string | null;
-            categoryFormat: string | null;
-            matchId: string | null;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
         }) | null;
         match: ({
             teamA: {
@@ -769,49 +781,30 @@ export declare class FriendliesService {
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
+            position: number;
+            round: number;
+            refereeId: string | null;
+            friendlyId: string | null;
+            bracketId: string | null;
+            group: number | null;
+            label: string | null;
             teamAId: string | null;
             teamBId: string | null;
             scoreTeamA: number;
             scoreTeamB: number;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
-            bracketId: string | null;
-            friendlyId: string | null;
-            round: number;
-            position: number;
-            scheduledAt: Date | null;
-            group: number | null;
-            bestOfSets: number | null;
-            label: string | null;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
         }) | null;
     }>;
     findMine(userId: string, query: QueryFriendlyDto): Promise<({
-        requester: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        };
-        requesterTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challenged: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challengedTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
         match: ({
             teamA: {
                 id: string;
@@ -832,8 +825,8 @@ export declare class FriendliesService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
                 id: string;
@@ -841,27 +834,48 @@ export declare class FriendliesService {
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
+            position: number;
+            round: number;
+            refereeId: string | null;
+            friendlyId: string | null;
+            bracketId: string | null;
+            group: number | null;
+            label: string | null;
             teamAId: string | null;
             teamBId: string | null;
             scoreTeamA: number;
             scoreTeamB: number;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
-            bracketId: string | null;
-            friendlyId: string | null;
-            round: number;
-            position: number;
-            scheduledAt: Date | null;
-            group: number | null;
-            bestOfSets: number | null;
-            label: string | null;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
         }) | null;
+        requester: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        };
+        requesterTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challenged: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challengedTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
         athletes: ({
             teamMember: {
                 user: {
@@ -871,69 +885,50 @@ export declare class FriendliesService {
                 } | null;
             } & {
                 id: string;
+                teamId: string;
+                userId: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
+                positions: import(".prisma/client").$Enums.VolleyballPosition[];
             };
         } & {
             id: string;
             isCaptain: boolean;
+            teamMemberId: string;
             friendlyId: string;
             side: string;
-            teamMemberId: string;
         })[];
     } & {
         id: string;
+        modality: string | null;
+        startTime: Date | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         status: import(".prisma/client").$Enums.FriendlyStatus;
         latitude: number | null;
         longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        date: Date;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        regionRadius: number | null;
         title: string | null;
+        categoryFormat: string | null;
+        scoreTeamA: number | null;
+        scoreTeamB: number | null;
+        matchId: string | null;
         requesterId: string;
         requesterTeamId: string | null;
         challengedId: string | null;
         challengedTeamId: string | null;
-        date: Date;
-        startTime: Date | null;
-        address: string | null;
         addressNumber: string | null;
-        city: string | null;
-        state: string | null;
-        regionRadius: number | null;
-        scoreTeamA: number | null;
-        scoreTeamB: number | null;
-        modality: string | null;
-        categoryFormat: string | null;
-        matchId: string | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     })[]>;
     findNearby(query: NearbyQueryDto): Promise<({
-        requester: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        };
-        requesterTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challenged: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challengedTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
         match: ({
             teamA: {
                 id: string;
@@ -954,8 +949,8 @@ export declare class FriendliesService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
                 id: string;
@@ -963,27 +958,48 @@ export declare class FriendliesService {
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
+            position: number;
+            round: number;
+            refereeId: string | null;
+            friendlyId: string | null;
+            bracketId: string | null;
+            group: number | null;
+            label: string | null;
             teamAId: string | null;
             teamBId: string | null;
             scoreTeamA: number;
             scoreTeamB: number;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
-            bracketId: string | null;
-            friendlyId: string | null;
-            round: number;
-            position: number;
-            scheduledAt: Date | null;
-            group: number | null;
-            bestOfSets: number | null;
-            label: string | null;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
         }) | null;
+        requester: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        };
+        requesterTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challenged: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challengedTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
         athletes: ({
             teamMember: {
                 user: {
@@ -993,69 +1009,50 @@ export declare class FriendliesService {
                 } | null;
             } & {
                 id: string;
+                teamId: string;
+                userId: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
+                positions: import(".prisma/client").$Enums.VolleyballPosition[];
             };
         } & {
             id: string;
             isCaptain: boolean;
+            teamMemberId: string;
             friendlyId: string;
             side: string;
-            teamMemberId: string;
         })[];
     } & {
         id: string;
+        modality: string | null;
+        startTime: Date | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         status: import(".prisma/client").$Enums.FriendlyStatus;
         latitude: number | null;
         longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        date: Date;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        regionRadius: number | null;
         title: string | null;
+        categoryFormat: string | null;
+        scoreTeamA: number | null;
+        scoreTeamB: number | null;
+        matchId: string | null;
         requesterId: string;
         requesterTeamId: string | null;
         challengedId: string | null;
         challengedTeamId: string | null;
-        date: Date;
-        startTime: Date | null;
-        address: string | null;
         addressNumber: string | null;
-        city: string | null;
-        state: string | null;
-        regionRadius: number | null;
-        scoreTeamA: number | null;
-        scoreTeamB: number | null;
-        modality: string | null;
-        categoryFormat: string | null;
-        matchId: string | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     })[]>;
     findOne(friendlyId: string, userId: string): Promise<{
-        requester: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        };
-        requesterTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challenged: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challengedTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
         match: ({
             teamA: {
                 id: string;
@@ -1076,8 +1073,8 @@ export declare class FriendliesService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
                 id: string;
@@ -1085,27 +1082,48 @@ export declare class FriendliesService {
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
+            position: number;
+            round: number;
+            refereeId: string | null;
+            friendlyId: string | null;
+            bracketId: string | null;
+            group: number | null;
+            label: string | null;
             teamAId: string | null;
             teamBId: string | null;
             scoreTeamA: number;
             scoreTeamB: number;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
-            bracketId: string | null;
-            friendlyId: string | null;
-            round: number;
-            position: number;
-            scheduledAt: Date | null;
-            group: number | null;
-            bestOfSets: number | null;
-            label: string | null;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
         }) | null;
+        requester: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        };
+        requesterTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challenged: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challengedTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
         athletes: ({
             teamMember: {
                 user: {
@@ -1115,73 +1133,54 @@ export declare class FriendliesService {
                 } | null;
             } & {
                 id: string;
+                teamId: string;
+                userId: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
+                positions: import(".prisma/client").$Enums.VolleyballPosition[];
             };
         } & {
             id: string;
             isCaptain: boolean;
+            teamMemberId: string;
             friendlyId: string;
             side: string;
-            teamMemberId: string;
         })[];
     } & {
         id: string;
+        modality: string | null;
+        startTime: Date | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         status: import(".prisma/client").$Enums.FriendlyStatus;
         latitude: number | null;
         longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        date: Date;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        regionRadius: number | null;
         title: string | null;
+        categoryFormat: string | null;
+        scoreTeamA: number | null;
+        scoreTeamB: number | null;
+        matchId: string | null;
         requesterId: string;
         requesterTeamId: string | null;
         challengedId: string | null;
         challengedTeamId: string | null;
-        date: Date;
-        startTime: Date | null;
-        address: string | null;
         addressNumber: string | null;
-        city: string | null;
-        state: string | null;
-        regionRadius: number | null;
-        scoreTeamA: number | null;
-        scoreTeamB: number | null;
-        modality: string | null;
-        categoryFormat: string | null;
-        matchId: string | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     }>;
     explore(query: NearbyQueryDto & {
         dateFrom?: string;
         dateTo?: string;
         city?: string;
     }): Promise<({
-        requester: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        };
-        requesterTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challenged: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
-        challengedTeam: {
-            id: string;
-            name: string;
-            avatarUrl: string | null;
-        } | null;
         match: ({
             teamA: {
                 id: string;
@@ -1202,8 +1201,8 @@ export declare class FriendliesService {
                 id: string;
                 matchId: string;
                 setNumber: number;
-                scoredBy: string;
                 timestamp: Date;
+                scoredBy: string;
             }[];
             winner: {
                 id: string;
@@ -1211,27 +1210,48 @@ export declare class FriendliesService {
             } | null;
         } & {
             id: string;
+            bestOfSets: number | null;
+            tiebreakScore: number | null;
             status: import(".prisma/client").$Enums.MatchStatus;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
+            scheduledAt: Date | null;
+            position: number;
+            round: number;
+            refereeId: string | null;
+            friendlyId: string | null;
+            bracketId: string | null;
+            group: number | null;
+            label: string | null;
             teamAId: string | null;
             teamBId: string | null;
             scoreTeamA: number;
             scoreTeamB: number;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
-            bracketId: string | null;
-            friendlyId: string | null;
-            round: number;
-            position: number;
-            scheduledAt: Date | null;
-            group: number | null;
-            bestOfSets: number | null;
-            label: string | null;
             nextMatchId: string | null;
             winnerId: string | null;
-            refereeId: string | null;
             startedAt: Date | null;
             finishedAt: Date | null;
         }) | null;
+        requester: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        };
+        requesterTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challenged: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
+        challengedTeam: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        } | null;
         athletes: ({
             teamMember: {
                 user: {
@@ -1241,47 +1261,48 @@ export declare class FriendliesService {
                 } | null;
             } & {
                 id: string;
+                teamId: string;
+                userId: string | null;
                 guestName: string | null;
                 cpf: string | null;
                 isGuest: boolean;
                 isCaptain: boolean;
-                userId: string | null;
-                teamId: string;
+                positions: import(".prisma/client").$Enums.VolleyballPosition[];
             };
         } & {
             id: string;
             isCaptain: boolean;
+            teamMemberId: string;
             friendlyId: string;
             side: string;
-            teamMemberId: string;
         })[];
     } & {
         id: string;
+        modality: string | null;
+        startTime: Date | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         status: import(".prisma/client").$Enums.FriendlyStatus;
         latitude: number | null;
         longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
+        refereeCode: string | null;
+        refereeCodeExpiresAt: Date | null;
+        date: Date;
+        address: string | null;
+        city: string | null;
+        state: string | null;
+        regionRadius: number | null;
         title: string | null;
+        categoryFormat: string | null;
+        scoreTeamA: number | null;
+        scoreTeamB: number | null;
+        matchId: string | null;
         requesterId: string;
         requesterTeamId: string | null;
         challengedId: string | null;
         challengedTeamId: string | null;
-        date: Date;
-        startTime: Date | null;
-        address: string | null;
         addressNumber: string | null;
-        city: string | null;
-        state: string | null;
-        regionRadius: number | null;
-        scoreTeamA: number | null;
-        scoreTeamB: number | null;
-        modality: string | null;
-        categoryFormat: string | null;
-        matchId: string | null;
-        refereeCode: string | null;
-        refereeCodeExpiresAt: Date | null;
     })[]>;
     private findFriendlyOrThrow;
     private isTeamOwner;

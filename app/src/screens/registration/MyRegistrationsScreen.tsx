@@ -13,6 +13,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
 import type { Registration, RegistrationStatus } from '../../types/registration';
 import type { RootStackParamList } from '../../navigation/types';
+import HeroHeader from '../../components/HeroHeader';
 
 type FilterKey = 'ALL' | 'CONFIRMED' | 'PENDING_PAYMENT' | 'CANCELLED';
 
@@ -84,12 +85,13 @@ export default function MyRegistrationsScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>MINHAS INSCRIÇÕES</Text>
-      </View>
+      <HeroHeader
+        title="MINHAS INSCRIÇÕES"
+        subtitle={`${registrations.length} inscrição${registrations.length !== 1 ? 'ões' : ''}`}
+        watermark="REGS"
+        onBack={() => navigation.goBack()}
+        rounded
+      />
 
       {/* Filter */}
       <View style={s.filterRow}>
@@ -187,16 +189,13 @@ export default function MyRegistrationsScreen({ navigation }: any) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md, marginBottom: spacing.md },
-  backBtn: { padding: 8, marginRight: spacing.sm },
-  headerTitle: { fontSize: 20, fontFamily: fonts.title.display, color: colors.text, letterSpacing: 2 },
 
   // Filter
-  filterRow: { flexDirection: 'row', paddingHorizontal: spacing.xl, marginBottom: spacing.lg, gap: spacing.sm },
+  filterRow: { flexDirection: 'row', paddingHorizontal: spacing.xl, paddingTop: spacing.lg, marginBottom: spacing.lg, gap: spacing.sm },
   filterTab: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm - 2, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
   filterTabActive: { backgroundColor: 'rgba(109,46,192,0.15)', borderColor: 'rgba(157,115,230,0.3)' },
-  filterTabText: { fontSize: 10, fontFamily: fonts.text.semiBold, color: colors.textMuted, letterSpacing: 1 },
-  filterTabTextActive: { color: colors.primaryGlow },
+  filterTabText: { fontSize: 11, fontFamily: fonts.text.semiBold, color: colors.textMuted, letterSpacing: 1 },
+  filterTabTextActive: { color: colors.primaryLight },
 
   scrollContent: { paddingHorizontal: spacing.xl, paddingBottom: 120 },
   center: { alignItems: 'center', paddingTop: spacing.hero },
@@ -205,7 +204,7 @@ const s = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', padding: spacing.xl },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: 8, marginBottom: spacing.md },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 10, letterSpacing: 1.5, fontFamily: fonts.text.semiBold },
+  statusText: { fontSize: 11, letterSpacing: 1.5, fontFamily: fonts.text.semiBold },
   cardTitle: { fontSize: 16, fontFamily: fonts.text.semiBold, color: colors.text, lineHeight: 20, marginBottom: spacing.sm },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.md },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },

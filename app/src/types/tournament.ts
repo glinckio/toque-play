@@ -36,6 +36,9 @@ export interface TournamentStage {
   address: string | null;
   city: string | null;
   state: string | null;
+  street: string | null;
+  number: string | null;
+  neighborhood: string | null;
   maxTeams: number | null;
   latitude: number | null;
   longitude: number | null;
@@ -50,6 +53,9 @@ export interface TournamentCategory {
   minMembers: number;
   maxMembers: number;
   bestOfSets: number;
+  semifinalBestOfSets?: number | null;
+  finalBestOfSets?: number | null;
+  tiebreakScore?: number | null;
   registrationPrice: number | null;
   price?: number;
   registrationDeadline: string | null;

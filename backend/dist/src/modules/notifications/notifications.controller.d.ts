@@ -11,12 +11,12 @@ export declare class NotificationsController {
         platform: string;
     }>;
     removeToken(userId: string, token: string): Promise<void>;
-    findMine(userId: string, page?: string, limit?: string): Promise<{
+    findMine(userId: string, page?: string, limit?: string, unread?: string): Promise<{
         data: {
             id: string;
+            type: string;
             createdAt: Date;
             userId: string;
-            type: string;
             title: string;
             body: string;
             referenceId: string | null;
@@ -32,9 +32,9 @@ export declare class NotificationsController {
     }>;
     markAsRead(notificationId: string, userId: string): Promise<{
         id: string;
+        type: string;
         createdAt: Date;
         userId: string;
-        type: string;
         title: string;
         body: string;
         referenceId: string | null;

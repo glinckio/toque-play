@@ -3,101 +3,137 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
-  Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
 import { radius } from '../../theme/radius';
 import { tournamentService } from '../../services/tournament';
 import { friendlyService } from '../../services/friendly';
+import HeroHeader from '../../components/HeroHeader';
+import ChevronButton from '../../components/ChevronButton';
+import { useDialogStore } from '../../stores/dialogStore';
 
 export default function RefereeCodeEntryScreen({ route }: any) {
-  const mode: 'tournament' | 'friendly' = route.params?.mode ?? 'tournament';
+  const mode: 'auto' | 'tournament' | 'friendly' = route.params?.mode ?? 'auto';
   const navigation = useNavigation();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const dialog = useDialogStore();
+
+  const navigateToTournament = (tournamentId: string) => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 1,
+        routes: [
+          { name: 'Main' },
+          { name: 'Tournament', params: { screen: 'BracketView', params: { tournamentId } } },
+        ],
+      })
+    );
+  };
+
+  const navigateToLiveMatch = (matchId: string) => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 1,
+        routes: [
+          { name: 'Main' },
+          { name: 'Tournament', params: { screen: 'LiveMatch', params: { matchId } } },
+        ],
+      })
+    );
+  };
+
+  const navigateToFriendlyMatch = (matchId: string) => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 1,
+        routes: [
+          { name: 'Main' },
+          { name: 'Friendly', params: { screen: 'LiveMatch', params: { matchId } } },
+        ],
+      })
+    );
+  };
 
   const handleEnter = async () => {
     const trimmed = code.trim().toUpperCase();
     if (trimmed.length < 6) {
-      Alert.alert('Código inválido', 'Digite o código de 6 caracteres.');
+      dialog.error('Digite o código de 6 caracteres.', 'Código inválido');
       return;
     }
 
     setLoading(true);
     try {
-      if (mode === 'friendly') {
-        const result = await friendlyService.enterRefereeCode(trimmed);
-        const matchId = result.match?.id ?? (result as any).matchId;
-        if (matchId) {
-          // Dismiss modal then navigate
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 1,
-              routes: [
-                { name: 'Main' },
-                { name: 'Friendly', params: { screen: 'LiveMatch', params: { matchId } } },
-              ],
-            })
-          );
-        } else {
-          Alert.alert('Sucesso', 'Código validado!');
-          navigation.goBack();
-        }
-      } else {
-        const result = await tournamentService.enterRefereeCode(trimmed);
-        const tournamentId = result.tournamentId;
-
-        if (tournamentId) {
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 1,
-              routes: [
-                { name: 'Main' },
-                { name: 'Tournament', params: { screen: 'BracketView', params: { tournamentId } } },
-              ],
-            })
-          );
-        } else {
-          Alert.alert('Erro', 'Torneio não encontrado.');
-        }
+      // Auto mode: try tournament → friendly sequentially
+      if (mode === 'auto' || mode === 'tournament') {
+        try {
+          const result = await tournamentService.enterRefereeCode(trimmed);
+          if (result.tournamentId) {
+            navigateToTournament(result.tournamentId);
+            return;
+          }
+        } catch {}
       }
-    } catch (e: any) {
-      Alert.alert('Código inválido', 'Código expirado ou não encontrado.');
+
+      if (mode === 'auto' || mode === 'friendly') {
+        try {
+          const result = await friendlyService.enterRefereeCode(trimmed);
+          const matchId = result.match?.id ?? (result as any).matchId;
+          if (matchId) {
+            navigateToFriendlyMatch(matchId);
+            return;
+          }
+        } catch {}
+      }
+
+      dialog.error('Código expirado ou não encontrado.', 'Código inválido');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <SafeAreaView style={styles.root} edges={['top']}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
-            <Ionicons name="close" size={26} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+  const insets = useSafeAreaInsets();
 
-        <View style={styles.content}>
+  return (
+    <View style={styles.root}>
+      <View style={{ height: insets.top }} />
+      <HeroHeader
+        title="CÓDIGO DO ÁRBITRO"
+        variant="dark"
+        onBack={() => navigation.goBack()}
+        rounded
+        compact
+        closeIcon
+      />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={insets.top}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.iconCircle}>
-            <Ionicons name="flag-outline" size={36} color={colors.primaryGlow} />
+            <Ionicons name="flag-outline" size={36} color={colors.primaryLight} />
           </View>
 
-          <Text style={styles.title}>CÓDIGO DO ÁRBITRO</Text>
           <Text style={styles.subtitle}>
             {mode === 'friendly'
               ? 'Digite o código fornecido pelo capitão para apitar o amistoso.'
-              : 'Digite o código fornecido pelo organizador para apitar a partida.'}
+              : 'Digite o código fornecido pelo organizador ou capitão para acessar a partida.'}
           </Text>
 
           <View style={styles.inputCard}>
@@ -106,107 +142,73 @@ export default function RefereeCodeEntryScreen({ route }: any) {
               value={code}
               onChangeText={setCode}
               placeholder="ABC123"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={colors.textPlaceholder}
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={6}
-              autoFocus
               textAlign="center"
             />
           </View>
 
-          <TouchableOpacity
-            style={styles.ctaBtn}
+          <ChevronButton
+            variant="primary"
+            size="lg"
+            fullWidth
             onPress={handleEnter}
             disabled={loading || code.trim().length < 6}
-            activeOpacity={0.8}
+            icon={<Ionicons name="enter-outline" size={16} color="#FFFFFF" />}
           >
-            <LinearGradient
-              colors={[colors.primary, colors.primaryGlow]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.ctaGradient, (loading || code.trim().length < 6) && styles.ctaDisabled]}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.text} />
-              ) : (
-                <>
-                  <Ionicons name="enter-outline" size={20} color={colors.text} />
-                  <Text style={styles.ctaText}>ENTRAR COMO ÁRBITRO</Text>
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+            {loading ? 'VERIFICANDO...' : 'ENTRAR COMO ÁRBITRO'}
+          </ChevronButton>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-  },
+  root: { flex: 1, backgroundColor: colors.dark },
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
-    paddingTop: 40,
+    justifyContent: 'center',
+    paddingBottom: spacing.hero,
   },
   iconCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(109,46,192,0.12)',
+    backgroundColor: 'rgba(109,46,192,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xl,
   },
-  title: {
-    fontFamily: fonts.title.display,
-    fontSize: 28,
-    color: colors.text,
-    letterSpacing: 3,
-    marginBottom: spacing.md,
-  },
   subtitle: {
-    fontSize: 14,
+    fontSize: typography.sizes.input,
     fontFamily: fonts.text.regular,
-    color: colors.textMuted,
+    color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: spacing.section,
   },
   inputCard: {
     width: '100%',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.darkSecondary,
     borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    padding: spacing.lg,
     marginBottom: spacing.xxl,
+    alignItems: 'center',
   },
   input: {
-    fontFamily: fonts.title.display,
-    fontSize: 40,
-    color: colors.text,
-    letterSpacing: 8,
-    paddingVertical: spacing.md,
+    fontFamily: fonts.title.regular,
+    fontSize: 32,
+    color: '#FFFFFF',
+    letterSpacing: 4,
+    padding: 0,
+    margin: 0,
+    textAlign: 'center',
+    width: '100%',
+    includeFontPadding: false,
   },
-  ctaBtn: { width: '100%', borderRadius: 14, overflow: 'hidden' },
-  ctaGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.lg,
-  },
-  ctaDisabled: { opacity: 0.4 },
-  ctaText: { fontSize: 14, letterSpacing: 2, color: colors.text, fontFamily: fonts.text.semiBold },
 });

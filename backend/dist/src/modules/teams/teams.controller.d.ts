@@ -8,28 +8,29 @@ export declare class TeamsController {
         members: ({
             user: {
                 id: string;
-                email: string;
                 name: string;
                 avatarUrl: string | null;
+                email: string;
             } | null;
         } & {
             id: string;
+            teamId: string;
+            userId: string | null;
             guestName: string | null;
             cpf: string | null;
             isGuest: boolean;
             isCaptain: boolean;
-            userId: string | null;
-            teamId: string;
+            positions: import(".prisma/client").$Enums.VolleyballPosition[];
         })[];
     } & {
         id: string;
         name: string;
-        avatarUrl: string | null;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        avatarUrl: string | null;
         sport: string;
         ownerId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     findAll(userId: string): Promise<({
         _count: {
@@ -38,108 +39,111 @@ export declare class TeamsController {
     } & {
         id: string;
         name: string;
-        avatarUrl: string | null;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        avatarUrl: string | null;
         sport: string;
         ownerId: string;
+        createdAt: Date;
+        updatedAt: Date;
     })[]>;
     search(query: string, userId: string): Promise<{
-        id: string;
-        name: string;
-        avatarUrl: string | null;
-        sport: string;
+        id: any;
+        name: any;
+        avatarUrl: any;
+        sport: any;
         _count: {
-            members: number;
+            members: any;
         };
     }[]>;
     findOne(id: string, userId: string): Promise<{
         owner: {
             id: string;
-            email: string;
             name: string;
             avatarUrl: string | null;
+            email: string;
         };
         members: ({
             user: {
                 id: string;
-                email: string;
                 name: string;
                 avatarUrl: string | null;
+                email: string;
             } | null;
         } & {
             id: string;
+            teamId: string;
+            userId: string | null;
             guestName: string | null;
             cpf: string | null;
             isGuest: boolean;
             isCaptain: boolean;
-            userId: string | null;
-            teamId: string;
+            positions: import(".prisma/client").$Enums.VolleyballPosition[];
         })[];
     } & {
         id: string;
         name: string;
-        avatarUrl: string | null;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        avatarUrl: string | null;
         sport: string;
         ownerId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     update(id: string, userId: string, dto: UpdateTeamDto): Promise<{
         members: ({
             user: {
                 id: string;
-                email: string;
                 name: string;
                 avatarUrl: string | null;
+                email: string;
             } | null;
         } & {
             id: string;
+            teamId: string;
+            userId: string | null;
             guestName: string | null;
             cpf: string | null;
             isGuest: boolean;
             isCaptain: boolean;
-            userId: string | null;
-            teamId: string;
+            positions: import(".prisma/client").$Enums.VolleyballPosition[];
         })[];
     } & {
         id: string;
         name: string;
-        avatarUrl: string | null;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        avatarUrl: string | null;
         sport: string;
         ownerId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(id: string, userId: string): Promise<void>;
     uploadAvatar(id: string, userId: string, file: Express.Multer.File): Promise<{
         members: ({
             user: {
                 id: string;
-                email: string;
                 name: string;
                 avatarUrl: string | null;
+                email: string;
             } | null;
         } & {
             id: string;
+            teamId: string;
+            userId: string | null;
             guestName: string | null;
             cpf: string | null;
             isGuest: boolean;
             isCaptain: boolean;
-            userId: string | null;
-            teamId: string;
+            positions: import(".prisma/client").$Enums.VolleyballPosition[];
         })[];
     } & {
         id: string;
         name: string;
-        avatarUrl: string | null;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
+        avatarUrl: string | null;
         sport: string;
         ownerId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

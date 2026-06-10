@@ -15,10 +15,11 @@ export declare class TeamInvitationsController {
         };
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.InvitationStatus;
         createdAt: Date;
         updatedAt: Date;
         teamId: string;
+        positions: import(".prisma/client").$Enums.VolleyballPosition[];
+        status: import(".prisma/client").$Enums.InvitationStatus;
         invitedUserId: string;
         invitedById: string;
     })[]>;
@@ -30,16 +31,17 @@ export declare class TeamInvitationsController {
         };
         invitedUser: {
             id: string;
-            email: string;
             name: string;
             avatarUrl: string | null;
+            email: string;
         };
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.InvitationStatus;
         createdAt: Date;
         updatedAt: Date;
         teamId: string;
+        positions: import(".prisma/client").$Enums.VolleyballPosition[];
+        status: import(".prisma/client").$Enums.InvitationStatus;
         invitedUserId: string;
         invitedById: string;
     }>;
@@ -51,16 +53,17 @@ export declare class TeamInvitationsController {
         };
         invitedUser: {
             id: string;
-            email: string;
             name: string;
             avatarUrl: string | null;
+            email: string;
         };
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.InvitationStatus;
         createdAt: Date;
         updatedAt: Date;
         teamId: string;
+        positions: import(".prisma/client").$Enums.VolleyballPosition[];
+        status: import(".prisma/client").$Enums.InvitationStatus;
         invitedUserId: string;
         invitedById: string;
     }>;

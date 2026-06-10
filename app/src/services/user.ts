@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import api from './api';
 
 export const userService = {
@@ -6,4 +7,24 @@ export const userService = {
 
   updateProfile: (data: { name?: string; phone?: string; bio?: string }) =>
     api.patch('/users/me', data).then((r) => r.data),
+
+  uploadAvatar: async (uri: string) => {
+    const formData = new FormData();
+
+    const filename = uri.split('/').pop() ?? 'avatar.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const ext = match?.[1]?.toLowerCase() ?? 'jpg';
+    const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+
+    formData.append('file', {
+      uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
+      name: filename,
+      type: mimeType,
+    } as any);
+
+    const { data } = await api.post('/users/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  },
 };

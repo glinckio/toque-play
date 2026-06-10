@@ -1,25 +1,40 @@
 export const colors = {
   // Brand
-  primary: '#6d2ec0',
-  primaryGlow: '#9D73E6',
-  primaryDeep: '#5D3A8E',
+  primary: '#6D2EC0',
+  primaryDark: '#4A1F87',
+  primaryLight: '#A674F0',
+  primaryTint: '#F4EFFA',
 
-  // Dark palette
-  background: '#05060A',
-  backgroundSecondary: '#0a0c13',
-  surface: '#0d0c11',
-  surfaceSoft: '#1A1A1F',
+  // Backgrounds (light)
+  background: '#FAFAFA',
+  backgroundSecondary: '#F3F3F5',
+  surface: '#FFFFFF',
+  surfaceSoft: '#FFFFFF',
 
   // Text
-  text: '#FFFFFF',
-  textSecondary: '#C9CBD3',
-  textMuted: '#7E8291',
+  text: '#150A1F',
+  textStrong: '#150A1F',
+  textDefault: '#3D2C52',
+  textSecondary: '#3D2C52',
+  textMuted: '#6B5B7E',
+  textPlaceholder: '#A89BBA',
 
   // Status
-  error: '#FF4D4D',
-  success: '#4CAF50',
+  error: '#E04545',
+  success: '#1FB87A',
+  warning: '#F0A030',
 
-  // Overlay
-  border: '#2A2A35',
-  disabled: '#3A3A45',
+  // Borders & Inputs
+  border: 'rgba(0, 0, 0, 0.1)',
+  inputBackground: '#F4EFFA',
+  disabled: '#D6D5D5',
+  disabledText: '#8D8D8D',
+
+  // Overlays
+  overlay: 'rgba(20, 10, 30, 0.5)',
+  shadow: 'rgba(20, 10, 30, 0.06)',
+
+  // Dark accents (used in LiveMatch, Referee screens)
+  dark: '#150A1F',
+  darkSecondary: '#3D2C52',
 } as const;

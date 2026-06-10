@@ -17,10 +17,9 @@ export default function TournamentNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        presentation: 'modal',
       }}
     >
-      <Stack.Screen name="TournamentDetail" component={TournamentDetailModal} />
+      <Stack.Screen name="TournamentDetail" component={TournamentDetailModal} options={{ presentation: 'modal' }} />
       <Stack.Screen name="RegistrationTeamSelect" component={RegistrationTeamSelect} />
       <Stack.Screen name="RegistrationMemberSelect" component={RegistrationMemberSelect} />
       <Stack.Screen name="RegistrationSummary" component={RegistrationSummary} />

@@ -13,12 +13,12 @@ export declare class AdminService {
     listUsers(query: QueryUsersDto): Promise<{
         data: {
             id: string;
-            email: string;
             name: string;
-            role: import(".prisma/client").$Enums.Role;
-            status: import(".prisma/client").$Enums.UserStatus;
             avatarUrl: string | null;
             createdAt: Date;
+            status: import(".prisma/client").$Enums.UserStatus;
+            email: string;
+            role: import(".prisma/client").$Enums.Role;
         }[];
         total: number;
         page: number;
@@ -31,34 +31,34 @@ export declare class AdminService {
     }>;
     unblockUser(userId: string): Promise<{
         id: string;
-        email: string;
         name: string;
         status: import(".prisma/client").$Enums.UserStatus;
+        email: string;
     }>;
     listTournaments(query: QueryAdminTournamentsDto): Promise<{
         data: ({
-            owner: {
-                id: string;
-                email: string;
-                name: string;
-            };
             _count: {
                 registrations: number;
                 brackets: number;
             };
+            owner: {
+                id: string;
+                name: string;
+                email: string;
+            };
         } & {
             id: string;
             name: string;
-            status: import(".prisma/client").$Enums.TournamentStatus;
-            createdAt: Date;
-            updatedAt: Date;
             description: string | null;
             ownerId: string;
-            refereeCode: string | null;
-            refereeCodeExpiresAt: Date | null;
+            createdAt: Date;
+            updatedAt: Date;
+            status: import(".prisma/client").$Enums.TournamentStatus;
             imageUrl: string | null;
             eventType: import(".prisma/client").$Enums.TournamentEventType;
             isPublished: boolean;
+            refereeCode: string | null;
+            refereeCodeExpiresAt: Date | null;
         })[];
         total: number;
         page: number;
@@ -78,11 +78,11 @@ export declare class AdminService {
     getLogs(query: QueryLogsDto): Promise<{
         id: string;
         createdAt: Date;
+        metadata: import("@prisma/client/runtime/library").JsonValue | null;
+        message: string;
         level: string;
         source: string | null;
-        message: string;
         stack: string | null;
-        metadata: import("@prisma/client/runtime/library").JsonValue | null;
     }[]>;
     getMonitoring(): Promise<{
         activeMatches: number;

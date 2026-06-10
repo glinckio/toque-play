@@ -1,52 +1,48 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React from 'react';
+import { StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from './types';
 import HomeScreen from '../screens/main/HomeScreen';
 import ExploreScreen from '../screens/main/ExploreScreen';
 import TeamsScreen from '../screens/main/TeamsScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
+import ProfileScreen from '../screens/main/ProfileScreen';
 import CustomTabBar from '../components/CustomTabBar';
-import Sidebar from '../components/Sidebar';
-import { colors } from '../theme/colors';
+import TabScreenWrapper from './TabScreenWrapper';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-export default function MainNavigator() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const openSidebar = () => setSidebarOpen(true);
-  const closeSidebar = () => setSidebarOpen(false);
+const withWrapper = (Component: React.ComponentType) =>
+  function AnimatedScreen(props: any) {
+    return (
+      <TabScreenWrapper>
+        <Component {...props} />
+      </TabScreenWrapper>
+    );
+  };
 
+export default function MainNavigator() {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <Tab.Navigator
         tabBar={(props) => <CustomTabBar {...props} />}
         screenOptions={{
           headerShown: false,
         }}
       >
-        <Tab.Screen name="Home">
-          {(props) => <HomeScreen {...props} onAvatarPress={openSidebar} />}
-        </Tab.Screen>
-        <Tab.Screen name="Explore">
-          {(props) => <ExploreScreen {...props} onAvatarPress={openSidebar} />}
-        </Tab.Screen>
-        <Tab.Screen name="Teams">
-          {(props) => <TeamsScreen {...props} onAvatarPress={openSidebar} />}
-        </Tab.Screen>
-        <Tab.Screen name="Notifications">
-          {(props) => <NotificationsScreen {...props} onAvatarPress={openSidebar} />}
-        </Tab.Screen>
+        <Tab.Screen name="Home" component={withWrapper(HomeScreen)} />
+        <Tab.Screen name="Explore" component={withWrapper(ExploreScreen)} />
+        <Tab.Screen name="Teams" component={withWrapper(TeamsScreen)} />
+        <Tab.Screen name="Notifications" component={withWrapper(NotificationsScreen)} />
+        <Tab.Screen name="Profile" component={withWrapper(ProfileScreen)} />
       </Tab.Navigator>
-
-      <Sidebar visible={sidebarOpen} onClose={closeSidebar} />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
 });

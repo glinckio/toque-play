@@ -1,5 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { StorageService } from '../storage/storage.service';
+import { NotificationService } from '../../common/services/notification.service';
 import { AppError } from '../../common/errors/app-error';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateStructureDto } from './dto/update-structure.dto';
@@ -22,7 +24,11 @@ const FULL_INCLUDE = {
 
 @Injectable()
 export class TournamentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storage: StorageService,
+    private notificationService: NotificationService,
+  ) {}
 
   async create(userId: string, dto: CreateTournamentDto) {
     return this.prisma.tournament.create({
@@ -275,11 +281,24 @@ export class TournamentsService {
       throw AppError.tournamentNotReady();
     }
 
-    return this.prisma.tournament.update({
+    const updated = await this.prisma.tournament.update({
       where: { id: tournamentId },
       data: { status: TournamentStatus.IN_PROGRESS },
       include: FULL_INCLUDE,
     });
+
+    // Notify all registered athletes
+    const userIds = await this.notificationService.getRegisteredAthleteUserIds(tournamentId);
+    if (userIds.length > 0) {
+      await this.notificationService.sendToUsers(userIds, {
+        title: 'Torneio Iniciado!',
+        body: `O torneio "${updated.name}" começou! Acompanhe os jogos.`,
+        type: 'TOURNAMENT_STARTED',
+        referenceId: tournamentId,
+      });
+    }
+
+    return updated;
   }
 
   async generateRefereeCode(tournamentId: string, userId: string) {
@@ -332,12 +351,27 @@ export class TournamentsService {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) throw AppError.userNotFound();
 
-    return this.prisma.tournamentReferee.upsert({
+    const result = await this.prisma.tournamentReferee.upsert({
       where: { tournamentId_userId: { tournamentId, userId: user.id } },
       update: {},
       create: { tournamentId, userId: user.id },
       include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } },
     });
+
+    // Notify the referee
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      select: { name: true },
+    });
+    await this.notificationService.createNotification(
+      user.id,
+      'Convite de Árbitro',
+      `Você foi adicionado como árbitro do torneio ${tournament?.name ?? ''}.`,
+      'REFEREE_ASSIGNED',
+      tournamentId,
+    );
+
+    return result;
   }
 
   async removeReferee(tournamentId: string, organizerId: string, refereeId: string) {
@@ -345,6 +379,44 @@ export class TournamentsService {
     await this.prisma.tournamentReferee.delete({
       where: { id: refereeId },
     });
+  }
+
+  async completeTournament(tournamentId: string, userId: string) {
+    const tournament = await this.verifyOwnership(tournamentId, userId);
+
+    if (tournament.status !== TournamentStatus.IN_PROGRESS) {
+      throw AppError.tournamentNotInProgress();
+    }
+
+    // Check all matches in all brackets are finished
+    const pendingMatches = await this.prisma.match.count({
+      where: {
+        bracket: { tournamentId },
+        status: { notIn: ['FINISHED', 'WALKOVER'] },
+      },
+    });
+    if (pendingMatches > 0) {
+      throw AppError.tournamentHasPendingMatches();
+    }
+
+    const updated = await this.prisma.tournament.update({
+      where: { id: tournamentId },
+      data: { status: TournamentStatus.FINISHED },
+      include: FULL_INCLUDE,
+    });
+
+    // Notify all registered athletes
+    const userIds = await this.notificationService.getRegisteredAthleteUserIds(tournamentId);
+    if (userIds.length > 0) {
+      await this.notificationService.sendToUsers(userIds, {
+        title: 'Torneio Finalizado!',
+        body: `O torneio "${updated.name}" foi finalizado. Confira o resultado!`,
+        type: 'TOURNAMENT_COMPLETED',
+        referenceId: tournamentId,
+      });
+    }
+
+    return updated;
   }
 
   async getReferees(tournamentId: string) {
@@ -804,6 +876,68 @@ export class TournamentsService {
         throw AppError.tournamentTooCloseToEdit();
       }
     }
+  }
+
+  async getBanners() {
+    const publicUrl = process.env.MINIO_PUBLIC_URL;
+    const bucket = process.env.MINIO_BUCKET ?? 'toqueplay';
+    const protocol = process.env.MINIO_USE_SSL === 'true' ? 'https' : 'http';
+    const host = process.env.MINIO_ENDPOINT ?? 'localhost';
+    const port = process.env.MINIO_PORT ?? '9000';
+    const baseUrl = publicUrl ? `${publicUrl}/${bucket}` : `${protocol}://${host}:${port}/${bucket}`;
+
+    // Default banner keys — these are seeded via seed-banners.ts
+    const defaultKeys = [
+      'banners/WhatsApp Image 2026-06-10 at 12.04.25 AM.jpeg',
+      'banners/WhatsApp Image 2026-06-10 at 12.10.36 AM.jpeg',
+      'banners/WhatsApp Image 2026-06-10 at 12.10.46 AM.jpeg',
+      'banners/WhatsApp Iamage 2026-06-10 at 12.04.25 AM.jpeg',
+    ];
+
+    return defaultKeys.map((key) => `${baseUrl}/${key}`);
+  }
+
+  async uploadCover(tournamentId: string, userId: string, file: Express.Multer.File) {
+    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!tournament || tournament.ownerId !== userId) {
+      throw AppError.notTournamentOwner();
+    }
+
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) {
+      throw new BadRequestException('Formato inválido. Use JPEG, PNG ou WebP.');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('Arquivo muito grande. Máximo 10MB.');
+    }
+
+    const ext = file.originalname.split('.').pop() ?? 'jpg';
+    const key = `tournaments/${tournamentId}/cover-${Date.now()}.${ext}`;
+
+    // Delete old cover
+    if (tournament.imageUrl) {
+      const oldKey = this.storage.extractKeyFromUrl(tournament.imageUrl);
+      if (oldKey) await this.storage.deleteFile(oldKey);
+    }
+
+    const imageUrl = await this.storage.uploadFile(file.buffer, key, file.mimetype);
+    return this.prisma.tournament.update({
+      where: { id: tournamentId },
+      data: { imageUrl },
+      include: FULL_INCLUDE,
+    });
+  }
+
+  async setBannerUrl(tournamentId: string, userId: string, imageUrl: string) {
+    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!tournament || tournament.ownerId !== userId) {
+      throw AppError.notTournamentOwner();
+    }
+    return this.prisma.tournament.update({
+      where: { id: tournamentId },
+      data: { imageUrl },
+      include: FULL_INCLUDE,
+    });
   }
 }
 

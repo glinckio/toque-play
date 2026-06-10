@@ -113,6 +113,26 @@ let NotificationService = class NotificationService {
             data: { userId, title, body, type, referenceId },
         });
     }
+    async getRegisteredAthleteUserIds(tournamentId) {
+        const members = await this.prisma.registrationMember.findMany({
+            where: {
+                registration: {
+                    tournamentId,
+                    status: { notIn: ['CANCELLED', 'REJECTED'] },
+                },
+                teamMember: { isGuest: false, userId: { not: null } },
+            },
+            select: { teamMember: { select: { userId: true } } },
+        });
+        return [...new Set(members.map((m) => m.teamMember.userId).filter(Boolean))];
+    }
+    async getTeamMemberUserIds(teamId) {
+        const members = await this.prisma.teamMember.findMany({
+            where: { teamId, isGuest: false, userId: { not: null } },
+            select: { userId: true },
+        });
+        return [...new Set(members.map((m) => m.userId).filter(Boolean))];
+    }
     async sendPushNotification(tokens, payload, deepLink) {
         try {
             const message = {
@@ -146,15 +166,20 @@ let NotificationService = class NotificationService {
             case 'TOURNAMENT':
             case 'BRACKET_GENERATED':
             case 'REGISTRATION':
+            case 'REGISTRATION_CONFIRMED':
+            case 'TOURNAMENT_STARTED':
+            case 'TOURNAMENT_COMPLETED':
                 return `toqueplay://tournament/${referenceId}`;
             case 'MATCH':
             case 'MATCH_START':
             case 'MATCH_FINISH':
+            case 'MATCH_SET':
                 return `toqueplay://match/${referenceId}`;
             case 'CHAT':
             case 'CHAT_MESSAGE':
                 return `toqueplay://chat/${referenceId}`;
             case 'FRIENDLY':
+            case 'FRIENDLY_REJECTED':
                 return `toqueplay://friendly/${referenceId}`;
             case 'TEAM_INVITE':
                 return `toqueplay://team-invitation/${referenceId}`;
@@ -173,12 +198,17 @@ let NotificationService = class NotificationService {
             case 'MATCH':
             case 'MATCH_START':
             case 'MATCH_FINISH':
+            case 'MATCH_SET':
                 return 'matches';
             case 'FRIENDLY':
+            case 'FRIENDLY_REJECTED':
                 return 'friendlies';
             case 'TOURNAMENT':
             case 'BRACKET_GENERATED':
             case 'REGISTRATION':
+            case 'REGISTRATION_CONFIRMED':
+            case 'TOURNAMENT_STARTED':
+            case 'TOURNAMENT_COMPLETED':
                 return 'tournaments';
             default:
                 return 'tournaments';

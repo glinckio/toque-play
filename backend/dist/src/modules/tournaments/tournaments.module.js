@@ -10,13 +10,14 @@ exports.TournamentsModule = void 0;
 const common_1 = require("@nestjs/common");
 const tournaments_controller_1 = require("./tournaments.controller");
 const tournaments_service_1 = require("./tournaments.service");
+const storage_service_1 = require("../storage/storage.service");
 let TournamentsModule = class TournamentsModule {
 };
 exports.TournamentsModule = TournamentsModule;
 exports.TournamentsModule = TournamentsModule = __decorate([
     (0, common_1.Module)({
         controllers: [tournaments_controller_1.TournamentsController],
-        providers: [tournaments_service_1.TournamentsService],
+        providers: [tournaments_service_1.TournamentsService, storage_service_1.StorageService],
         exports: [tournaments_service_1.TournamentsService],
     })
 ], TournamentsModule);

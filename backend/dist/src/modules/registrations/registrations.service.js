@@ -18,6 +18,7 @@ const bull_1 = require("@nestjs/bull");
 const prisma_service_1 = require("../../common/prisma.service");
 const app_error_1 = require("../../common/errors/app-error");
 const stripe_service_1 = require("../../common/services/stripe.service");
+const notification_service_1 = require("../../common/services/notification.service");
 const tournaments_service_1 = require("../tournaments/tournaments.service");
 const client_1 = require("@prisma/client");
 const REGISTRATION_INCLUDE = {
@@ -39,12 +40,14 @@ let RegistrationsService = class RegistrationsService {
     prisma;
     tournamentsService;
     stripeService;
+    notificationService;
     expiryQueue;
     paymentsGateway;
-    constructor(prisma, tournamentsService, stripeService, expiryQueue) {
+    constructor(prisma, tournamentsService, stripeService, notificationService, expiryQueue) {
         this.prisma = prisma;
         this.tournamentsService = tournamentsService;
         this.stripeService = stripeService;
+        this.notificationService = notificationService;
         this.expiryQueue = expiryQueue;
     }
     setPaymentsGateway(gateway) {
@@ -173,11 +176,23 @@ let RegistrationsService = class RegistrationsService {
         if (registration.status === client_1.RegistrationStatus.PENDING_PAYMENT) {
             throw app_error_1.AppError.paymentRequired();
         }
-        return this.prisma.registration.update({
+        const updated = await this.prisma.registration.update({
             where: { id: regId },
             data: { status: client_1.RegistrationStatus.CONFIRMED },
             include: REGISTRATION_INCLUDE,
         });
+        const memberUserIds = updated.members
+            .map((m) => m.teamMember?.user?.id)
+            .filter((id) => !!id && id !== userId);
+        if (memberUserIds.length > 0) {
+            await this.notificationService.sendToUsers(memberUserIds, {
+                title: 'Inscrição Confirmada!',
+                body: `Sua inscrição no torneio "${updated.tournament.name}" foi confirmada.`,
+                type: 'REGISTRATION_CONFIRMED',
+                referenceId: tournamentId,
+            });
+        }
+        return updated;
     }
     async rejectRegistration(tournamentId, regId, userId) {
         await this.tournamentsService.verifyOwnership(tournamentId, userId);
@@ -261,7 +276,19 @@ let RegistrationsService = class RegistrationsService {
                     paidAt: new Date(),
                     status: client_1.RegistrationStatus.CONFIRMED,
                 },
+                include: REGISTRATION_INCLUDE,
             });
+            const memberUserIds = reg.members
+                .map((m) => m.teamMember?.user?.id)
+                .filter((id) => !!id);
+            if (memberUserIds.length > 0) {
+                await this.notificationService.sendToUsers(memberUserIds, {
+                    title: 'Pagamento Confirmado!',
+                    body: `Sua inscrição no torneio "${reg.tournament.name}" foi confirmada.`,
+                    type: 'REGISTRATION_CONFIRMED',
+                    referenceId: reg.tournamentId,
+                });
+            }
             if (this.paymentsGateway) {
                 this.paymentsGateway.emitPaymentConfirmed(reg.userId, registrationId);
             }
@@ -301,9 +328,10 @@ let RegistrationsService = class RegistrationsService {
 exports.RegistrationsService = RegistrationsService;
 exports.RegistrationsService = RegistrationsService = __decorate([
     (0, common_1.Injectable)(),
-    __param(3, (0, bull_1.InjectQueue)('registration-expiry')),
+    __param(4, (0, bull_1.InjectQueue)('registration-expiry')),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         tournaments_service_1.TournamentsService,
-        stripe_service_1.StripeService, Object])
+        stripe_service_1.StripeService,
+        notification_service_1.NotificationService, Object])
 ], RegistrationsService);
 //# sourceMappingURL=registrations.service.js.map

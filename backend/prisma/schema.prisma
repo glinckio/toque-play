@@ -89,6 +89,15 @@ enum InvitationStatus {
   CANCELLED
 }
 
+enum VolleyballPosition {
+  LEVANTADOR
+  PONTEIRO
+  OPOSTO
+  CENTRAL
+  LIBERO
+  PONTA
+}
+
 enum MatchEventType {
   POINT
   MATCH_START
@@ -202,6 +211,7 @@ model TeamMember {
   cpf        String?
   isGuest    Boolean          @default(false)
   isCaptain  Boolean          @default(false)
+  positions  VolleyballPosition[] @default([])
 
   @@unique([teamId, userId])
   @@index([teamId])
@@ -219,6 +229,7 @@ model TeamInvitation {
   invitedUser   User             @relation(fields: [invitedUserId], references: [id], onDelete: Cascade)
   invitedById   String
   status        InvitationStatus @default(PENDING)
+  positions     VolleyballPosition[] @default([])
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
@@ -281,6 +292,7 @@ model TournamentCategory {
   bestOfSets            Int              @default(3)
   semifinalBestOfSets   Int?
   finalBestOfSets       Int?
+  tiebreakScore         Int?
   startTime    DateTime?
   registrationPrice    Decimal?  @db.Decimal(10, 2)
   registrationDeadline DateTime?
@@ -403,8 +415,9 @@ model Match {
   status      MatchStatus @default(SCHEDULED)
   scheduledAt DateTime?
   group       Int?
-  bestOfSets  Int?
-  label       String?
+  bestOfSets    Int?
+  tiebreakScore Int?
+  label         String?
 
   teamAId     String?
   teamA       Team?       @relation("MatchTeamA", fields: [teamAId], references: [id])

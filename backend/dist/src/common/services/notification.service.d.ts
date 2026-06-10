@@ -14,9 +14,9 @@ export declare class NotificationService implements OnModuleInit {
         referenceId?: string;
     }): Promise<{
         id: string;
+        type: string;
         createdAt: Date;
         userId: string;
-        type: string;
         title: string;
         body: string;
         referenceId: string | null;
@@ -29,9 +29,9 @@ export declare class NotificationService implements OnModuleInit {
         referenceId?: string;
     }): Promise<{
         id: string;
+        type: string;
         createdAt: Date;
         userId: string;
-        type: string;
         title: string;
         body: string;
         referenceId: string | null;
@@ -39,14 +39,16 @@ export declare class NotificationService implements OnModuleInit {
     }[]>;
     createNotification(userId: string, title: string, body: string, type: string, referenceId?: string): Promise<{
         id: string;
+        type: string;
         createdAt: Date;
         userId: string;
-        type: string;
         title: string;
         body: string;
         referenceId: string | null;
         read: boolean;
     }>;
+    getRegisteredAthleteUserIds(tournamentId: string): Promise<string[]>;
+    getTeamMemberUserIds(teamId: string): Promise<string[]>;
     private sendPushNotification;
     private buildDeepLink;
     private mapTypeToCategory;

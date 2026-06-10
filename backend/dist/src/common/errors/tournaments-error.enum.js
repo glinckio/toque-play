@@ -17,6 +17,8 @@ var TournamentsErrorCode;
     TournamentsErrorCode["STAGE_DATE_TOO_SOON"] = "STAGE_DATE_TOO_SOON";
     TournamentsErrorCode["STAGE_NOT_FOUND"] = "STAGE_NOT_FOUND";
     TournamentsErrorCode["TOURNAMENT_TOO_CLOSE_TO_EDIT"] = "TOURNAMENT_TOO_CLOSE_TO_EDIT";
+    TournamentsErrorCode["TOURNAMENT_NOT_IN_PROGRESS"] = "TOURNAMENT_NOT_IN_PROGRESS";
+    TournamentsErrorCode["TOURNAMENT_HAS_PENDING_MATCHES"] = "TOURNAMENT_HAS_PENDING_MATCHES";
 })(TournamentsErrorCode || (exports.TournamentsErrorCode = TournamentsErrorCode = {}));
 exports.TournamentsErrorMessages = {
     [TournamentsErrorCode.TOURNAMENT_NOT_FOUND]: 'Tournament not found',
@@ -33,5 +35,7 @@ exports.TournamentsErrorMessages = {
     [TournamentsErrorCode.STAGE_DATE_TOO_SOON]: 'Stage dates must be at least 1 week in the future',
     [TournamentsErrorCode.STAGE_NOT_FOUND]: 'Stage not found in this tournament',
     [TournamentsErrorCode.TOURNAMENT_TOO_CLOSE_TO_EDIT]: 'Cannot edit: tournament date is less than 3 days away',
+    [TournamentsErrorCode.TOURNAMENT_NOT_IN_PROGRESS]: 'This action is only allowed for tournaments in progress',
+    [TournamentsErrorCode.TOURNAMENT_HAS_PENDING_MATCHES]: 'Cannot complete: there are pending matches',
 };
 //# sourceMappingURL=tournaments-error.enum.js.map

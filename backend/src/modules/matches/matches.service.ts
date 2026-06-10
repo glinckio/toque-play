@@ -4,6 +4,7 @@ import { AppError } from '../../common/errors/app-error';
 import { MatchesGateway } from './matches.gateway';
 import { RankingService } from '../ranking/ranking.service';
 import { BracketsService } from '../brackets/brackets.service';
+import { NotificationService } from '../../common/services/notification.service';
 import { PointDto } from './dto/point.dto';
 import { SetFinishDto } from './dto/set-finish.dto';
 import { WalkoverDto } from './dto/walkover.dto';
@@ -18,6 +19,7 @@ export class MatchesService {
     private prisma: PrismaService,
     private matchesGateway: MatchesGateway,
     private rankingService: RankingService,
+    private notificationService: NotificationService,
     @Inject(forwardRef(() => BracketsService))
     private bracketsService: BracketsService,
   ) {}
@@ -78,13 +80,16 @@ export class MatchesService {
         startedAt: now,
       };
 
-      // Backfill bestOfSets from category if not set
+      // Backfill bestOfSets and tiebreakScore from category if not set
       if (!match.bestOfSets && match.bracketId) {
         const category = await tx.tournamentCategory.findFirst({
           where: { brackets: { some: { id: match.bracketId } } },
         });
         if (category) {
           updateData.bestOfSets = category.bestOfSets;
+          if (!match.tiebreakScore && category.tiebreakScore) {
+            updateData.tiebreakScore = category.tiebreakScore;
+          }
         }
       }
 
@@ -203,7 +208,7 @@ export class MatchesService {
     }
 
     const isFriendly = !!match.friendlyId;
-    const setReachedWinningScore = this.isWinningScore(newSetScoreA, newSetScoreB, modality);
+    const setReachedWinningScore = this.isWinningScore(newSetScoreA, newSetScoreB, modality, currentSet.setNumber, match.bestOfSets, match.tiebreakScore);
 
     // For friendly matches: just flag set finished (manual match finish)
     const setFinished = isFriendly && setReachedWinningScore;
@@ -423,6 +428,19 @@ export class MatchesService {
       sets: updatedSets,
     });
 
+    // Notify both teams' athletes about set result
+    const teamIds = [match.teamAId, match.teamBId].filter(Boolean) as string[];
+    const teamUserIds = (await Promise.all(teamIds.map((tid: string) => this.notificationService.getTeamMemberUserIds(tid)))).flat();
+    const uniqueUserIds = [...new Set(teamUserIds.filter((id: string) => id !== userId))];
+    if (uniqueUserIds.length > 0) {
+      await this.notificationService.sendToUsers(uniqueUserIds, {
+        title: 'Set Encerrado',
+        body: `Set ${dto.setNumber} encerrado! Placar: ${setToFinish.scoreA} x ${setToFinish.scoreB}`,
+        type: 'MATCH_SET',
+        referenceId: matchId,
+      });
+    }
+
     return this.prisma.match.findUnique({
       where: { id: matchId },
       include: {
@@ -527,6 +545,22 @@ export class MatchesService {
 
     // Auto-advance round-robin teams to playoffs if applicable
     await this.bracketsService.checkAndAdvanceRoundRobinTeams(matchId).catch(() => {});
+
+    // Notify both teams' athletes about match result
+    const matchTeamIds = [updated.teamA?.id, updated.teamB?.id].filter(Boolean) as string[];
+    const matchTeamUserIds = (await Promise.all(matchTeamIds.map((tid: string) => this.notificationService.getTeamMemberUserIds(tid)))).flat();
+    const matchUniqueUserIds = [...new Set(matchTeamUserIds.filter((id: string) => id !== userId))];
+    if (matchUniqueUserIds.length > 0) {
+      const winnerName = updated.winner?.name;
+      await this.notificationService.sendToUsers(matchUniqueUserIds, {
+        title: 'Partida Encerrada',
+        body: winnerName
+          ? `Partida finalizada! Vencedor: ${winnerName} (${match.scoreTeamA} x ${match.scoreTeamB})`
+          : `Partida finalizada! Placar: ${match.scoreTeamA} x ${match.scoreTeamB}`,
+        type: 'MATCH_FINISH',
+        referenceId: matchId,
+      });
+    }
 
     return updated;
   }
@@ -1151,8 +1185,17 @@ export class MatchesService {
     return modality === TournamentModality.BEACH ? 21 : 25;
   }
 
-  private isWinningScore(scoreA: number, scoreB: number, modality: string | undefined): boolean {
-    const threshold = this.getWinningThreshold(modality);
+  private isWinningScore(
+    scoreA: number,
+    scoreB: number,
+    modality: string | undefined,
+    setNumber?: number,
+    bestOfSets?: number | null,
+    tiebreakScore?: number | null,
+  ): boolean {
+    const isTiebreakSet = bestOfSets && bestOfSets > 1 && setNumber === bestOfSets;
+    const defaultThreshold = this.getWinningThreshold(modality);
+    const threshold = isTiebreakSet ? (tiebreakScore ?? 15) : defaultThreshold;
     const diff = Math.abs(scoreA - scoreB);
     return (scoreA >= threshold || scoreB >= threshold) && diff >= 2;
   }

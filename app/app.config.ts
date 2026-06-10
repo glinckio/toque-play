@@ -17,6 +17,7 @@ export default {
         monochromeImage: "./assets/android-icon-monochrome.png",
       },
       predictiveBackGestureEnabled: false,
+      softwareKeyboardLayoutMode: "resize",
     },
     web: {
       favicon: "./assets/favicon.png",

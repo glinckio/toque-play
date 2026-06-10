@@ -163,6 +163,9 @@ class CategoryDto {
     minMembers;
     maxMembers;
     bestOfSets;
+    semifinalBestOfSets;
+    finalBestOfSets;
+    tiebreakScore;
     startTime;
     registrationPrice;
     registrationDeadline;
@@ -210,6 +213,27 @@ __decorate([
     (0, class_validator_1.Min)(1),
     __metadata("design:type", Number)
 ], CategoryDto.prototype, "bestOfSets", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Melhor de quantos sets na semifinal (se nao informado, usa bestOfSets)' }),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], CategoryDto.prototype, "semifinalBestOfSets", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Melhor de quantos sets na final (se nao informado, usa bestOfSets)' }),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], CategoryDto.prototype, "finalBestOfSets", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Pontuacao do set de desempate/tiebreak (padrao: 15 para quadra, 15 para praia). Se nao informado, usa o score padrao da modalidade.' }),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], CategoryDto.prototype, "tiebreakScore", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'Horario de inicio' }),
     (0, class_validator_1.IsDateString)(),

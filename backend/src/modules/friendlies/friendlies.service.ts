@@ -165,13 +165,33 @@ export class FriendliesService {
 
     // Notify challenged user
     if (resolvedChallengedId) {
+      const requesterName = result?.requester?.name ?? 'Alguém';
+      const requesterTeamName = result?.requesterTeam?.name;
+      const body = requesterTeamName
+        ? `${requesterName} do time ${requesterTeamName} solicitou um amistoso contra o seu time!`
+        : `${requesterName} solicitou um amistoso contra o seu time!`;
+
       await this.notificationService.createNotification(
         resolvedChallengedId,
-        'Nova Solicitacao de Amistoso',
-        'Voce recebeu uma solicitacao de amistoso!',
+        'Nova Solicitação de Amistoso',
+        body,
         'FRIENDLY_REQUEST',
         result!.id,
       );
+
+      // Also notify other challenged team members
+      if (dto.challengedTeamId) {
+        const teamUserIds = await this.notificationService.getTeamMemberUserIds(dto.challengedTeamId);
+        const otherMembers = teamUserIds.filter((id) => id !== resolvedChallengedId && id !== userId);
+        if (otherMembers.length > 0) {
+          await this.notificationService.sendToUsers(otherMembers, {
+            title: 'Nova Solicitação de Amistoso',
+            body: `Seu time recebeu uma solicitação de amistoso de ${requesterTeamName ?? 'outro time'}!`,
+            type: 'FRIENDLY_REQUEST',
+            referenceId: result!.id,
+          });
+        }
+      }
     }
 
     // Auto-create inter-team chat if both teams present
@@ -283,13 +303,31 @@ export class FriendliesService {
     });
 
     // Notify requester about acceptance
+    const challengedTeamName = accepted?.challengedTeam?.name;
+    const acceptBody = challengedTeamName
+      ? `O time ${challengedTeamName} aceitou sua solicitação de amistoso!`
+      : 'Sua solicitação de amistoso foi aceita!';
+
     await this.notificationService.createNotification(
       friendly.requesterId,
       'Amistoso Aceito!',
-      'Sua solicitacao de amistoso foi aceita!',
+      acceptBody,
       'FRIENDLY_ACCEPTED',
       friendlyId,
     );
+
+    // Notify all athletes on both sides (except requester and acceptor)
+    const athleteUserIds = (accepted?.athletes ?? [])
+      .map((a: any) => a.teamMember?.user?.id)
+      .filter((id: string | null | undefined): id is string => !!id && id !== friendly.requesterId && id !== userId);
+    if (athleteUserIds.length > 0) {
+      await this.notificationService.sendToUsers([...new Set(athleteUserIds)], {
+        title: 'Amistoso Aceito!',
+        body: `O amistoso ${accepted?.requesterTeam?.name ?? ''} vs ${challengedTeamName ?? ''} foi confirmado!`,
+        type: 'FRIENDLY_ACCEPTED',
+        referenceId: friendlyId,
+      });
+    }
 
     // Auto-create inter-team chat if both teams present
     if (this.chatService && accepted?.requesterTeamId && accepted?.challengedTeamId) {
@@ -311,11 +349,38 @@ export class FriendliesService {
       throw AppError.friendlyAlreadyResponded();
     }
 
-    return this.prisma.friendly.update({
+    const rejected = await this.prisma.friendly.update({
       where: { id: friendlyId },
       data: { status: FriendlyStatus.REJECTED },
       include: FRIENDLY_INCLUDE,
     });
+
+    // Notify requester
+    const requesterTeamName = rejected.requesterTeam?.name;
+    await this.notificationService.sendToUsers([friendly.requesterId], {
+      title: 'Amistoso Recusado',
+      body: requesterTeamName
+        ? `O time adversário recusou a solicitação de amistoso do seu time ${requesterTeamName}.`
+        : 'Sua solicitação de amistoso foi recusada.',
+      type: 'FRIENDLY_REJECTED',
+      referenceId: friendlyId,
+    });
+
+    // Notify requester team members
+    if (rejected.requesterTeamId) {
+      const teamUserIds = await this.notificationService.getTeamMemberUserIds(rejected.requesterTeamId);
+      const otherMembers = teamUserIds.filter((id) => id !== friendly.requesterId);
+      if (otherMembers.length > 0) {
+        await this.notificationService.sendToUsers(otherMembers, {
+          title: 'Amistoso Recusado',
+          body: `A solicitação de amistoso do seu time foi recusada.`,
+          type: 'FRIENDLY_REJECTED',
+          referenceId: friendlyId,
+        });
+      }
+    }
+
+    return rejected;
   }
 
   async cancel(friendlyId: string, userId: string) {

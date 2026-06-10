@@ -56,6 +56,7 @@ export class TeamMembersService {
         teamId,
         invitedUserId: user.id,
         invitedById: ownerId,
+        positions: dto.positions ?? [],
       },
       include: {
         team: { select: { id: true, name: true, avatarUrl: true } },
@@ -132,6 +133,7 @@ export class TeamMembersService {
           teamId: invitation.teamId,
           userId,
           isCaptain: false,
+          positions: invitation.positions,
         },
       });
 
@@ -179,6 +181,7 @@ export class TeamMembersService {
         isGuest: true,
         guestName: dto.guestName,
         userId: null,
+        positions: dto.positions ?? [],
         ...(dto.cpf && { cpf: dto.cpf }),
       },
     });
@@ -191,7 +194,7 @@ export class TeamMembersService {
       where: { teamId },
       include: {
         user: {
-          select: { id: true, name: true, email: true, avatarUrl: true },
+          select: { id: true, name: true, email: true, phone: true, avatarUrl: true },
         },
       },
       orderBy: [{ isCaptain: 'desc' }, { id: 'asc' }],
@@ -217,10 +220,12 @@ export class TeamMembersService {
       where: { id: memberId },
       data: {
         ...(dto.isCaptain !== undefined && { isCaptain: dto.isCaptain }),
+        ...(dto.positions !== undefined && { positions: dto.positions }),
+        ...(dto.guestName !== undefined && { guestName: dto.guestName }),
       },
       include: {
         user: {
-          select: { id: true, name: true, email: true, avatarUrl: true },
+          select: { id: true, name: true, email: true, phone: true, avatarUrl: true },
         },
       },
     });

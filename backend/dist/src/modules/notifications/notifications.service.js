@@ -35,16 +35,19 @@ let NotificationsService = class NotificationsService {
             where: { id: deviceToken.id },
         });
     }
-    async findMine(userId, page = 1, limit = 20) {
+    async findMine(userId, page = 1, limit = 20, unreadOnly = false) {
         const skip = (page - 1) * limit;
+        const where = { userId };
+        if (unreadOnly)
+            where.read = false;
         const [notifications, total] = await Promise.all([
             this.prisma.notification.findMany({
-                where: { userId },
+                where,
                 orderBy: { createdAt: 'desc' },
                 skip,
                 take: limit,
             }),
-            this.prisma.notification.count({ where: { userId } }),
+            this.prisma.notification.count({ where }),
         ]);
         return {
             data: notifications,

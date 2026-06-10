@@ -1,5 +1,6 @@
-import { IsEmail, IsString, IsOptional } from 'class-validator';
+import { IsEmail, IsString, IsOptional, IsArray, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { VolleyballPosition } from '@prisma/client';
 import { IsCpf } from '../../../common/decorators/is-cpf.decorator';
 
 export class AddMemberDto {
@@ -15,4 +16,14 @@ export class AddMemberDto {
   @ApiPropertyOptional({ description: 'Se o membro e capitao' })
   @IsOptional()
   isCaptain?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Posicoes do atleta',
+    enum: VolleyballPosition,
+    isArray: true,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(VolleyballPosition, { each: true })
+  positions?: VolleyballPosition[];
 }

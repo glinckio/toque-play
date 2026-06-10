@@ -7,9 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -18,10 +16,15 @@ import type { RouteProp } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/fonts';
+import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import { teamService } from '../../services/team';
 import { registrationService } from '../../services/registration';
 import type { TournamentStackParamList } from '../../navigation/types';
 import type { TeamMember } from '../../types/team';
+import HeroHeader from '../../components/HeroHeader';
+import ChevronButton from '../../components/ChevronButton';
+import { useDialogStore } from '../../stores/dialogStore';
 
 type Nav = NativeStackNavigationProp<TournamentStackParamList, 'RegistrationMemberSelect'>;
 type Route = RouteProp<TournamentStackParamList, 'RegistrationMemberSelect'>;
@@ -30,6 +33,7 @@ export default function RegistrationMemberSelect() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { tournamentId, teamId, categoryId, minMembers, maxMembers } = route.params;
+  const dialog = useDialogStore();
 
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
@@ -92,7 +96,7 @@ export default function RegistrationMemberSelect() {
       navigation.replace('RegistrationSummary', { registrationId: reg.id });
     } catch (e: any) {
       const msg = e?.response?.data?.message ?? 'Erro ao inscrever time';
-      Alert.alert('Erro', typeof msg === 'string' ? msg : 'Erro ao inscrever time');
+      dialog.error(typeof msg === 'string' ? msg : 'Erro ao inscrever time');
     } finally {
       setSubmitting(false);
     }
@@ -101,7 +105,10 @@ export default function RegistrationMemberSelect() {
   if (loading) {
     return (
       <SafeAreaView style={styles.root} edges={['top']}>
-        <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 80 }} />
+        <HeroHeader title="SELECIONAR" watermark="PICK" onBack={() => navigation.goBack()} rounded />
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
       </SafeAreaView>
     );
   }
@@ -110,13 +117,7 @@ export default function RegistrationMemberSelect() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>SELECIONAR ATLETAS</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <HeroHeader title="SELECIONAR ATLETAS" watermark="PICK" onBack={() => navigation.goBack()} rounded />
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Info */}
@@ -131,7 +132,7 @@ export default function RegistrationMemberSelect() {
 
         {availableCount < minMembers && (
           <View style={styles.warningCard}>
-            <Ionicons name="alert-circle-outline" size={18} color="#FF9800" />
+            <Ionicons name="alert-circle-outline" size={18} color={colors.warning} />
             <Text style={styles.warningText}>
               Jogadores insuficientes. Mínimo {minMembers} necessários, mas só {availableCount} disponíve{availableCount !== 1 ? 'is' : 'l'}.
             </Text>
@@ -149,10 +150,8 @@ export default function RegistrationMemberSelect() {
             if (isBlocked) {
               return (
                 <View key={member.id} style={[styles.memberCard, styles.memberCardBlocked]}>
-                  <View style={styles.memberAvatarWrap}>
-                    <View style={styles.memberAvatarBlocked}>
-                      <Text style={styles.memberAvatarLetterMuted}>{name.charAt(0).toUpperCase()}</Text>
-                    </View>
+                  <View style={styles.memberAvatarBlocked}>
+                    <Text style={styles.memberAvatarLetterMuted}>{name.charAt(0).toUpperCase()}</Text>
                   </View>
                   <View style={styles.memberInfo}>
                     <Text style={styles.memberNameBlocked} numberOfLines={1}>{name}</Text>
@@ -173,26 +172,19 @@ export default function RegistrationMemberSelect() {
                 onPress={() => toggleMember(member.id)}
                 activeOpacity={0.7}
               >
-                <View style={styles.memberAvatarWrap}>
-                  <LinearGradient
-                    colors={isSelected ? [colors.primary, colors.primaryGlow] : [colors.surfaceSoft, colors.surfaceSoft]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.memberAvatarGradient}
-                  >
-                    <Text style={[styles.memberAvatarLetter, !isSelected && styles.memberAvatarLetterMuted]}>
-                      {name.charAt(0).toUpperCase()}
-                    </Text>
-                  </LinearGradient>
+                <View style={[styles.memberAvatar, isSelected && styles.memberAvatarSelected]}>
+                  <Text style={[styles.memberAvatarLetter, !isSelected && styles.memberAvatarLetterMuted]}>
+                    {name.charAt(0).toUpperCase()}
+                  </Text>
                 </View>
                 <View style={styles.memberInfo}>
                   <Text style={[styles.memberName, isSelected && styles.memberNameSelected]} numberOfLines={1}>
                     {name}
                   </Text>
                   {member.isCaptain && (
-                    <View style={styles.originalCaptainBadge}>
-                      <Ionicons name="ribbon" size={10} color={colors.primaryGlow} />
-                      <Text style={styles.originalCaptainText}>CAPITÃO DO TIME</Text>
+                    <View style={styles.captainBadge}>
+                      <Ionicons name="ribbon" size={10} color={colors.primary} />
+                      <Text style={styles.captainBadgeText}>CAPITÃO DO TIME</Text>
                     </View>
                   )}
                 </View>
@@ -208,7 +200,7 @@ export default function RegistrationMemberSelect() {
                         color={isCaptain ? '#FFD700' : colors.textMuted}
                       />
                     </TouchableOpacity>
-                    <Ionicons name="checkmark-circle" size={20} color={colors.primaryGlow} />
+                    <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -222,28 +214,16 @@ export default function RegistrationMemberSelect() {
       {/* Bottom action */}
       {canSubmit && (
         <View style={styles.bottomBar}>
-          <TouchableOpacity
-            style={styles.ctaBtn}
+          <ChevronButton
+            variant="primary"
+            size="lg"
+            fullWidth
             onPress={handleSubmit}
             disabled={submitting}
-            activeOpacity={0.8}
+            icon={<Ionicons name="checkmark-circle-outline" size={16} color="#FFFFFF" />}
           >
-            <LinearGradient
-              colors={[colors.primary, colors.primaryGlow]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.ctaGradient}
-            >
-              {submitting ? (
-                <ActivityIndicator color={colors.text} size="small" />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle-outline" size={20} color={colors.text} />
-                  <Text style={styles.ctaText}>CONFIRMAR INSCRIÇÃO</Text>
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+            {submitting ? 'INSCREVENDO...' : 'CONFIRMAR INSCRIÇÃO'}
+          </ChevronButton>
         </View>
       )}
     </SafeAreaView>
@@ -252,14 +232,7 @@ export default function RegistrationMemberSelect() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-  },
-  headerTitle: { fontFamily: fonts.title.display, fontSize: 22, color: colors.text, letterSpacing: 2 },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 40 },
 
   infoRow: {
@@ -267,114 +240,108 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.lg,
+    marginTop: spacing.lg,
   },
   infoText: {
-    fontSize: 13,
+    fontSize: typography.sizes.body,
     color: colors.textMuted,
     fontFamily: fonts.text.regular,
   },
   infoCount: {
-    fontFamily: fonts.title.display,
-    fontSize: 20,
+    fontFamily: fonts.title.regular,
+    fontSize: typography.sizes.title,
     color: colors.text,
-    letterSpacing: 1,
   },
 
   warningCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(255,152,0,0.1)',
+    backgroundColor: 'rgba(240,160,48,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(255,152,0,0.2)',
-    borderRadius: 12,
+    borderColor: 'rgba(240,160,48,0.2)',
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     marginBottom: spacing.lg,
   },
   warningText: {
     flex: 1,
-    fontSize: 12,
-    color: '#FF9800',
+    fontSize: typography.sizes.md,
+    color: colors.warning,
     fontFamily: fonts.text.regular,
     lineHeight: 16,
   },
 
   memberList: { gap: spacing.md },
 
-  // Available member
   memberCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderRadius: radius.card,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     gap: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   memberCardSelected: {
-    borderColor: 'rgba(157,115,230,0.3)',
-    backgroundColor: 'rgba(109,46,192,0.08)',
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
-  memberCardBlocked: {
-    opacity: 0.45,
+  memberCardBlocked: { opacity: 0.45 },
+
+  memberAvatar: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center', justifyContent: 'center',
   },
-  memberAvatarWrap: {},
-  memberAvatarGradient: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  memberAvatarSelected: { backgroundColor: colors.primary },
   memberAvatarBlocked: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: colors.inputBackground,
+    alignItems: 'center', justifyContent: 'center',
   },
   memberAvatarLetter: {
-    fontFamily: fonts.title.display,
+    fontFamily: fonts.title.regular,
     fontSize: 18,
-    color: colors.text,
+    color: '#FFFFFF',
   },
-  memberAvatarLetterMuted: {
-    color: colors.textMuted,
-  },
+  memberAvatarLetterMuted: { color: colors.textMuted },
+
   memberInfo: { flex: 1 },
   memberName: {
-    fontSize: 14,
+    fontSize: typography.sizes.input,
     color: colors.text,
     fontFamily: fonts.text.semiBold,
   },
-  memberNameSelected: {
-    color: colors.primaryGlow,
-  },
+  memberNameSelected: { color: colors.primary },
   memberNameBlocked: {
-    fontSize: 14,
+    fontSize: typography.sizes.input,
     color: colors.textMuted,
     fontFamily: fonts.text.semiBold,
   },
   blockedText: {
-    fontSize: 11,
+    fontSize: typography.sizes.md,
     color: colors.textMuted,
     fontFamily: fonts.text.regular,
     marginTop: 2,
   },
-  originalCaptainBadge: {
+  captainBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
     marginTop: 2,
   },
-  originalCaptainText: {
-    fontSize: 9,
-    letterSpacing: 1.5,
-    color: colors.primaryGlow,
+  captainBadgeText: {
+    fontSize: typography.sizes.md,
+    letterSpacing: typography.letterSpacing.medium,
+    color: colors.primary,
     fontFamily: fonts.text.bold,
   },
   memberActions: {
@@ -383,7 +350,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
 
-  // Bottom
   bottomBar: {
     position: 'absolute',
     bottom: 0,
@@ -391,17 +357,8 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
-    backgroundColor: 'rgba(5,6,10,0.9)',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.04)',
+    borderTopColor: colors.border,
   },
-  ctaBtn: { borderRadius: 14, overflow: 'hidden' },
-  ctaGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.lg,
-  },
-  ctaText: { fontSize: 14, letterSpacing: 2, color: colors.text, fontFamily: fonts.text.semiBold },
 });
