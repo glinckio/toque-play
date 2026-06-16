@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RegistrationsService } from './registrations.service';
 import { RegisterTeamDto } from './dto/register-team.dto';
 import { QueryRegistrationsDto } from './dto/query-registrations.dto';
+import { Audit } from '../audit/audit.decorator';
 
 @ApiTags('Tournament Registrations')
 @ApiBearerAuth()
@@ -31,6 +32,7 @@ export class TournamentRegistrationsController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Inscrever time em uma categoria' })
+  @Audit('REGISTRATION_CREATED', 'Registration')
   async registerTeam(
     @Param('tournamentId') tournamentId: string,
     @CurrentUser('id') userId: string,
@@ -60,6 +62,7 @@ export class TournamentRegistrationsController {
 
   @Patch('registrations/:regId/confirm')
   @ApiOperation({ summary: 'Confirmar inscricao (owner)' })
+  @Audit('REGISTRATION_CONFIRMED', 'Registration', { entityIdParam: 'regId' })
   async confirmRegistration(
     @Param('tournamentId') tournamentId: string,
     @Param('regId') regId: string,
@@ -70,6 +73,7 @@ export class TournamentRegistrationsController {
 
   @Patch('registrations/:regId/reject')
   @ApiOperation({ summary: 'Rejeitar inscricao (owner)' })
+  @Audit('REGISTRATION_REJECTED', 'Registration', { entityIdParam: 'regId' })
   async rejectRegistration(
     @Param('tournamentId') tournamentId: string,
     @Param('regId') regId: string,

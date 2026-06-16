@@ -11,13 +11,8 @@ import { BullBoardMiddleware } from './bull-board.middleware';
 })
 export class AdminModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(MaintenanceMiddleware)
-      .exclude('api/admin')
-      .forRoutes('*');
+    consumer.apply(MaintenanceMiddleware).exclude('api/admin').forRoutes('*');
 
-    consumer
-      .apply(BullBoardMiddleware)
-      .forRoutes('api/admin/queues');
+    consumer.apply(BullBoardMiddleware).forRoutes('api/admin/queues');
   }
 }

@@ -14,6 +14,7 @@ import {
   TournamentStatus,
   RegistrationStatus,
 } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 
 const REGISTRATION_INCLUDE = {
   tournament: { select: { id: true, name: true, status: true } },
@@ -40,6 +41,7 @@ export class RegistrationsService {
     private tournamentsService: TournamentsService,
     private stripeService: StripeService,
     private notificationService: NotificationService,
+    private auditService: AuditService,
     @InjectQueue('registration-expiry') private expiryQueue: Queue,
   ) {}
 
@@ -347,6 +349,23 @@ export class RegistrationsService {
       if (this.paymentsGateway) {
         this.paymentsGateway.emitPaymentConfirmed(reg.userId, registrationId);
       }
+
+      void this.auditService.log({
+        action: 'PAYMENT_CONFIRMED',
+        entityType: 'Registration',
+        entityId: registrationId,
+        actorId: reg.userId ?? null,
+        actorEmail: reg.user?.email ?? null,
+        newValues: {
+          status: reg.status,
+          paymentStatus: reg.paymentStatus,
+          paymentId: reg.paymentId,
+          paidAt: reg.paidAt,
+          method: 'STRIPE',
+        },
+        method: 'WEBHOOK',
+        route: 'stripe:checkout.session.completed',
+      });
     }
   }
 
@@ -373,6 +392,22 @@ export class RegistrationsService {
     if (this.paymentsGateway && newStatus === RegistrationStatus.CONFIRMED) {
       this.paymentsGateway.emitPaymentConfirmed(updated.userId, dto.registrationId);
     }
+
+    void this.auditService.log({
+      action: newStatus === RegistrationStatus.CONFIRMED ? 'PAYMENT_CONFIRMED' : 'PAYMENT_PENDING',
+      entityType: 'Registration',
+      entityId: dto.registrationId,
+      actorId: updated.userId ?? null,
+      actorEmail: updated.user?.email ?? null,
+      newValues: {
+        status: updated.status,
+        paymentStatus: updated.paymentStatus,
+        paymentId: updated.paymentId,
+        method: 'MANUAL_WEBHOOK',
+      },
+      method: 'WEBHOOK',
+      route: 'manual:payment-webhook',
+    });
 
     return updated;
   }

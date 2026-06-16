@@ -23,6 +23,7 @@ import { WalkoverDto } from './dto/walkover.dto';
 import { TimeoutDto } from './dto/timeout.dto';
 import { SubstitutionDto } from './dto/substitution.dto';
 import { NearbyQueryDto } from './dto/nearby-query.dto';
+import { Audit } from '../audit/audit.decorator';
 
 @ApiTags('Matches')
 @ApiBearerAuth()
@@ -75,6 +76,9 @@ export class MatchesController {
   @Patch(':id/start')
   @ApiOperation({ summary: 'Iniciar partida' })
   @ApiResponse({ status: 200, description: 'Partida iniciada' })
+  @Audit('MATCH_STARTED', 'Match', {
+    fetchBefore: async (prisma, id) => prisma.match.findUnique({ where: { id }, select: { id: true, status: true, bracketId: true, friendlyId: true } }),
+  })
   async startMatch(
     @Param('id') matchId: string,
     @CurrentUser('id') userId: string,
@@ -118,6 +122,9 @@ export class MatchesController {
   @Patch(':id/finish')
   @ApiOperation({ summary: 'Finalizar partida' })
   @ApiResponse({ status: 200, description: 'Partida finalizada' })
+  @Audit('MATCH_FINISHED', 'Match', {
+    fetchBefore: async (prisma, id) => prisma.match.findUnique({ where: { id }, select: { id: true, status: true, winnerId: true, scoreTeamA: true, scoreTeamB: true } }),
+  })
   async finishMatch(
     @Param('id') matchId: string,
     @CurrentUser('id') userId: string,
@@ -128,6 +135,9 @@ export class MatchesController {
   @Patch(':id/walkover')
   @ApiOperation({ summary: 'Declarar W.O.' })
   @ApiResponse({ status: 200, description: 'W.O. declarado' })
+  @Audit('MATCH_WALKOVER', 'Match', {
+    fetchBefore: async (prisma, id) => prisma.match.findUnique({ where: { id }, select: { id: true, status: true, winnerId: true } }),
+  })
   async declareWalkover(
     @Param('id') matchId: string,
     @CurrentUser('id') userId: string,

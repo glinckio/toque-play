@@ -22,6 +22,7 @@ import { FriendliesService } from './friendlies.service';
 import { CreateFriendlyDto } from './dto/create-friendly.dto';
 import { AcceptFriendlyDto } from './dto/accept-friendly.dto';
 import { QueryFriendlyDto, NearbyQueryDto } from './dto/query-friendly.dto';
+import { Audit } from '../audit/audit.decorator';
 
 @ApiTags('Friendlies')
 @ApiBearerAuth()
@@ -34,6 +35,7 @@ export class FriendliesController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Criar solicitacao de amistoso' })
   @ApiResponse({ status: 201, description: 'Amistoso criado' })
+  @Audit('FRIENDLY_REQUESTED', 'Friendly')
   async create(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateFriendlyDto,
@@ -83,6 +85,9 @@ export class FriendliesController {
 
   @Patch(':id/accept')
   @ApiOperation({ summary: 'Aceitar amistoso' })
+  @Audit('FRIENDLY_ACCEPTED', 'Friendly', {
+    fetchBefore: async (prisma, id) => prisma.friendly.findUnique({ where: { id }, select: { id: true, status: true, requesterTeamId: true, challengedTeamId: true } }),
+  })
   async accept(
     @Param('id') friendlyId: string,
     @CurrentUser('id') userId: string,
@@ -93,6 +98,9 @@ export class FriendliesController {
 
   @Patch(':id/reject')
   @ApiOperation({ summary: 'Rejeitar amistoso' })
+  @Audit('FRIENDLY_REJECTED', 'Friendly', {
+    fetchBefore: async (prisma, id) => prisma.friendly.findUnique({ where: { id }, select: { id: true, status: true } }),
+  })
   async reject(
     @Param('id') friendlyId: string,
     @CurrentUser('id') userId: string,
@@ -102,6 +110,9 @@ export class FriendliesController {
 
   @Patch(':id/cancel')
   @ApiOperation({ summary: 'Cancelar amistoso' })
+  @Audit('FRIENDLY_CANCELLED', 'Friendly', {
+    fetchBefore: async (prisma, id) => prisma.friendly.findUnique({ where: { id }, select: { id: true, status: true } }),
+  })
   async cancel(
     @Param('id') friendlyId: string,
     @CurrentUser('id') userId: string,

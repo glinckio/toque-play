@@ -1,14 +1,33 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
+import { StorageService } from '../storage/storage.service';
 import { AppError } from '../../common/errors/app-error';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { QueryAdminTournamentsDto } from './dto/query-admin-tournaments.dto';
 import { QueryLogsDto } from './dto/query-logs.dto';
 import { QueryMetricsDto } from './dto/query-metrics.dto';
 import { UpdateSystemDto } from './dto/update-system.dto';
+import { QueryAdminMatchesDto } from './dto/query-matches.dto';
+import { QueryAdminAthletesDto } from './dto/query-athletes.dto';
+import { QueryAdminPaymentsDto } from './dto/query-payments.dto';
+import { UpdateTournamentAdminDto } from './dto/update-tournament-admin.dto';
+import { UpdateUserAdminDto } from './dto/update-user-admin.dto';
+import {
+  CreateFriendlyAdminDto,
+  UpdateFriendlyAdminDto,
+} from './dto/friendly-admin.dto';
+import { QueryAdminFriendliesDto } from './dto/query-friendlies.dto';
+import { CreateTournamentAdminDto } from './dto/create-tournament-admin.dto';
+import {
+  CreateRegistrationAdminDto,
+  UpdateRegistrationMemberAdminDto,
+  AddRegistrationMemberAdminDto,
+} from './dto/registration-admin.dto';
+import * as bcrypt from 'bcrypt';
 
-const DASHBOARD_CACHE_KEY = 'admin:dashboard';
+const DASHBOARD_CACHE_KEY = 'admin:dashboard:v2';
 const DASHBOARD_CACHE_TTL = 300; // 5 minutes
 const MAINTENANCE_KEY = 'system:maintenance';
 const GLOBAL_MESSAGE_KEY = 'system:globalMessage';
@@ -18,6 +37,7 @@ export class AdminService {
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
+    private storage: StorageService,
   ) {}
 
   // ─── Dashboard ───────────────────────────────────────────
@@ -28,8 +48,11 @@ export class AdminService {
       return JSON.parse(cached);
     }
 
+    const now = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const [
       totalUsers,
@@ -37,14 +60,50 @@ export class AdminService {
       tournamentsByStatus,
       totalMatches,
       totalTeams,
+      paidRegs30d,
+      paidRegs6m,
+      regsLast7d,
+      usersByRoleRows,
+      modalityRows,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({
-        where: { refreshTokens: { some: { createdAt: { gte: thirtyDaysAgo } } } },
+        where: {
+          refreshTokens: { some: { createdAt: { gte: thirtyDaysAgo } } },
+        },
       }),
-      this.prisma.tournament.groupBy({ by: ['status'], _count: { status: true } }),
+      this.prisma.tournament.groupBy({
+        by: ['status'],
+        _count: { status: true },
+      }),
       this.prisma.match.count(),
       this.prisma.team.count(),
+      this.prisma.registration.findMany({
+        where: {
+          paymentStatus: 'PAID',
+          paidAt: { gte: thirtyDaysAgo, not: null },
+        },
+        include: { category: { select: { registrationPrice: true } } },
+      }),
+      this.prisma.registration.findMany({
+        where: {
+          paymentStatus: 'PAID',
+          paidAt: {
+            gte: new Date(now.getFullYear(), now.getMonth() - 5, 1),
+            not: null,
+          },
+        },
+        include: { category: { select: { registrationPrice: true } } },
+      }),
+      this.prisma.registration.findMany({
+        where: { createdAt: { gte: sevenDaysAgo } },
+        select: { createdAt: true },
+      }),
+      this.prisma.user.groupBy({ by: ['role'], _count: { role: true } }),
+      this.prisma.tournamentCategory.groupBy({
+        by: ['modality'],
+        _count: { modality: true },
+      }),
     ]);
 
     const tournamentsCount: Record<string, number> = {};
@@ -52,15 +111,103 @@ export class AdminService {
       tournamentsCount[row.status] = row._count.status;
     }
 
+    const priceToCents = (p: unknown): number => {
+      if (p === null || p === undefined) return 0;
+      const n = typeof p === 'number' ? p : Number(String(p));
+      return Number.isFinite(n) ? Math.round(n * 100) : 0;
+    };
+
+    const revenue30dCents = paidRegs30d.reduce(
+      (sum, r) => sum + priceToCents(r.category?.registrationPrice),
+      0,
+    );
+
+    // Receita por mês (últimos 6 meses) — valor em BRL (não cents) p/ gráfico
+    const monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const revenueByMonth: { month: string; value: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const next = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      const totalCents = paidRegs6m
+        .filter((r) => {
+          const paid = r.paidAt;
+          if (!paid) return false;
+          return paid >= d && paid < next;
+        })
+        .reduce((s, r) => s + priceToCents(r.category?.registrationPrice), 0);
+      revenueByMonth.push({
+        month: monthLabels[d.getMonth()],
+        value: Math.round(totalCents / 100),
+      });
+    }
+
+    // Inscrições por dia (últimos 7)
+    const registrationsByDay: { day: string; value: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      const next = new Date(d);
+      next.setDate(d.getDate() + 1);
+      const count = regsLast7d.filter((r) => r.createdAt >= d && r.createdAt < next).length;
+      registrationsByDay.push({
+        day: String(d.getDate()).padStart(2, '0'),
+        value: count,
+      });
+    }
+
+    const roleColors: Record<string, string> = {
+      ATLETA: '#6D2EC0',
+      ORGANIZADOR: '#A674F0',
+      SUPER_ADMIN: '#F0A030',
+    };
+    const roleLabels: Record<string, string> = {
+      ATLETA: 'Atletas',
+      ORGANIZADOR: 'Organizadores',
+      SUPER_ADMIN: 'Admins',
+    };
+    const usersByRole = usersByRoleRows.map((r) => ({
+      name: roleLabels[r.role] ?? r.role,
+      value: r._count.role,
+      color: roleColors[r.role] ?? '#A89BBA',
+    }));
+
+    const modalityColors: Record<string, string> = {
+      BEACH: '#F0A030',
+      COURT: '#6D2EC0',
+    };
+    const modalityLabels: Record<string, string> = {
+      BEACH: 'Praia',
+      COURT: 'Quadra',
+    };
+    const modalityTotal = modalityRows.reduce((s, r) => s + r._count.modality, 0) || 1;
+    const modalityBreakdown = modalityRows.map((r) => ({
+      name: modalityLabels[r.modality] ?? r.modality,
+      value: Math.round((r._count.modality / modalityTotal) * 100),
+      color: modalityColors[r.modality] ?? '#A89BBA',
+    }));
+
     const result = {
       totalUsers,
       activeUsersLast30d: activeUsers,
       tournamentsByStatus: tournamentsCount,
       totalMatches,
       totalTeams,
+      revenue30dCents,
+      revenueByMonth,
+      registrationsByDay,
+      usersByRole,
+      modalityBreakdown,
+      registrationsPending: await this.prisma.registration.count({
+        where: { status: 'PENDING_PAYMENT' },
+      }),
     };
 
-    await this.redis.set(DASHBOARD_CACHE_KEY, JSON.stringify(result), DASHBOARD_CACHE_TTL);
+    await this.redis.set(
+      DASHBOARD_CACHE_KEY,
+      JSON.stringify(result),
+      DASHBOARD_CACHE_TTL,
+    );
 
     return result;
   }
@@ -98,7 +245,13 @@ export class AdminService {
       this.prisma.user.count({ where }),
     ]);
 
-    return { data: users, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      data: users,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async blockUser(userId: string) {
@@ -132,11 +285,30 @@ export class AdminService {
   // ─── Tournament Management ───────────────────────────────
 
   async listTournaments(query: QueryAdminTournamentsDto) {
-    const { page = 1, limit = 20, status } = query;
+    const { page = 1, limit = 20, status, search, modality, from, to } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (status) where.status = status;
+    const where: Prisma.TournamentWhereInput = {};
+    if (status) where.status = status as never;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { owner: { name: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+    if (modality) {
+      where.categories = { some: { modality } };
+    }
+    if (from || to) {
+      where.stages = {
+        some: {
+          date: {
+            ...(from ? { gte: new Date(from) } : {}),
+            ...(to ? { lte: new Date(to) } : {}),
+          },
+        },
+      };
+    }
 
     const [tournaments, total] = await Promise.all([
       this.prisma.tournament.findMany({
@@ -152,13 +324,22 @@ export class AdminService {
       this.prisma.tournament.count({ where }),
     ]);
 
-    return { data: tournaments, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      data: tournaments,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async blockTournament(tournamentId: string) {
-    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id: tournamentId },
+    });
     if (!tournament) throw AppError.tournamentNotFound();
-    if (tournament.status === 'CANCELLED') throw AppError.tournamentAlreadyDeleted();
+    if (tournament.status === 'CANCELLED')
+      throw AppError.tournamentAlreadyDeleted();
 
     return this.prisma.tournament.update({
       where: { id: tournamentId },
@@ -168,15 +349,120 @@ export class AdminService {
   }
 
   async deleteTournament(tournamentId: string) {
-    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id: tournamentId },
+    });
     if (!tournament) throw AppError.tournamentNotFound();
-    if (tournament.status === 'CANCELLED') throw AppError.tournamentAlreadyDeleted();
+    if (tournament.status === 'CANCELLED')
+      throw AppError.tournamentAlreadyDeleted();
 
     // Soft delete: set status to CANCELLED, mark unpublished
     return this.prisma.tournament.update({
       where: { id: tournamentId },
       data: { status: 'CANCELLED', isPublished: false },
       select: { id: true, name: true, status: true },
+    });
+  }
+
+  async getTournament(tournamentId: string) {
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        categories: true,
+        stages: true,
+        sponsors: true,
+        _count: {
+          select: {
+            registrations: true,
+            brackets: true,
+            athleteStats: true,
+          },
+        },
+      },
+    });
+    if (!tournament) throw AppError.tournamentNotFound();
+    return tournament;
+  }
+
+  // Update admin bypass — sem checagens de regra de negócio.
+  async updateTournament(tournamentId: string, dto: UpdateTournamentAdminDto) {
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      include: { categories: { take: 1 }, stages: { take: 1 } },
+    });
+    if (!tournament) throw AppError.tournamentNotFound();
+
+    const { category, stage, ...tournamentFields } = dto;
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.tournament.update({
+        where: { id: tournamentId },
+        data: {
+          ...(tournamentFields.name !== undefined && { name: tournamentFields.name }),
+          ...(tournamentFields.description !== undefined && {
+            description: tournamentFields.description,
+          }),
+          ...(tournamentFields.imageUrl !== undefined && {
+            imageUrl: tournamentFields.imageUrl,
+          }),
+          ...(tournamentFields.eventType !== undefined && {
+            eventType: tournamentFields.eventType as never,
+          }),
+          ...(tournamentFields.status !== undefined && {
+            status: tournamentFields.status as never,
+          }),
+          ...(tournamentFields.isPublished !== undefined && {
+            isPublished: tournamentFields.isPublished,
+          }),
+        },
+      });
+
+      if (category && tournament.categories[0]) {
+        await tx.tournamentCategory.update({
+          where: { id: tournament.categories[0].id },
+          data: {
+            ...(category.type !== undefined && { type: category.type as never }),
+            ...(category.format !== undefined && { format: category.format as never }),
+            ...(category.modality !== undefined && { modality: category.modality as never }),
+            ...(category.minMembers !== undefined && { minMembers: category.minMembers }),
+            ...(category.maxMembers !== undefined && { maxMembers: category.maxMembers }),
+            ...(category.bestOfSets !== undefined && { bestOfSets: category.bestOfSets }),
+            ...(category.tiebreakScore !== undefined && {
+              tiebreakScore: category.tiebreakScore,
+            }),
+            ...(category.registrationPrice !== undefined && {
+              registrationPrice: category.registrationPrice,
+            }),
+          },
+        });
+      }
+
+      if (stage && tournament.stages[0]) {
+        await tx.tournamentStage.update({
+          where: { id: tournament.stages[0].id },
+          data: {
+            ...(stage.name !== undefined && { name: stage.name }),
+            ...(stage.date !== undefined && { date: new Date(stage.date) }),
+            ...(stage.startTime !== undefined && {
+              startTime: new Date(stage.startTime),
+            }),
+            ...(stage.maxTeams !== undefined && { maxTeams: stage.maxTeams }),
+            ...(stage.city !== undefined && { city: stage.city }),
+            ...(stage.state !== undefined && { state: stage.state }),
+            ...(stage.address !== undefined && { address: stage.address }),
+          },
+        });
+      }
+
+      return tx.tournament.findUnique({
+        where: { id: tournamentId },
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          categories: true,
+          stages: true,
+        },
+      });
     });
   }
 
@@ -283,7 +569,11 @@ export class AdminService {
       this.prisma.user.count(),
       this.prisma.user.count({ where: dateFilter }),
       this.prisma.tournament.count({ where: dateFilter }),
-      this.prisma.match.count({ where: dateFilter.createdAt ? { scheduledAt: dateFilter.createdAt } : {} }),
+      this.prisma.match.count({
+        where: dateFilter.createdAt
+          ? { scheduledAt: dateFilter.createdAt }
+          : {},
+      }),
       this.prisma.registration.count({ where: dateFilter }),
     ]);
 
@@ -295,5 +585,891 @@ export class AdminService {
       totalRegistrations,
       period: { from: from ?? null, to: to ?? null },
     };
+  }
+
+  // ─── Match Management ────────────────────────────────────
+
+  async listMatches(query: QueryAdminMatchesDto) {
+    const { page = 1, limit = 20, status, type, tournamentId, friendlyId, from, to } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.MatchWhereInput = {};
+    if (status) where.status = status as never;
+    if (type === 'tournament') where.bracketId = { not: null };
+    if (type === 'friendly') where.friendlyId = { not: null };
+    if (tournamentId) where.bracket = { tournamentId };
+    if (friendlyId) where.friendlyId = friendlyId;
+    if (from || to) {
+      where.scheduledAt = {
+        ...(from ? { gte: new Date(from) } : {}),
+        ...(to ? { lte: new Date(to) } : {}),
+      };
+    }
+
+    const include = {
+      teamA: { select: { id: true, name: true } },
+      teamB: { select: { id: true, name: true } },
+      winner: { select: { id: true, name: true } },
+      bracket: {
+        select: {
+          id: true,
+          tournamentId: true,
+          tournament: { select: { id: true, name: true } },
+        },
+      },
+      friendly: {
+        select: {
+          id: true,
+          title: true,
+          requesterTeam: { select: { id: true, name: true } },
+          challengedTeam: { select: { id: true, name: true } },
+        },
+      },
+    } satisfies Prisma.MatchInclude;
+
+    const [matches, total] = await Promise.all([
+      this.prisma.match.findMany({ where, include, orderBy: { scheduledAt: 'desc' }, skip, take: limit }),
+      this.prisma.match.count({ where }),
+    ]);
+
+    return {
+      data: matches,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getMatch(matchId: string) {
+    const match = await this.prisma.match.findUnique({
+      where: { id: matchId },
+      include: {
+        teamA: { select: { id: true, name: true } },
+        teamB: { select: { id: true, name: true } },
+        winner: { select: { id: true, name: true } },
+        bracket: {
+          select: {
+            id: true,
+            tournamentId: true,
+            tournament: { select: { id: true, name: true } },
+          },
+        },
+        friendly: {
+          select: {
+            id: true,
+            title: true,
+            requesterTeam: { select: { id: true, name: true } },
+            challengedTeam: { select: { id: true, name: true } },
+          },
+        },
+        sets: { orderBy: { setNumber: 'asc' } },
+        matchEvents: {
+          orderBy: { createdAt: 'asc' },
+        },
+        pointEvents: {
+          orderBy: { timestamp: 'asc' },
+        },
+      },
+    });
+    if (!match) throw new BadRequestException('Partida não encontrada');
+    return match;
+  }
+
+  // ─── Athlete Management ──────────────────────────────────
+
+  async listAthletes(query: QueryAdminAthletesDto) {
+    const { page = 1, limit = 20, search } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.UserWhereInput = { role: 'ATLETA' };
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const select = {
+      id: true,
+      name: true,
+      email: true,
+      avatarUrl: true,
+      phone: true,
+      status: true,
+      createdAt: true,
+      athleteStats: {
+        select: {
+          matchesPlayed: true,
+          matchesWon: true,
+          setsWon: true,
+          pointsScored: true,
+          mvpCount: true,
+        },
+      },
+      _count: { select: { teamMembers: true } },
+    } satisfies Prisma.UserSelect;
+
+    const [athletes, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    const data = athletes.map((a) => {
+      const stats = a.athleteStats.reduce(
+        (acc, s) => {
+          acc.matchesPlayed += s.matchesPlayed;
+          acc.matchesWon += s.matchesWon;
+          acc.setsWon += s.setsWon;
+          acc.pointsScored += s.pointsScored;
+          acc.mvpCount += s.mvpCount;
+          return acc;
+        },
+        {
+          matchesPlayed: 0,
+          matchesWon: 0,
+          setsWon: 0,
+          pointsScored: 0,
+          mvpCount: 0,
+        },
+      );
+      return {
+        id: a.id,
+        name: a.name,
+        email: a.email,
+        avatarUrl: a.avatarUrl,
+        phone: a.phone,
+        status: a.status,
+        createdAt: a.createdAt,
+        teamsCount: a._count.teamMembers,
+        stats,
+      };
+    });
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  // ─── Payment Management ──────────────────────────────────
+
+  async listPayments(query: QueryAdminPaymentsDto) {
+    const { page = 1, limit = 20, status, tournamentId, search } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.RegistrationWhereInput = {};
+    if (status) where.paymentStatus = status;
+    if (tournamentId) where.tournamentId = tournamentId;
+    if (search) {
+      where.OR = [
+        { paymentId: { contains: search, mode: 'insensitive' } },
+        { user: { name: { contains: search, mode: 'insensitive' } } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const include = {
+      user: { select: { id: true, name: true, email: true } },
+      tournament: { select: { id: true, name: true } },
+      category: { select: { id: true, type: true, modality: true } },
+      team: { select: { id: true, name: true } },
+    } satisfies Prisma.RegistrationInclude;
+
+    const [registrations, total] = await Promise.all([
+      this.prisma.registration.findMany({
+        where,
+        include,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.registration.count({ where }),
+    ]);
+
+    const data = registrations.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      userName: r.user?.name ?? null,
+      userEmail: r.user?.email ?? null,
+      tournamentId: r.tournamentId,
+      tournamentName: r.tournament?.name ?? null,
+      categoryId: r.categoryId,
+      categoryLabel: r.category
+        ? `${r.category.type} · ${r.category.modality}`
+        : null,
+      teamId: r.teamId,
+      teamName: r.team?.name ?? null,
+      status: r.status,
+      paymentId: r.paymentId,
+      paymentStatus: r.paymentStatus,
+      paymentMethod: r.paymentMethod,
+      paidAt: r.paidAt,
+      createdAt: r.createdAt,
+    }));
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async refundPayment(registrationId: string) {
+    const registration = await this.prisma.registration.findUnique({
+      where: { id: registrationId },
+    });
+    if (!registration) throw AppError.userNotFound();
+    if (!registration.paymentId) {
+      throw new BadRequestException('Inscrição sem pagamento associado');
+    }
+
+    // Atualiza o status da inscrição como reembolsada.
+    // A integração efetiva com a API do Stripe (stripe.refunds.create) deve
+    // ser feita via StripeModule quando as chaves estiverem configuradas.
+    const updated = await this.prisma.registration.update({
+      where: { id: registrationId },
+      data: { paymentStatus: 'REFUNDED' },
+    });
+
+    return {
+      id: updated.id,
+      paymentStatus: updated.paymentStatus,
+      paymentId: updated.paymentId,
+    };
+  }
+
+  // ─── User Detail/Update (admin bypass) ───────────────────
+
+  async getUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        avatarUrl: true,
+        phone: true,
+        bio: true,
+        isEmailVerified: true,
+        createdAt: true,
+        _count: {
+          select: {
+            teams: true,
+            teamMembers: true,
+            registrations: true,
+            tournaments: true,
+          },
+        },
+      },
+    });
+    if (!user) throw AppError.userNotFound();
+    return user;
+  }
+
+  async updateUser(userId: string, dto: UpdateUserAdminDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw AppError.userNotFound();
+
+    const data: Prisma.UserUpdateInput = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.email !== undefined) data.email = dto.email;
+    if (dto.role !== undefined) data.role = dto.role as never;
+    if (dto.status !== undefined) data.status = dto.status as never;
+    if (dto.phone !== undefined) data.phone = dto.phone;
+    if (dto.password) {
+      data.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        avatarUrl: true,
+        phone: true,
+        bio: true,
+        isEmailVerified: true,
+      },
+    });
+  }
+
+  // ─── Friendly Management (admin) ─────────────────────────
+
+  async listFriendlies(query: QueryAdminFriendliesDto) {
+    const { page = 1, limit = 20, status, search, modality, from, to } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.FriendlyWhereInput = {};
+    if (status) where.status = status as never;
+    if (search) where.title = { contains: search, mode: 'insensitive' };
+    if (modality) where.modality = modality;
+    if (from || to) {
+      where.date = {
+        ...(from ? { gte: new Date(from) } : {}),
+        ...(to ? { lte: new Date(to) } : {}),
+      };
+    }
+
+    const include = {
+      requester: { select: { id: true, name: true, email: true } },
+      requesterTeam: { select: { id: true, name: true } },
+      challenged: { select: { id: true, name: true, email: true } },
+      challengedTeam: { select: { id: true, name: true } },
+    } satisfies Prisma.FriendlyInclude;
+
+    const [friendlies, total] = await Promise.all([
+      this.prisma.friendly.findMany({
+        where,
+        include,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.friendly.count({ where }),
+    ]);
+
+    return {
+      data: friendlies,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getFriendly(friendlyId: string) {
+    const friendly = await this.prisma.friendly.findUnique({
+      where: { id: friendlyId },
+      include: {
+        requester: { select: { id: true, name: true, email: true } },
+        requesterTeam: { select: { id: true, name: true } },
+        challenged: { select: { id: true, name: true, email: true } },
+        challengedTeam: { select: { id: true, name: true } },
+      },
+    });
+    if (!friendly) throw AppError.userNotFound();
+    return friendly;
+  }
+
+  async createFriendly(dto: CreateFriendlyAdminDto) {
+    return this.prisma.friendly.create({
+      data: {
+        title: dto.title,
+        requesterId: dto.requesterId,
+        requesterTeamId: dto.requesterTeamId,
+        challengedId: dto.challengedId,
+        challengedTeamId: dto.challengedTeamId,
+        status: (dto.status ?? 'PENDING') as never,
+        date: new Date(dto.date),
+        startTime: dto.startTime ? new Date(dto.startTime) : null,
+        city: dto.city,
+        state: dto.state,
+        address: dto.address,
+        modality: dto.modality,
+        categoryFormat: dto.categoryFormat,
+      },
+    });
+  }
+
+  async updateFriendly(friendlyId: string, dto: UpdateFriendlyAdminDto) {
+    const existing = await this.prisma.friendly.findUnique({
+      where: { id: friendlyId },
+    });
+    if (!existing) throw AppError.userNotFound();
+
+    return this.prisma.friendly.update({
+      where: { id: friendlyId },
+      data: {
+        ...(dto.title !== undefined && { title: dto.title }),
+        ...(dto.requesterId !== undefined && { requesterId: dto.requesterId }),
+        ...(dto.requesterTeamId !== undefined && {
+          requesterTeamId: dto.requesterTeamId,
+        }),
+        ...(dto.challengedId !== undefined && { challengedId: dto.challengedId }),
+        ...(dto.challengedTeamId !== undefined && {
+          challengedTeamId: dto.challengedTeamId,
+        }),
+        ...(dto.status !== undefined && { status: dto.status as never }),
+        ...(dto.date !== undefined && { date: new Date(dto.date) }),
+        ...(dto.startTime !== undefined && {
+          startTime: dto.startTime ? new Date(dto.startTime) : null,
+        }),
+        ...(dto.city !== undefined && { city: dto.city }),
+        ...(dto.state !== undefined && { state: dto.state }),
+        ...(dto.address !== undefined && { address: dto.address }),
+        ...(dto.scoreTeamA !== undefined && { scoreTeamA: dto.scoreTeamA }),
+        ...(dto.scoreTeamB !== undefined && { scoreTeamB: dto.scoreTeamB }),
+      },
+    });
+  }
+
+  async deleteFriendly(friendlyId: string) {
+    const existing = await this.prisma.friendly.findUnique({
+      where: { id: friendlyId },
+    });
+    if (!existing) throw AppError.userNotFound();
+    await this.prisma.friendly.delete({ where: { id: friendlyId } });
+    return { id: friendlyId, deleted: true };
+  }
+
+  // ─── Recent Activity (feed de notificações admin) ────────
+
+  async getRecentActivity(limit = 20, offset = 0) {
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [newUsers, newTournaments, newFriendlies, paymentRegs] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { createdAt: { gte: since } },
+        select: { id: true, name: true, email: true, role: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+      this.prisma.tournament.findMany({
+        where: { createdAt: { gte: since } },
+        select: {
+          id: true,
+          name: true,
+          ownerId: true,
+          owner: { select: { name: true } },
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+      this.prisma.friendly.findMany({
+        where: { createdAt: { gte: since } },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          requester: { select: { name: true } },
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+      this.prisma.registration.findMany({
+        where: {
+          OR: [{ paymentStatus: { not: null } }, { paidAt: { not: null, gte: since } }],
+        },
+        select: {
+          id: true,
+          paymentStatus: true,
+          paymentMethod: true,
+          paidAt: true,
+          createdAt: true,
+          user: { select: { name: true } },
+          tournament: { select: { name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
+
+    type ActivityItem = {
+      id: string;
+      type: 'USER' | 'TOURNAMENT' | 'FRIENDLY' | 'PAYMENT';
+      title: string;
+      subtitle?: string;
+      tone: 'neutral' | 'success' | 'danger' | 'warning' | 'info';
+      createdAt: string;
+    };
+
+    const items: ActivityItem[] = [];
+
+    for (const u of newUsers) {
+      items.push({
+        id: `u-${u.id}`,
+        type: 'USER',
+        title: `${u.name} se cadastrou`,
+        subtitle: `${u.email} · ${u.role}`,
+        tone: 'neutral',
+        createdAt: u.createdAt.toISOString(),
+      });
+    }
+
+    for (const t of newTournaments) {
+      items.push({
+        id: `t-${t.id}`,
+        type: 'TOURNAMENT',
+        title: `Novo torneio: ${t.name}`,
+        subtitle: t.owner?.name ? `por ${t.owner.name}` : undefined,
+        tone: 'info',
+        createdAt: t.createdAt.toISOString(),
+      });
+    }
+
+    for (const f of newFriendlies) {
+      items.push({
+        id: `f-${f.id}`,
+        type: 'FRIENDLY',
+        title: `Amistoso: ${f.title ?? 'sem título'}`,
+        subtitle: f.requester?.name ? `desafiante ${f.requester.name}` : undefined,
+        tone: 'neutral',
+        createdAt: f.createdAt.toISOString(),
+      });
+    }
+
+    for (const r of paymentRegs) {
+      let tone: ActivityItem['tone'] = 'neutral';
+      let label = r.paymentStatus ?? 'PENDING';
+      if (r.paymentStatus === 'PAID' || r.paymentStatus === 'succeeded') {
+        tone = 'success';
+        label = 'Pago';
+      } else if (r.paymentStatus === 'FAILED' || r.paymentStatus === 'failed') {
+        tone = 'danger';
+        label = 'Falhou';
+      } else if (
+        r.paymentStatus === 'PENDING' ||
+        r.paymentStatus === 'pending' ||
+        r.paymentStatus === 'processing'
+      ) {
+        tone = 'warning';
+        label = 'Pendente';
+      } else if (r.paymentStatus === 'REFUNDED' || r.paymentStatus === 'refunded') {
+        tone = 'info';
+        label = 'Reembolsado';
+      }
+
+      items.push({
+        id: `p-${r.id}`,
+        type: 'PAYMENT',
+        title: `Pagamento ${label}`,
+        subtitle: `${r.user?.name ?? '—'} · ${r.tournament?.name ?? ''}`,
+        tone,
+        createdAt: (r.paidAt ?? r.createdAt).toISOString(),
+      });
+    }
+
+    items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return items.slice(0, limit);
+  }
+
+  // ─── Teams (lista simples p/ selectors admin) ────────────
+
+  async listTeams(query: { search?: string; page?: number; limit?: number }) {
+    const { page = 1, limit = 100, search } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.TeamWhereInput = {};
+    if (search) {
+      where.name = { contains: search, mode: 'insensitive' };
+    }
+
+    const [teams, total] = await Promise.all([
+      this.prisma.team.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          sport: true,
+          ownerId: true,
+          _count: { select: { members: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.team.count({ where }),
+    ]);
+
+    return { data: teams, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  // ─── Tournament full create (admin) ──────────────────────
+
+  async createTournamentFull(dto: CreateTournamentAdminDto) {
+    const owner = await this.prisma.user.findUnique({ where: { id: dto.ownerId } });
+    if (!owner) throw new BadRequestException('Organizador não encontrado');
+
+    return this.prisma.tournament.create({
+      data: {
+        name: dto.name,
+        description: dto.description,
+        imageUrl: dto.imageUrl,
+        ownerId: dto.ownerId,
+        eventType: (dto.eventType ?? 'SINGLE') as never,
+        status: (dto.status ?? 'DRAFT') as never,
+        isPublished: dto.isPublished ?? false,
+        categories: {
+          create: {
+            type: dto.category.type as never,
+            format: dto.category.format as never,
+            modality: dto.category.modality as never,
+            minMembers: dto.category.minMembers ?? 2,
+            maxMembers: dto.category.maxMembers ?? 2,
+            bestOfSets: dto.category.bestOfSets ?? 3,
+            tiebreakScore: dto.category.tiebreakScore ?? 15,
+            registrationPrice: dto.category.registrationPrice ?? 0,
+            ...(dto.category.bracketType
+              ? { bracketType: dto.category.bracketType as never }
+              : {}),
+          },
+        },
+        stages: {
+          create: {
+            name: dto.stage.name ?? 'Etapa Única',
+            date: new Date(dto.stage.date),
+            startTime: dto.stage.startTime ? new Date(dto.stage.startTime) : null,
+            maxTeams: dto.stage.maxTeams ?? 16,
+            city: dto.stage.city,
+            state: dto.stage.state,
+            address: dto.stage.address,
+          },
+        },
+      },
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        categories: true,
+        stages: true,
+      },
+    });
+  }
+
+  async changeTournamentOwner(tournamentId: string, ownerId: string) {
+    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!tournament) throw AppError.tournamentNotFound();
+    const owner = await this.prisma.user.findUnique({ where: { id: ownerId } });
+    if (!owner) throw new BadRequestException('Organizador não encontrado');
+
+    return this.prisma.tournament.update({
+      where: { id: tournamentId },
+      data: { ownerId },
+      select: { id: true, ownerId: true, owner: { select: { id: true, name: true, email: true } } },
+    });
+  }
+
+  // ─── Banners + cover upload (admin bypass) ───────────────
+
+  async getBanners(): Promise<string[]> {
+    const publicUrl = process.env.MINIO_PUBLIC_URL;
+    const bucket = process.env.MINIO_BUCKET ?? 'toqueplay';
+    const protocol = process.env.MINIO_USE_SSL === 'true' ? 'https' : 'http';
+    const host = process.env.MINIO_ENDPOINT ?? 'localhost';
+    const port = process.env.MINIO_PORT ?? '9000';
+    const baseUrl = publicUrl ? `${publicUrl}/${bucket}` : `${protocol}://${host}:${port}/${bucket}`;
+    const defaultKeys = [
+      'banners/WhatsApp Image 2026-06-10 at 12.04.25 AM.jpeg',
+      'banners/WhatsApp Image 2026-06-10 at 12.10.36 AM.jpeg',
+      'banners/WhatsApp Image 2026-06-10 at 12.10.46 AM.jpeg',
+      'banners/WhatsApp Iamage 2026-06-10 at 12.04.25 AM.jpeg',
+    ];
+    return defaultKeys.map((k) => `${baseUrl}/${k}`);
+  }
+
+  async uploadCover(tournamentId: string, file: Express.Multer.File) {
+    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!tournament) throw AppError.tournamentNotFound();
+
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) {
+      throw new BadRequestException('Formato inválido. Use JPEG, PNG ou WebP.');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('Arquivo muito grande. Máximo 10MB.');
+    }
+
+    const ext = file.originalname.split('.').pop() ?? 'jpg';
+    const key = `tournaments/${tournamentId}/cover-${Date.now()}.${ext}`;
+
+    if (tournament.imageUrl) {
+      const oldKey = this.storage.extractKeyFromUrl(tournament.imageUrl);
+      if (oldKey) await this.storage.deleteFile(oldKey);
+    }
+    const imageUrl = await this.storage.uploadFile(file.buffer, key, file.mimetype);
+    return this.prisma.tournament.update({
+      where: { id: tournamentId },
+      data: { imageUrl },
+      select: { id: true, imageUrl: true },
+    });
+  }
+
+  // ─── Registrations management (admin) ────────────────────
+
+  async listRegistrations(tournamentId: string) {
+    const regs = await this.prisma.registration.findMany({
+      where: { tournamentId },
+      include: {
+        team: { select: { id: true, name: true } },
+        user: { select: { id: true, name: true, email: true } },
+        category: { select: { id: true, type: true, modality: true } },
+        members: {
+          include: {
+            teamMember: {
+              include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return regs;
+  }
+
+  async createRegistration(tournamentId: string, dto: CreateRegistrationAdminDto) {
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      include: { categories: { take: 1 } },
+    });
+    if (!tournament) throw AppError.tournamentNotFound();
+    const category = tournament.categories[0];
+    if (!category) throw new BadRequestException('Torneio sem categoria');
+
+    const team = await this.prisma.team.findUnique({ where: { id: dto.teamId } });
+    if (!team) throw new BadRequestException('Time não encontrado');
+
+    // Validar membros únicos dentro do torneio
+    const memberIds = dto.members.map((m) => m.teamMemberId);
+    const existingMembers = await this.prisma.registrationMember.findMany({
+      where: {
+        teamMemberId: { in: memberIds },
+        registration: { tournamentId },
+      },
+      select: { teamMemberId: true },
+    });
+    if (existingMembers.length > 0) {
+      const dup = existingMembers.map((m) => m.teamMemberId).join(', ');
+      throw new BadRequestException(
+        `Membros já inscritos neste torneio em outra inscrição: ${dup}`,
+      );
+    }
+
+    // Validar pertencem ao time
+    const teamMembers = await this.prisma.teamMember.findMany({
+      where: { id: { in: memberIds }, teamId: dto.teamId },
+      select: { id: true },
+    });
+    if (teamMembers.length !== memberIds.length) {
+      throw new BadRequestException('Um ou mais membros não pertencem ao time informado');
+    }
+
+    // Valida min/max
+    if (memberIds.length < category.minMembers || memberIds.length > category.maxMembers) {
+      throw new BadRequestException(
+        `Quantidade de membros inválida (${memberIds.length}). Permitido entre ${category.minMembers} e ${category.maxMembers}.`,
+      );
+    }
+
+    return this.prisma.registration.create({
+      data: {
+        tournamentId,
+        categoryId: category.id,
+        teamId: dto.teamId,
+        userId: dto.userId,
+        status: (dto.status ?? 'CONFIRMED') as never,
+        paymentStatus: dto.paymentStatus ?? 'PAID',
+        paymentMethod: dto.paymentMethod ?? 'ADMIN',
+        paidAt: new Date(),
+        members: {
+          create: dto.members.map((m) => ({
+            teamMemberId: m.teamMemberId,
+            isCaptain: Boolean(m.isCaptain),
+          })),
+        },
+      },
+      include: {
+        team: true,
+        members: { include: { teamMember: { include: { user: true } } } },
+      },
+    });
+  }
+
+  async deleteRegistration(regId: string) {
+    const reg = await this.prisma.registration.findUnique({ where: { id: regId } });
+    if (!reg) throw new BadRequestException('Inscrição não encontrada');
+    await this.prisma.registration.delete({ where: { id: regId } });
+    return { id: regId, deleted: true };
+  }
+
+  async addRegistrationMember(
+    regId: string,
+    dto: AddRegistrationMemberAdminDto,
+  ) {
+    const reg = await this.prisma.registration.findUnique({
+      where: { id: regId },
+      include: { category: true },
+    });
+    if (!reg) throw new BadRequestException('Inscrição não encontrada');
+
+    // Não pode ser membro duplicado neste torneio
+    const exists = await this.prisma.registrationMember.findFirst({
+      where: {
+        teamMemberId: dto.teamMemberId,
+        registration: { tournamentId: reg.tournamentId },
+      },
+    });
+    if (exists) {
+      throw new BadRequestException('Membro já inscrito em outra inscrição do torneio');
+    }
+
+    // count check
+    const count = await this.prisma.registrationMember.count({
+      where: { registrationId: regId },
+    });
+    if (reg.category && count >= reg.category.maxMembers) {
+      throw new BadRequestException('Limite de membros da categoria atingido');
+    }
+
+    return this.prisma.registrationMember.create({
+      data: {
+        registrationId: regId,
+        teamMemberId: dto.teamMemberId,
+        isCaptain: Boolean(dto.isCaptain),
+      },
+      include: {
+        teamMember: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
+      },
+    });
+  }
+
+  async removeRegistrationMember(regId: string, memberId: string) {
+    const m = await this.prisma.registrationMember.findUnique({
+      where: { id: memberId },
+    });
+    if (!m || m.registrationId !== regId) {
+      throw new BadRequestException('Membro não pertence a esta inscrição');
+    }
+    await this.prisma.registrationMember.delete({ where: { id: memberId } });
+    return { id: memberId, deleted: true };
+  }
+
+  async updateRegistrationMember(
+    regId: string,
+    memberId: string,
+    dto: UpdateRegistrationMemberAdminDto,
+  ) {
+    const m = await this.prisma.registrationMember.findUnique({
+      where: { id: memberId },
+    });
+    if (!m || m.registrationId !== regId) {
+      throw new BadRequestException('Membro não pertence a esta inscrição');
+    }
+
+    const data: Prisma.RegistrationMemberUpdateInput = {};
+    if (dto.isCaptain !== undefined) data.isCaptain = Boolean(dto.isCaptain);
+
+    // Se está virando capitão, remover capitania dos outros da mesma inscrição
+    if (dto.isCaptain === 1) {
+      await this.prisma.registrationMember.updateMany({
+        where: { registrationId: regId, id: { not: memberId } },
+        data: { isCaptain: false },
+      });
+    }
+
+    return this.prisma.registrationMember.update({
+      where: { id: memberId },
+      data,
+    });
   }
 }

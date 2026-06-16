@@ -3,7 +3,9 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class QueryLogsDto {
-  @ApiPropertyOptional({ description: 'Filter by log level (INFO, WARN, ERROR)' })
+  @ApiPropertyOptional({
+    description: 'Filter by log level (INFO, WARN, ERROR)',
+  })
   @IsString()
   @IsOptional()
   level?: string;

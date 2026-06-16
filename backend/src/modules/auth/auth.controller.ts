@@ -13,6 +13,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Audit } from '../audit/audit.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -26,6 +27,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Registrar novo usuario' })
   @ApiResponse({ status: 201, description: 'Registro realizado com sucesso' })
   @ApiResponse({ status: 409, description: 'Email ja cadastrado' })
+  @Audit('USER_REGISTERED', 'User')
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
@@ -36,6 +38,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Verificar email com codigo' })
   @ApiResponse({ status: 200, description: 'Email verificado com sucesso' })
   @ApiResponse({ status: 400, description: 'Codigo invalido ou expirado' })
+  @Audit('USER_EMAIL_VERIFIED', 'User')
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto);
   }

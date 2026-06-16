@@ -25,7 +25,17 @@
       "Bash(pnpm --filter app tsc --noEmit)",
       "Bash(ls .env*)",
       "Bash(ls src/navigation/*.tsx)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(pnpm create:*)",
+      "Bash(corepack --version)",
+      "Bash(corepack pnpm:*)",
+      "Bash(corepack enable:*)",
+      "Bash(pnpm --version)",
+      "Bash(chmod +x \"C:/Users/Linck/bin/pnpm\")",
+      "Bash(mkdir -p \"C:/Users/Linck/bin\")",
+      "Bash(pnpm exec:*)",
+      "Bash(pnpm run:*)",
+      "Bash(xargs wc:*)"
     ]
   }
 }

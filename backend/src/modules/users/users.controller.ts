@@ -8,6 +8,7 @@ import { NotificationPreferencesDto } from './dto/notification-preferences.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Type } from 'class-transformer';
+import { Audit } from '../audit/audit.decorator';
 
 class UpdateLocationDto {
   @IsNumber()
@@ -39,6 +40,9 @@ export class UsersController {
 
   @Patch('me')
   @ApiOperation({ summary: 'Atualizar perfil' })
+  @Audit('USER_PROFILE_UPDATED', 'User', {
+    fetchBefore: async (prisma, id) => prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, phone: true, bio: true, avatarUrl: true } }),
+  })
   async updateProfile(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateUserDto,

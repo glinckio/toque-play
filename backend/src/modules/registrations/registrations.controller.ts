@@ -16,6 +16,7 @@ import {
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RegistrationsService } from './registrations.service';
+import { Audit } from '../audit/audit.decorator';
 
 @ApiTags('Registrations')
 @ApiBearerAuth()
@@ -41,6 +42,9 @@ export class RegistrationsController {
 
   @Post(':id/checkout')
   @ApiOperation({ summary: 'Criar sessao de pagamento Stripe' })
+  @Audit('PAYMENT_CHECKOUT_CREATED', 'Registration', {
+    fetchBefore: async (prisma, id) => prisma.registration.findUnique({ where: { id }, select: { id: true, status: true, paymentStatus: true, paymentMethod: true } }),
+  })
   async createCheckout(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -51,6 +55,9 @@ export class RegistrationsController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancelar inscricao' })
+  @Audit('REGISTRATION_CANCELLED', 'Registration', {
+    fetchBefore: async (prisma, id) => prisma.registration.findUnique({ where: { id }, select: { id: true, status: true, paymentStatus: true } }),
+  })
   async cancelRegistration(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,

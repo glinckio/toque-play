@@ -148,6 +148,7 @@ model User {
   chatMessages       ChatMessage[]
   athleteStats       AthleteStats[]
   tournamentReferees TournamentReferee[]
+  auditLogs          AuditLog[]
 }
 
 model RefreshToken {
@@ -623,6 +624,31 @@ model AdminLog {
   @@index([source])
   @@index([createdAt])
   @@map("logs")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  action       String
+  entityType   String
+  entityId     String?
+  actorId      String?
+  actorEmail   String?
+  actorRole    String?
+  oldValues    Json?
+  newValues    Json?
+  ipAddress    String?
+  userAgent    String?
+  method       String?
+  route        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  actor        User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([action])
+  @@map("audit_logs")
 }
 
 model AthleteStats {

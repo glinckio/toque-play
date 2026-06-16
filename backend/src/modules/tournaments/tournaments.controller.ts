@@ -32,6 +32,7 @@ import { AddSponsorsDto } from './dto/add-sponsors.dto';
 import { QueryTournamentsDto } from './dto/query-tournaments.dto';
 import { ExploreQueryDto } from './dto/explore-query.dto';
 import { TournamentStatus } from '@prisma/client';
+import { Audit } from '../audit/audit.decorator';
 
 @ApiTags('Tournaments')
 @ApiBearerAuth()
@@ -44,6 +45,7 @@ export class TournamentsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Criar torneio (rascunho)' })
   @ApiResponse({ status: 201, description: 'Torneio criado como DRAFT' })
+  @Audit('TOURNAMENT_CREATED', 'Tournament')
   async create(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateTournamentDto,
@@ -129,6 +131,9 @@ export class TournamentsController {
 
   @Patch(':id/publish')
   @ApiOperation({ summary: 'Publicar torneio' })
+  @Audit('TOURNAMENT_PUBLISHED', 'Tournament', {
+    fetchBefore: async (prisma, id) => prisma.tournament.findUnique({ where: { id }, select: { id: true, name: true, status: true, isPublished: true } }),
+  })
   async publish(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -138,6 +143,9 @@ export class TournamentsController {
 
   @Patch(':id/start')
   @ApiOperation({ summary: 'Iniciar torneio (muda status para IN_PROGRESS)' })
+  @Audit('TOURNAMENT_STARTED', 'Tournament', {
+    fetchBefore: async (prisma, id) => prisma.tournament.findUnique({ where: { id }, select: { id: true, name: true, status: true } }),
+  })
   async startTournament(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -147,6 +155,9 @@ export class TournamentsController {
 
   @Patch(':id/complete')
   @ApiOperation({ summary: 'Finalizar torneio (muda status para FINISHED)' })
+  @Audit('TOURNAMENT_FINISHED', 'Tournament', {
+    fetchBefore: async (prisma, id) => prisma.tournament.findUnique({ where: { id }, select: { id: true, name: true, status: true } }),
+  })
   async completeTournament(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -203,6 +214,9 @@ export class TournamentsController {
 
   @Patch(':id/draft')
   @ApiOperation({ summary: 'Salvar como rascunho' })
+  @Audit('TOURNAMENT_DRAFTED', 'Tournament', {
+    fetchBefore: async (prisma, id) => prisma.tournament.findUnique({ where: { id }, select: { id: true, name: true, status: true } }),
+  })
   async saveAsDraft(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -296,6 +310,9 @@ export class TournamentsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Cancelar torneio' })
+  @Audit('TOURNAMENT_CANCELLED', 'Tournament', {
+    fetchBefore: async (prisma, id) => prisma.tournament.findUnique({ where: { id }, select: { id: true, name: true, status: true } }),
+  })
   async cancel(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,

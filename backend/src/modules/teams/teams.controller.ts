@@ -25,6 +25,7 @@ import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Audit } from '../audit/audit.decorator';
 
 @ApiTags('Teams')
 @ApiBearerAuth()
@@ -37,6 +38,7 @@ export class TeamsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Criar time' })
   @ApiResponse({ status: 201, description: 'Time criado com sucesso' })
+  @Audit('TEAM_CREATED', 'Team')
   async create(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateTeamDto,
@@ -72,6 +74,9 @@ export class TeamsController {
   @ApiOperation({ summary: 'Editar time (somente owner)' })
   @ApiResponse({ status: 200, description: 'Time atualizado' })
   @ApiResponse({ status: 403, description: 'Somente o owner pode editar' })
+  @Audit('TEAM_UPDATED', 'Team', {
+    fetchBefore: async (prisma, id) => prisma.team.findUnique({ where: { id }, select: { id: true, name: true, description: true, ownerId: true, sport: true } }),
+  })
   async update(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -85,6 +90,9 @@ export class TeamsController {
   @ApiOperation({ summary: 'Excluir time (somente owner)' })
   @ApiResponse({ status: 204, description: 'Time excluido' })
   @ApiResponse({ status: 403, description: 'Somente o owner pode excluir' })
+  @Audit('TEAM_DELETED', 'Team', {
+    fetchBefore: async (prisma, id) => prisma.team.findUnique({ where: { id }, select: { id: true, name: true, ownerId: true } }),
+  })
   async remove(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
