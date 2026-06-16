@@ -278,4 +278,142 @@ export class PrivacyService {
 
     return this.getConsents(userId);
   }
+
+  // ─── DPO Channel ──────────────────────────────────────────
+
+  async createDpoRequest(
+    dto: {
+      type: string;
+      subject: string;
+      message: string;
+      email?: string;
+    },
+    userId?: string,
+  ) {
+    const email = dto.email ?? null;
+    if (!userId && !email) {
+      throw AppError.accountDeletionConfirmationRequired();
+    }
+
+    const created = await this.prisma.dataSubjectRequest.create({
+      data: {
+        userId: userId ?? null,
+        email: email ?? 'anonymous@toqueplay.local',
+        type: dto.type as any,
+        subject: dto.subject,
+        message: dto.message,
+      },
+    });
+
+    void this.auditService.log({
+      action: 'DPO_REQUEST_CREATED',
+      entityType: 'DataSubjectRequest',
+      entityId: created.id,
+      actorId: userId ?? null,
+      actorEmail: email ?? null,
+      newValues: { type: dto.type, subject: dto.subject },
+    });
+
+    return created;
+  }
+
+  async listDpoRequests(opts: { page?: number; limit?: number; status?: string }) {
+    const page = opts.page ?? 1;
+    const limit = opts.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (opts.status) where.status = opts.status;
+
+    const [data, total] = await Promise.all([
+      this.prisma.dataSubjectRequest.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.dataSubjectRequest.count({ where }),
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async updateDpoRequestStatus(id: string, status: string, reviewerId: string) {
+    const updated = await this.prisma.dataSubjectRequest.update({
+      where: { id },
+      data: { status: status as any },
+    });
+
+    void this.auditService.log({
+      action: 'DPO_REQUEST_UPDATED',
+      entityType: 'DataSubjectRequest',
+      entityId: id,
+      actorId: reviewerId,
+      newValues: { status },
+    });
+
+    return updated;
+  }
+
+  // ─── Security Incidents ────────────────────────────────────
+
+  async createSecurityIncident(dto: {
+    type: string;
+    severity: string;
+    affectedUsers: number;
+    notes?: string;
+  }) {
+    const incident = await this.prisma.securityIncident.create({
+      data: {
+        type: dto.type,
+        severity: dto.severity,
+        affectedUsers: dto.affectedUsers,
+        notes: dto.notes ?? null,
+      },
+    });
+
+    void this.auditService.log({
+      action: 'SECURITY_INCIDENT_REPORTED',
+      entityType: 'SecurityIncident',
+      entityId: incident.id,
+      newValues: {
+        type: dto.type,
+        severity: dto.severity,
+        affectedUsers: dto.affectedUsers,
+      },
+    });
+
+    // HIGH/CRITICAL with affected users = escalation trigger
+    if (
+      (dto.severity === 'HIGH' || dto.severity === 'CRITICAL') &&
+      dto.affectedUsers > 0
+    ) {
+      this.logger.warn(
+        `SECURITY INCIDENT ESCALATION id=${incident.id} severity=${dto.severity} affectedUsers=${dto.affectedUsers} — ANPD notification required within 2 business days (LGPD art. 48).`,
+      );
+    }
+
+    return incident;
+  }
+
+  async listSecurityIncidents(opts: { page?: number; limit?: number; status?: string }) {
+    const page = opts.page ?? 1;
+    const limit = opts.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (opts.status) where.status = opts.status;
+
+    const [data, total] = await Promise.all([
+      this.prisma.securityIncident.findMany({
+        where,
+        orderBy: { detectedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.securityIncident.count({ where }),
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
 }

@@ -15,6 +15,39 @@ async function bootstrap() {
       dsn,
       environment: process.env.NODE_ENV || 'development',
       tracesSampleRate: 1.0,
+      sendDefaultPii: false, // LGPD art. 46 — never leak email/IP/UA by default
+      beforeSend(event) {
+        // Scrub PII from request body + headers before any event leaves the process.
+        const req = event.request;
+        if (req) {
+          if (req.headers) {
+            delete req.headers['authorization'];
+            delete req.headers['cookie'];
+            delete req.headers['x-forwarded-for'];
+          }
+          if (req.data && typeof req.data === 'object') {
+            const data = req.data as Record<string, unknown>;
+            for (const k of [
+              'password',
+              'newPassword',
+              'confirmPassword',
+              'code',
+              'refreshToken',
+              'accessToken',
+              'secret',
+            ]) {
+              if (k in data) data[k] = '[redacted]';
+            }
+          }
+        }
+        // Mask user.email but keep a stable hash for correlation.
+        if (event.user?.email) {
+          const crypto = require('crypto');
+          const hash = crypto.createHash('sha256').update(event.user.email).digest('hex').slice(0, 12);
+          event.user.email = `redacted+${hash}@scrubbed.local`;
+        }
+        return event;
+      },
     });
   }
 

@@ -131,6 +131,9 @@ model User {
   longitude       Float?
   enableLocationNotifications Boolean @default(false)
   notificationPreferences    Json?
+  twoFactorSecret            String?
+  twoFactorEnabled           Boolean @default(false)
+  twoFactorBackupCodes       Json?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -262,11 +265,14 @@ model Tournament {
   refereeCode          String?
   refereeCodeExpiresAt DateTime?
 
+  deletedAt           DateTime?
+
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
   @@index([ownerId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model TournamentReferee {
@@ -673,6 +679,63 @@ enum ConsentPurpose {
   NOTIFICATIONS_PUSH          // Opcional: push notifications
   LOCATION_DISCOVERY          // Opcional: geolocalização para descoberta
   MARKETING_EMAIL             // Opcional: marketing por email
+}
+
+model StripeEvent {
+  id           String   @id                          // Stripe event id (evt_*)
+  type         String
+  processedAt  DateTime @default(now()) @map("processed_at")
+  payloadHash  String?  @map("payload_hash")
+
+  @@map("stripe_events")
+}
+
+model SecurityIncident {
+  id             String   @id @default(uuid())
+  type           String
+  severity       String   // LOW | MEDIUM | HIGH | CRITICAL
+  affectedUsers  Int      @default(0) @map("affected_users")
+  detectedAt     DateTime @default(now()) @map("detected_at")
+  status         String   @default("OPEN") // OPEN | INVESTIGATING | RESOLVED | CLOSED
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([severity])
+  @@map("security_incidents")
+}
+
+enum DataSubjectRequestType {
+  ACCESS
+  PORTABILITY
+  RECTIFICATION
+  DELETION
+  COMPLAINT
+  OTHER
+}
+
+enum DataSubjectRequestStatus {
+  PENDING
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+model DataSubjectRequest {
+  id         String                  @id @default(uuid())
+  userId     String?
+  email      String
+  type       DataSubjectRequestType
+  subject    String
+  message    String
+  status     DataSubjectRequestStatus @default(PENDING)
+  createdAt  DateTime                @default(now()) @map("created_at")
+  updatedAt  DateTime                @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([email])
+  @@map("data_subject_requests")
 }
 
 model AthleteStats {

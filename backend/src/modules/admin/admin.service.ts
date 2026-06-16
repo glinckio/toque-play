@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { StorageService } from '../storage/storage.service';
+import { maskEmail, maskName, maskPhone, toCsv } from '../../common/utils/pii-masking';
 import { assertImageFile } from '../../common/utils/file-validation';
 import { AppError } from '../../common/errors/app-error';
 import { QueryUsersDto } from './dto/query-users.dto';
@@ -255,6 +256,46 @@ export class AdminService {
     };
   }
 
+  /**
+   * CSV export of all users with PII masked (LGPD minimization on bulk exports).
+   * Full-PII view requires S2.14 2FA-enabled admin toggle (future).
+   */
+  async exportUsersCsv(): Promise<string> {
+    const users = await this.prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10000,
+    });
+
+    const rows = users.map((u) => ({
+      id: u.id,
+      name: maskName(u.name),
+      email: maskEmail(u.email),
+      phone: maskPhone(u.phone),
+      role: u.role,
+      status: u.status,
+      createdAt: u.createdAt.toISOString(),
+    }));
+
+    return toCsv(rows, [
+      { key: 'id', label: 'ID' },
+      { key: 'name', label: 'Nome' },
+      { key: 'email', label: 'Email' },
+      { key: 'phone', label: 'Telefone' },
+      { key: 'role', label: 'Perfil' },
+      { key: 'status', label: 'Status' },
+      { key: 'createdAt', label: 'Criado em' },
+    ]);
+  }
+
   async blockUser(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw AppError.userNotFound();
@@ -290,6 +331,10 @@ export class AdminService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.TournamentWhereInput = {};
+    // Soft-delete filter: hidden unless admin explicitly asks via includeDeleted
+    if (!query.includeDeleted) {
+      where.deletedAt = null;
+    }
     if (status) where.status = status as never;
     if (search) {
       where.OR = [
@@ -354,14 +399,17 @@ export class AdminService {
       where: { id: tournamentId },
     });
     if (!tournament) throw AppError.tournamentNotFound();
-    if (tournament.status === 'CANCELLED')
-      throw AppError.tournamentAlreadyDeleted();
+    if (tournament.deletedAt) throw AppError.tournamentAlreadyDeleted();
 
-    // Soft delete: set status to CANCELLED, mark unpublished
+    // Soft delete: hide from listings, keep row for referential integrity.
     return this.prisma.tournament.update({
       where: { id: tournamentId },
-      data: { status: 'CANCELLED', isPublished: false },
-      select: { id: true, name: true, status: true },
+      data: {
+        deletedAt: new Date(),
+        status: 'CANCELLED',
+        isPublished: false,
+      },
+      select: { id: true, name: true, status: true, deletedAt: true },
     });
   }
 

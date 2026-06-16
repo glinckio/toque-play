@@ -10,7 +10,11 @@ import { Request } from 'express';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../common/prisma.service';
 import { AuditService } from './audit.service';
-import { AUDIT_METADATA_KEY, AuditMeta } from './audit.decorator';
+import {
+  AUDIT_METADATA_KEY,
+  AUDIT_READ_METADATA_KEY,
+  AuditMeta,
+} from './audit.decorator';
 
 const MUTATION_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
@@ -64,8 +68,49 @@ export class AuditInterceptor implements NestInterceptor {
     const req = context.switchToHttp().getRequest<Request>();
     const method = req.method.toUpperCase();
 
+    // READ audit path: only intercepts when handler is decorated with @AuditRead.
     if (!MUTATION_METHODS.has(method)) {
-      return next.handle();
+      const readMeta = this.reflector.get<{
+        action: string;
+        entityType: string;
+        entityIdParam?: string;
+      } | undefined>(AUDIT_READ_METADATA_KEY, context.getHandler());
+
+      if (!readMeta) {
+        return next.handle();
+      }
+
+      const user0 = (req as any).user ?? null;
+      const route = (req as any).route?.path ?? req.url;
+      const entityId = readMeta.entityIdParam
+        ? ((req.params as any)?.[readMeta.entityIdParam] ?? null)
+        : null;
+
+      return next.handle().pipe(
+        tap(() => {
+          const res = context.switchToHttp().getResponse();
+          const statusCode: number = res?.statusCode ?? 200;
+          if (statusCode >= 400) return;
+
+          from(
+            this.auditService.log({
+              action: readMeta.action,
+              entityType: readMeta.entityType,
+              entityId: entityId != null ? String(entityId) : null,
+              actorId: user0?.id ?? null,
+              actorEmail: user0?.email ?? null,
+              actorRole: user0?.role ?? null,
+              ipAddress: extractIp(req),
+              userAgent: req.headers['user-agent'] ?? null,
+              method,
+              route,
+            }),
+          ).subscribe({
+            error: (err) =>
+              this.logger.warn(`audit read pipe failed: ${(err as Error).message}`),
+          });
+        }),
+      );
     }
 
     const meta = this.reflector.get<AuditMeta | undefined>(

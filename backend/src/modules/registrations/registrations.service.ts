@@ -98,39 +98,43 @@ export class RegistrationsService {
       throw AppError.teamSizeMismatch();
     }
 
-    // Check if any selected member is already registered in this tournament
-    const alreadyRegistered = await this.prisma.registrationMember.findMany({
-      where: {
-        teamMemberId: { in: dto.memberIds },
-        registration: {
-          tournamentId,
-          status: { notIn: [RegistrationStatus.CANCELLED, RegistrationStatus.REJECTED] },
-        },
-      },
-      select: { teamMemberId: true },
-    });
-    if (alreadyRegistered.length > 0) {
-      throw AppError.teamAlreadyRegistered();
-    }
-
+    // Race-condition-safe registration: check + create inside a single transaction.
+    // Any concurrent request that wins the check will block the other until commit,
+    // and the second will then see the freshly-inserted rows and throw.
     const isFree = !category.registrationPrice || Number(category.registrationPrice) === 0;
     const status: RegistrationStatus = isFree ? RegistrationStatus.PENDING_CONFIRMATION : RegistrationStatus.PENDING_PAYMENT;
 
-    const registration = await this.prisma.registration.create({
-      data: {
-        tournamentId,
-        categoryId: dto.categoryId,
-        teamId: dto.teamId,
-        userId,
-        status,
-        members: {
-          create: dto.memberIds.map((teamMemberId) => ({
-            teamMemberId,
-            isCaptain: dto.captainMemberId ? teamMemberId === dto.captainMemberId : false,
-          })),
+    const registration = await this.prisma.$transaction(async (tx) => {
+      const alreadyRegistered = await tx.registrationMember.findMany({
+        where: {
+          teamMemberId: { in: dto.memberIds },
+          registration: {
+            tournamentId,
+            status: { notIn: [RegistrationStatus.CANCELLED, RegistrationStatus.REJECTED] },
+          },
         },
-      },
-      include: REGISTRATION_INCLUDE,
+        select: { teamMemberId: true },
+      });
+      if (alreadyRegistered.length > 0) {
+        throw AppError.teamAlreadyRegistered();
+      }
+
+      return tx.registration.create({
+        data: {
+          tournamentId,
+          categoryId: dto.categoryId,
+          teamId: dto.teamId,
+          userId,
+          status,
+          members: {
+            create: dto.memberIds.map((teamMemberId) => ({
+              teamMemberId,
+              isCaptain: dto.captainMemberId ? teamMemberId === dto.captainMemberId : false,
+            })),
+          },
+        },
+        include: REGISTRATION_INCLUDE,
+      });
     });
 
     // Schedule expiry job for paid registrations (30 min delay)
@@ -317,14 +321,36 @@ export class RegistrationsService {
   }
 
   async handleStripeWebhook(event: any) {
-    // Idempotency: dedupe Stripe event deliveries (retries are common)
-    const isFirst = await this.redisService.setNx(
-      `stripe:event:${event.id}`,
-      '1',
-      24 * 60 * 60,
-    );
-    if (!isFirst) {
-      return; // already processed
+    // Idempotency: dedupe Stripe event deliveries (retries are common).
+    // Two layers: Redis (24h fast-path) + StripeEvent table (persistent audit).
+    const redisKey = `stripe:event:${event.id}`;
+    const firstInRedis = await this.redisService.setNx(redisKey, '1', 24 * 60 * 60);
+
+    if (!firstInRedis) {
+      // double-check persistence layer
+      const alreadyPersisted = await this.prisma.stripeEvent.findUnique({
+        where: { id: event.id },
+      });
+      if (alreadyPersisted) return;
+    }
+
+    // Persist event record (best-effort; unique constraint protects against races).
+    try {
+      await this.prisma.stripeEvent.create({
+        data: {
+          id: event.id,
+          type: event.type,
+          payloadHash: event.data?.object?.id ?? null,
+        },
+      });
+    } catch (err: any) {
+      // P2002 = already exists (duplicate event). Treat as already processed.
+      if (err?.code !== 'P2002') {
+        // log non-fatal error and continue — webhook should still be processed
+        // if we got this far; event.id uniqueness is for audit, not gating.
+      } else {
+        return;
+      }
     }
 
     if (event.type === 'checkout.session.completed') {

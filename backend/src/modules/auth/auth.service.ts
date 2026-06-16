@@ -474,6 +474,15 @@ export class AuthService {
     await this.redisService.del(`login:lock:${email}`);
   }
 
+  async getUserFor2faStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, twoFactorEnabled: true, twoFactorBackupCodes: true },
+    });
+    if (!user) throw AppError.userNotFound();
+    return user;
+  }
+
   private async createVerificationCode(userId: string): Promise<string> {
     const plainCode = String(crypto.randomInt(100000, 1000000));
     const hashedCode = await bcrypt.hash(plainCode, 12);

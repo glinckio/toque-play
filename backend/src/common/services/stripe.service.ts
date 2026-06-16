@@ -66,4 +66,33 @@ export class StripeService {
   async isEventProcessed(eventId: string, redisSetNxTtl: (key: string, value: string, ttlSec: number) => Promise<boolean>): Promise<boolean> {
     return redisSetNxTtl(`stripe:event:${eventId}`, '1', 24 * 60 * 60);
   }
+
+  /**
+   * Best-effort cancel of a Stripe PaymentIntent or Checkout Session.
+   * Idempotent — no-op if already canceled/completed.
+   */
+  async cancelPaymentIntent(paymentId: string): Promise<void> {
+    // Stripe checkout session ids start with "cs_"; PaymentIntents with "pi_".
+    if (paymentId.startsWith('cs_')) {
+      try {
+        await this.stripe.checkout.sessions.expire(paymentId);
+      } catch (err: any) {
+        if (err?.statusCode !== 404 && err?.code !== 'resource_missing') throw err;
+      }
+      return;
+    }
+    if (paymentId.startsWith('pi_')) {
+      try {
+        await this.stripe.paymentIntents.cancel(paymentId);
+      } catch (err: any) {
+        // ignore if already canceled/completed
+        if (
+          err?.code !== 'payment_intents_not_cancellable' &&
+          err?.statusCode !== 400
+        ) {
+          throw err;
+        }
+      }
+    }
+  }
 }

@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
-import { PrivacyController } from './privacy.controller';
+import { PrivacyController, AdminPrivacyController } from './privacy.controller';
 import { PrivacyService } from './privacy.service';
+import { PrivacyRetentionCron } from './privacy-retention.cron';
 
 @Module({
-  controllers: [PrivacyController],
-  providers: [PrivacyService],
+  controllers: [PrivacyController, AdminPrivacyController],
+  providers: [PrivacyService, PrivacyRetentionCron],
   exports: [PrivacyService],
 })
 export class PrivacyModule {}

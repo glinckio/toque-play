@@ -12,8 +12,11 @@ import {
   HttpStatus,
   UseInterceptors,
   UploadedFile,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Request, Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -46,7 +49,7 @@ import {
 } from './dto/registration-admin.dto';
 import { QueryAuditLogsDto } from '../audit/dto/query-audit-logs.dto';
 import { AuditService } from '../audit/audit.service';
-import { Audit } from '../audit/audit.decorator';
+import { Audit, AuditRead } from '../audit/audit.decorator';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -78,6 +81,20 @@ export class AdminController {
     return this.adminService.listUsers(query);
   }
 
+  @Get('users/export')
+  @ApiOperation({ summary: 'Export users as CSV (PII masked)' })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV with cpf/email/phone masked. Full PII requires S2.14 2FA toggle.',
+  })
+  @AuditRead('USERS_EXPORTED', 'User')
+  async exportUsersCsv(@Req() req: Request, @Res() res: Response) {
+    const csv = await this.adminService.exportUsersCsv();
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="users-${Date.now()}.csv"`);
+    res.send(csv);
+  }
+
   @Patch('users/:id/block')
   @ApiOperation({ summary: 'Block a user' })
   @ApiResponse({ status: 200, description: 'User blocked' })
@@ -91,6 +108,7 @@ export class AdminController {
   @Get('users/:id')
   @ApiOperation({ summary: 'Get user detail (admin)' })
   @ApiResponse({ status: 200, description: 'User detail' })
+  @AuditRead('USER_PII_ACCESSED', 'User')
   getUser(@Param('id') id: string) {
     return this.adminService.getUser(id);
   }
@@ -273,6 +291,7 @@ export class AdminController {
   @Get('athletes')
   @ApiOperation({ summary: 'List registered athletes with aggregated stats' })
   @ApiResponse({ status: 200, description: 'Paginated athlete list' })
+  @AuditRead('ATHLETE_PII_ACCESSED', 'Athlete')
   listAthletes(@Query() query: QueryAdminAthletesDto) {
     return this.adminService.listAthletes(query);
   }

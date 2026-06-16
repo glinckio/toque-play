@@ -62,4 +62,5 @@ export type RootStackParamList = {
   PrivacyConsents: undefined;
   DataExport: undefined;
   DeleteAccount: undefined;
+  DpoContact: undefined;
 };

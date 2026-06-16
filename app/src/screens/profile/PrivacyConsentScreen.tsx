@@ -169,6 +169,12 @@ export default function PrivacyConsentScreen() {
             danger
             onPress={() => navigation.navigate('DeleteAccount')}
           />
+          <ActionRow
+            icon="chatbubble-ellipses-outline"
+            label="Falar com o DPO"
+            hint="Solicitação formal de direitos — acesso, correção, reclamação."
+            onPress={() => navigation.navigate('DpoContact')}
+          />
         </View>
       </View>
     </ScrollView>

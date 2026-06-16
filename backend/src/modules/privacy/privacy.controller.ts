@@ -3,8 +3,11 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
+  Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -16,8 +19,15 @@ import { Request } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PrivacyService } from './privacy.service';
-import { IsEmail, IsNotEmpty, IsBoolean, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsBoolean, IsOptional, IsEnum, IsInt, IsString, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  CreateDpoRequestDto,
+  CreateSecurityIncidentDto,
+  UpdateDpoRequestStatusDto,
+} from './dto/dpo.dto';
+import { Public } from '../../common/decorators/public.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 class DeleteAccountDto {
   @ApiProperty({ description: 'Confirmação: digite seu email para confirmar a exclusão' })
@@ -121,5 +131,78 @@ export class PrivacyController {
       { email: dto.email, expectedEmail: user.email },
       { ip, userAgent },
     );
+  }
+
+  // ─── DPO channel (open to authenticated + unauthenticated users) ──
+
+  @Public()
+  @Post('dpo-contact')
+  @HttpCode(HttpStatus.CREATED)
+  @Throttle({ default: { ttl: 3600000, limit: 5 } })
+  @ApiOperation({ summary: 'Abrir solicitação com o DPO (LGPD art. 18 / ANPD)' })
+  @ApiResponse({ status: 201, description: 'Solicitação criada' })
+  async createDpoRequest(
+    @Body() dto: CreateDpoRequestDto,
+    @CurrentUser() user: { id?: string } | undefined,
+  ) {
+    return this.privacyService.createDpoRequest(dto, user?.id);
+  }
+}
+
+@ApiTags('Admin · Privacy')
+@ApiBearerAuth()
+@Controller('admin/privacy')
+@UseGuards(JwtAuthGuard)
+@Roles('SUPER_ADMIN')
+export class AdminPrivacyController {
+  constructor(private readonly privacyService: PrivacyService) {}
+
+  @Get('dpo-requests')
+  @ApiOperation({ summary: 'Listar solicitações DPO (LGPD)' })
+  @ApiResponse({ status: 200, description: 'Lista paginada' })
+  listDpoRequests(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.privacyService.listDpoRequests({
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+      status,
+    });
+  }
+
+  @Patch('dpo-requests/:id')
+  @ApiOperation({ summary: 'Atualizar status de solicitação DPO' })
+  @ApiResponse({ status: 200, description: 'Solicitação atualizada' })
+  updateDpoStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateDpoRequestStatusDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.privacyService.updateDpoRequestStatus(id, dto.status, userId);
+  }
+
+  @Post('security-incident')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Registrar incidente de segurança (LGPD art. 48)' })
+  @ApiResponse({ status: 201, description: 'Incidente registrado' })
+  createIncident(@Body() dto: CreateSecurityIncidentDto) {
+    return this.privacyService.createSecurityIncident(dto);
+  }
+
+  @Get('security-incident')
+  @ApiOperation({ summary: 'Listar incidentes' })
+  @ApiResponse({ status: 200, description: 'Lista paginada' })
+  listIncidents(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.privacyService.listSecurityIncidents({
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+      status,
+    });
   }
 }

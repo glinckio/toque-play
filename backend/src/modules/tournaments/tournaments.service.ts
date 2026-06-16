@@ -4,6 +4,7 @@ import { StorageService } from '../storage/storage.service';
 import { NotificationService } from '../../common/services/notification.service';
 import { AppError } from '../../common/errors/app-error';
 import { assertImageFile } from '../../common/utils/file-validation';
+import { canTransition } from './tournament-state-chart';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateStructureDto } from './dto/update-structure.dto';
 import { AddSponsorsDto } from './dto/add-sponsors.dto';
@@ -231,7 +232,7 @@ export class TournamentsService {
   async publish(tournamentId: string, userId: string) {
     const tournament = await this.verifyOwnership(tournamentId, userId);
 
-    if (tournament.status !== TournamentStatus.DRAFT) {
+    if (!canTransition(tournament.status, TournamentStatus.PUBLISHED)) {
       throw AppError.tournamentAlreadyPublished();
     }
 
@@ -278,7 +279,7 @@ export class TournamentsService {
   async startTournament(tournamentId: string, userId: string) {
     const tournament = await this.verifyOwnership(tournamentId, userId);
 
-    if (tournament.status !== TournamentStatus.BRACKET_GENERATED) {
+    if (!canTransition(tournament.status, TournamentStatus.IN_PROGRESS)) {
       throw AppError.tournamentNotReady();
     }
 
@@ -385,7 +386,7 @@ export class TournamentsService {
   async completeTournament(tournamentId: string, userId: string) {
     const tournament = await this.verifyOwnership(tournamentId, userId);
 
-    if (tournament.status !== TournamentStatus.IN_PROGRESS) {
+    if (!canTransition(tournament.status, TournamentStatus.FINISHED)) {
       throw AppError.tournamentNotInProgress();
     }
 
@@ -449,11 +450,7 @@ export class TournamentsService {
   async saveAsDraft(tournamentId: string, userId: string) {
     const tournament = await this.verifyOwnership(tournamentId, userId);
 
-    if (
-      tournament.status === TournamentStatus.IN_PROGRESS ||
-      tournament.status === TournamentStatus.FINISHED ||
-      tournament.status === TournamentStatus.CANCELLED
-    ) {
+    if (!canTransition(tournament.status, TournamentStatus.DRAFT)) {
       throw AppError.tournamentNotDraft();
     }
 
@@ -526,11 +523,7 @@ export class TournamentsService {
   async cancel(tournamentId: string, userId: string) {
     const tournament = await this.verifyOwnership(tournamentId, userId);
 
-    if (
-      tournament.status === TournamentStatus.IN_PROGRESS ||
-      tournament.status === TournamentStatus.FINISHED ||
-      tournament.status === TournamentStatus.CANCELLED
-    ) {
+    if (!canTransition(tournament.status, TournamentStatus.CANCELLED)) {
       throw AppError.tournamentCannotCancel();
     }
 

@@ -5,6 +5,7 @@ import {
   Min,
   IsDateString,
   IsIn,
+  IsBoolean,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -24,6 +25,15 @@ export class QueryAdminTournamentsDto {
   @IsOptional()
   @IsIn(['BEACH', 'COURT'])
   modality?: 'BEACH' | 'COURT';
+
+  @ApiPropertyOptional({
+    description: 'Incluir torneios com soft-delete (deletedAt != null)',
+    default: false,
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  includeDeleted?: boolean = false;
 
   @ApiPropertyOptional({
     description: 'Data inicial (filtra por stages.date >= from)',
