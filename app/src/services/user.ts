@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import api from './api';
+import { validateImageFile } from '../utils/image-validation';
 
 export const userService = {
   updateLocation: (latitude: number, longitude: number) =>
@@ -9,12 +10,22 @@ export const userService = {
     api.patch('/users/me', data).then((r) => r.data),
 
   uploadAvatar: async (uri: string) => {
+    const validation = await validateImageFile(uri);
+    if (!validation.ok) {
+      throw new Error(validation.reason ?? 'Arquivo inválido');
+    }
+
     const formData = new FormData();
 
     const filename = uri.split('/').pop() ?? 'avatar.jpg';
     const match = /\.(\w+)$/.exec(filename);
     const ext = match?.[1]?.toLowerCase() ?? 'jpg';
-    const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+
+    // Use the magic-bytes-validated mime; fall back to extension heuristic only
+    // if detection somehow returned nothing.
+    const mimeType =
+      validation.detectedType ??
+      (ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg');
 
     formData.append('file', {
       uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),

@@ -48,6 +48,12 @@ export const useLiveMatchStore = create<LiveMatchState>((set, get) => ({
     const socket = io(WS_URL, {
       auth: { token },
       transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 30000,
+      randomizationFactor: 0.5,
+      timeout: 20000,
     });
 
     socket.on('connect', () => {

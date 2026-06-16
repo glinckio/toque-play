@@ -4,6 +4,7 @@ import { StorageService } from '../storage/storage.service';
 import { NotificationService } from '../../common/services/notification.service';
 import { AppError } from '../../common/errors/app-error';
 import { assertImageFile } from '../../common/utils/file-validation';
+import { parseDate } from '../../common/utils/date';
 import { canTransition } from './tournament-state-chart';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateStructureDto } from './dto/update-structure.dto';
@@ -91,8 +92,8 @@ export class TournamentsService {
             ? {
                 create: dto.stages.map((s) => ({
                   name: s.name,
-                  date: new Date(s.date),
-                  startTime: s.startTime ? new Date(s.startTime) : undefined,
+                  date: parseDate(s.date) ?? new Date(),
+                  startTime: s.startTime ? parseDate(s.startTime) ?? undefined : undefined,
                   maxTeams: s.maxTeams,
                   street: s.street,
                   number: s.number,

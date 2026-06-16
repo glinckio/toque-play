@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { secureStorage } from '../storage/secureStorage';
 import { User } from '../types/user';
 
 interface AuthState {
@@ -35,19 +35,23 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user) => set({ user }),
 
-      clearAuth: () =>
+      clearAuth: () => {
+        // Also wipe the persisted keychain entry so next login starts fresh
+        // (prevents stale tokens being re-hydrated into a half-cleared state).
+        void secureStorage.removeItem('auth-storage');
         set({
           accessToken: null,
           refreshToken: null,
           user: null,
           isAuthenticated: false,
-        }),
+        });
+      },
 
       setHasHydrated: (value) => set({ _hasHydrated: value }),
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => secureStorage),
       partialize: (state) => ({
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,

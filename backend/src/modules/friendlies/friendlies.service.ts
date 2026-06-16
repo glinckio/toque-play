@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { AppError } from '../../common/errors/app-error';
+import { parseDate } from '../../common/utils/date';
 import { NotificationService } from '../../common/services/notification.service';
 import { CreateFriendlyDto } from './dto/create-friendly.dto';
 import { QueryFriendlyDto, NearbyQueryDto } from './dto/query-friendly.dto';
@@ -131,8 +132,8 @@ export class FriendliesService {
           challengedTeamId: dto.challengedTeamId,
           title: dto.title,
           description: dto.description,
-          date: new Date(dto.date),
-          startTime: dto.startTime ? new Date(dto.startTime) : undefined,
+          date: parseDate(dto.date) ?? new Date(),
+          startTime: dto.startTime ? parseDate(dto.startTime) ?? undefined : undefined,
           address: dto.address,
           city: dto.city,
           state: dto.state,

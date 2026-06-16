@@ -4,6 +4,7 @@ import { PrismaService } from '../../common/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { StorageService } from '../storage/storage.service';
 import { maskEmail, maskName, maskPhone, toCsv } from '../../common/utils/pii-masking';
+import { parseDate } from '../../common/utils/date';
 import { assertImageFile } from '../../common/utils/file-validation';
 import { AppError } from '../../common/errors/app-error';
 import { QueryUsersDto } from './dto/query-users.dto';
@@ -1015,8 +1016,8 @@ export class AdminService {
         challengedId: dto.challengedId,
         challengedTeamId: dto.challengedTeamId,
         status: (dto.status ?? 'PENDING') as never,
-        date: new Date(dto.date),
-        startTime: dto.startTime ? new Date(dto.startTime) : null,
+        date: parseDate(dto.date) ?? new Date(),
+        startTime: dto.startTime ? parseDate(dto.startTime) : null,
         city: dto.city,
         state: dto.state,
         address: dto.address,
@@ -1045,9 +1046,9 @@ export class AdminService {
           challengedTeamId: dto.challengedTeamId,
         }),
         ...(dto.status !== undefined && { status: dto.status as never }),
-        ...(dto.date !== undefined && { date: new Date(dto.date) }),
+        ...(dto.date !== undefined && { date: parseDate(dto.date) ?? new Date() }),
         ...(dto.startTime !== undefined && {
-          startTime: dto.startTime ? new Date(dto.startTime) : null,
+          startTime: dto.startTime ? parseDate(dto.startTime) : null,
         }),
         ...(dto.city !== undefined && { city: dto.city }),
         ...(dto.state !== undefined && { state: dto.state }),
@@ -1269,8 +1270,8 @@ export class AdminService {
         stages: {
           create: {
             name: dto.stage.name ?? 'Etapa Única',
-            date: new Date(dto.stage.date),
-            startTime: dto.stage.startTime ? new Date(dto.stage.startTime) : null,
+            date: parseDate(dto.stage.date) ?? new Date(),
+            startTime: dto.stage.startTime ? parseDate(dto.stage.startTime) : null,
             maxTeams: dto.stage.maxTeams ?? 16,
             city: dto.stage.city,
             state: dto.stage.state,

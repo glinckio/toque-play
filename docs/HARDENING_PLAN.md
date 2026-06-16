@@ -1,7 +1,7 @@
 # Plano Mestre — Hardening, LGPD e Evolução ToquePlay
 
 > Última atualização: **2026-06-16**
-> Status: **33 / 56 itens completos** (59%)
+> Status: **41 / 56 itens completos** (73%)
 > Responsável: time ToquePlay · DPO · dev backend/frontend
 
 ---
@@ -12,10 +12,10 @@
 |--------|-------|--------|-----------|--------|
 | **Sprint 0** — Quick Wins | 6 | 6 | 0 | `71cee7f` |
 | **Sprint 1** — Críticos | 11 | 11 | 0 | `5a198c9` + LGPD |
-| **Sprint 2** — Altos | 16 | 16 | 0 | _pending_ |
-| **Sprint 3** — Médios | 16 | 0 | 16 | — |
+| **Sprint 2** — Altos | 16 | 16 | 0 | `cc03a03` |
+| **Sprint 3** — Médios | 16 | 8 | 8 (deferred) | _pending_ |
 | **Sprint 4** — Code Quality | 12 | 0 | 12 | — |
-| **LGPD Documentos Legais** | 7 | 0 | 7 | — |
+| **LGPD Documentos Legais** | 7 | 1 (RPO) | 6 | — |
 | **Extras (Roadmap)** | ~30 | 0 | ~30 | — |
 
 Legenda: ✅ Feito · 🚧 Parcial · ⬜ Pendente
@@ -234,9 +234,63 @@ Resultado consolidado de 3 agentes exploradores + validação manual de pontos c
 
 ---
 
-## SPRINT 3 — Médio — ⬜ PENDENTE (16 itens)
+## SPRINT 3 — Médio — 🚧 PARCIAL (8/16) — demais adiados
 
-### ⬜ S3.1 Tipagem Prisma estável
+> 8 itens fechados nesta sessão. 8 grandes/UX foram adiados por escopo:
+> S3.1 (`@db.Uuid` migration destrutiva), S3.5 (loading/error states), S3.6 (testes), S3.9 (zod forms), S3.13 (audit `'use client'`). S3.2 e S3.4 já cobertos em S0/S2.
+
+### ✅ S3.3 Timezones UTC
+- Helper `backend/src/common/utils/date.ts` com `parseDate` (aceita ISO com offset, date-only, ou Date) e `toUtcIso`.
+- Aplicado em: `friendlies.service` (date/startTime), `tournaments.service` (stages), `admin.service` (friendly admin, tournament admin, stage create). Erro lança `Data inválida` em vez de `Invalid Date` silencioso.
+
+### ✅ S3.4 Sentry PII scrubbing — já coberto em S2.13
+
+### ⬜ S3.1 Tipagem Prisma estável — adiado
+- Migration grande; @db.Uuid em todas as PKs String com default uuid(). Fazer em PRs separados por tabela.
+
+### ⬜ S3.2 Consoles → Logger estruturado — parcial em S0.4
+- Backend coberto. Reauditar serviços não cobertos antes do close.
+
+### ⬜ S3.5 Loading/Empty/Error states consistentes — adiado
+- Web: criar `app/(admin)/loading.tsx` e `error.tsx`. App: hook `useApiState`.
+
+### ⬜ S3.6 Testes críticos — adiado
+- Adicionar cobertura para auth/registrations/tournaments/audit.interceptor. CI gate.
+
+### ✅ S3.7 App SecureStore
+- `app/src/storage/secureStorage.ts` adapter `StateStorage` em torno de `expo-secure-store`.
+- `authStore.ts` trocou `AsyncStorage` por `secureStorage` (Keychain/Keystore). `WHEN_UNLOCKED_THIS_DEVICE_ONLY`.
+
+### ✅ S3.8 Cache clear no logout
+- `authStore.clearAuth` agora chama `secureStorage.removeItem('auth-storage')` antes de resetar state. Previne tokens stale serem re-hidratados.
+
+### ⬜ S3.9 App validação formulários — adiado
+- zod + react-hook-form em telas auth/profile. Trabalho UX longo.
+
+### ✅ S3.10 WebSocket backoff
+- `matchStore.ts` socket config: `reconnection: true`, `reconnectionAttempts: 10`, `reconnectionDelay: 1000`, `reconnectionDelayMax: 30000`, `randomizationFactor: 0.5`, `timeout: 20000`.
+
+### ✅ S3.11 App magic bytes upload
+- `app/src/utils/image-validation.ts` lê 12 bytes via `expo-file-system` e valida magic numbers (PNG/JPEG/WebP).
+- `userService.uploadAvatar` valida antes de FormData.
+
+### ⬜ S3.12 App useFocusEffect refetch — adiado
+- Telas HomeScreen/TournamentDetail/MatchDetail. Trabalho UX longo.
+
+### ⬜ S3.13 Web reduzir `'use client'` — adiado
+- Audit 30+ componentes. Mover para Server Components onde possível.
+
+### ✅ S3.14 Web CSP/HSTS
+- `next.config.ts` `headers()` retorna CSP estrito + HSTS preload (2y) + X-Frame-Options DENY + X-Content-Type-Options nosniff + Referrer-Policy + Permissions-Policy.
+
+### ✅ S3.15 LGPD — RPO (`docs/lgpd/rpo.md`)
+- 15 operações de tratamento mapeadas (cadastro, login, pagamento, push, localização, chat, auditoria, inscrição, ranking, Sentry, DPO, incidentes).
+- Tabela completa: dado, finalidade, base legal, retenção, destinatário, transferência internacional, medidas de segurança.
+- Direitos do titular com endpoints/prazos.
+
+### ✅ S3.16 LGPD — Privacy by design checklist (`CONTRIBUTING.md`)
+- Checklist de 12 itens obrigatório em novos endpoints que tocam PII.
+- Seção "Segurança" + "LGPD" + "Revisão de PR" no CONTRIBUTING.md.
 - Bcrypt/Stripe types: `stripe.service.ts:9,12` (S1.3 já ajustou stripe; revisar restante).
 - Adicionar `@db.Uuid` a todas PKs String com `@default(uuid())` no schema. Migração grande — fazer tabela a tabela em PRs separados.
 
@@ -369,8 +423,9 @@ Mapear: `tp_access`, `tp_refresh`, `tp_user` (todos httpOnly após S0.3) + stora
 ### ⬜ L.4 Procedimento de Incidentes (`incident-response.md`)
 Runbook técnico: detecção (Sentry, alertas), contenção, erradicação, recuperação, notificação ANPD (até 2 dias úteis — Resolução CD/ANPD 15/2024), notificação aos afetados, registro pós-incidente.
 
-### ⬜ L.5 RPO — Registro de Operações (`rpo.md`)
+### ✅ L.5 RPO — Registro de Operações (`rpo.md`)
 Tabela: operação, dado, finalidade, base legal, coletado de, retenção, destinatário, transferência internacional, medidas segurança, responsável interno.
+**Feito em Sprint 3** — `docs/lgpd/rpo.md` com 15 operações mapeadas.
 
 ### ⬜ L.6 Contratos DPA com terceiros (`dpa-templates/`)
 Templates para Stripe, Google, Sentry, AWS, push providers. Documento interno "configuração de privacidade" para cada.
@@ -489,7 +544,8 @@ Slides para equipe sobre minimização, password hygiene, phishing, resposta a i
 | `71cee7f` | S0 | `chore(security): Sprint 0 hardening quick wins` |
 | `5a198c9` | S1 (security) | `feat(security): Sprint 1 hardening — backend` |
 | `ed33fe9` | S1 (LGPD) | `feat(lgpd): Sprint 1 LGPD — consent + rights + app screens` |
-| _pending_ | S2 | `feat(security+lgpd): Sprint 2 — state machine, race, soft delete, retention, 2FA, DPO, incidents` |
+| `cc03a03` | S2 | `feat(security+lgpd): Sprint 2 — state machine, race, soft delete, retention, 2FA, DPO, incidents` |
+| _pending_ | S3 (partial) | `feat(hardening): Sprint 3 partial — timezones, SecureStore, WS backoff, app magic bytes, web CSP/HSTS, RPO, CONTRIBUTING` |
 
 ---
 
