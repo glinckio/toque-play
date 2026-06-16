@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, HttpStatus, HttpCode } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, Param, UseGuards, UseInterceptors, UploadedFile, HttpStatus, HttpCode, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { IsNumber, IsOptional, IsBoolean } from 'class-validator';
@@ -36,6 +36,12 @@ export class UsersController {
   @ApiOperation({ summary: 'Perfil do usuário logado' })
   async getProfile(@CurrentUser('id') userId: string) {
     return this.usersService.getProfile(userId);
+  }
+
+  @Get('me/stats')
+  @ApiOperation({ summary: 'Estatísticas do usuário logado' })
+  async getMyStats(@CurrentUser('id') userId: string) {
+    return this.usersService.getUserStats(userId);
   }
 
   @Patch('me')
@@ -86,8 +92,14 @@ export class UsersController {
   }
 
   @Get(':id/stats')
-  @ApiOperation({ summary: 'Buscar estatísticas de um atleta' })
-  async getUserStats(@Param('id') userId: string) {
+  @ApiOperation({ summary: 'Buscar estatísticas de um atleta (apenas próprio usuário ou SUPER_ADMIN)' })
+  async getUserStats(
+    @Param('id') userId: string,
+    @CurrentUser() requester: { id: string; role: string },
+  ) {
+    if (requester.id !== userId && requester.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Acesso negado às estatísticas de outro usuário');
+    }
     return this.usersService.getUserStats(userId);
   }
 }

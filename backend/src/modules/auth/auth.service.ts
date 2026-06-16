@@ -163,26 +163,33 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
+    await this.assertLoginNotLocked(dto.email);
+
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
 
     if (!user) {
+      await this.recordFailedLogin(dto.email);
       throw AppError.emailNotFound();
     }
 
     if (!user.password) {
+      await this.recordFailedLogin(dto.email);
       throw AppError.emailNotFound();
     }
 
     const passwordMatches = await bcrypt.compare(dto.password, user.password);
     if (!passwordMatches) {
+      await this.recordFailedLogin(dto.email);
       throw AppError.invalidPassword();
     }
 
     if (!user.isEmailVerified) {
       throw AppError.emailNotVerified();
     }
+
+    await this.clearFailedLogins(dto.email);
 
     const { accessToken, refreshToken } = await this.generateTokens(
       user.id,
@@ -258,6 +265,15 @@ export class AuthService {
   }
 
   async refreshToken(refreshToken: string) {
+    // Reuse detection: a previously-rotated token showing up again means theft.
+    const rotatedOwner = await this.redisService.get(`refresh:rotated:${refreshToken}`);
+    if (rotatedOwner) {
+      // Revoke the entire family of tokens for this user (defense in depth).
+      await this.prisma.refreshToken.deleteMany({ where: { userId: rotatedOwner } });
+      await this.redisService.del(`refresh:rotated:${refreshToken}`);
+      throw AppError.invalidRefreshToken();
+    }
+
     const stored = await this.prisma.refreshToken.findUnique({
       where: { token: refreshToken },
       include: { user: true },
@@ -268,6 +284,13 @@ export class AuthService {
     }
 
     await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+
+    // Mark this token as rotated (7d window matches refresh TTL).
+    await this.redisService.set(
+      `refresh:rotated:${refreshToken}`,
+      stored.userId,
+      7 * 24 * 60 * 60,
+    );
 
     const {
       accessToken,
@@ -289,10 +312,14 @@ export class AuthService {
     };
   }
 
-  async logout(userId: string) {
+  async logout(userId: string, jti?: string) {
     await this.prisma.refreshToken.deleteMany({
       where: { userId },
     });
+    // Revoke the current access token for its remaining lifetime (15 min default).
+    if (jti) {
+      await this.redisService.set(`revoked:jwt:${jti}`, '1', 15 * 60);
+    }
   }
 
   async forgotPassword(email: string) {
@@ -342,6 +369,44 @@ export class AuthService {
     return { message: 'Senha redefinida com sucesso.' };
   }
 
+  // Progressive lockout: 5 fails → 15min, 10 → 1h, 15 → 24h
+  private static readonly LOCK_STEPS: Array<{ fails: number; ttl: number }> = [
+    { fails: 5, ttl: 15 * 60 },
+    { fails: 10, ttl: 60 * 60 },
+    { fails: 15, ttl: 24 * 60 * 60 },
+  ];
+
+  private async assertLoginNotLocked(email: string): Promise<void> {
+    const client = this.redisService.getClient();
+    const ttl = await client.pttl(`login:lock:${email}`);
+    if (ttl && ttl > 0) {
+      const minutes = Math.ceil(ttl / 60000);
+      throw new UnauthorizedException(
+        `Conta temporariamente bloqueada. Tente novamente em ${minutes} minuto(s).`,
+      );
+    }
+  }
+
+  private async recordFailedLogin(email: string): Promise<void> {
+    const client = this.redisService.getClient();
+    const key = `login:fail:${email}`;
+    const count = await client.incr(key);
+    if (count === 1) {
+      await client.expire(key, 15 * 60);
+    }
+    for (const step of AuthService.LOCK_STEPS) {
+      if (count === step.fails) {
+        await this.redisService.set(`login:lock:${email}`, String(count), step.ttl);
+        break;
+      }
+    }
+  }
+
+  private async clearFailedLogins(email: string): Promise<void> {
+    await this.redisService.del(`login:fail:${email}`);
+    await this.redisService.del(`login:lock:${email}`);
+  }
+
   private async createVerificationCode(userId: string): Promise<string> {
     const plainCode = String(crypto.randomInt(100000, 1000000));
     const hashedCode = await bcrypt.hash(plainCode, 12);
@@ -375,7 +440,9 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string, email: string, role: string) {
-    const payload = { sub: userId, email, role };
+    // Unique id per access token — enables per-token revocation on logout.
+    const jti = crypto.randomUUID();
+    const payload = { sub: userId, email, role, jti };
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),

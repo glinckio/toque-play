@@ -4,8 +4,8 @@ import { AppError } from '../../common/errors/app-error';
 import { StorageService } from '../storage/storage.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
+import { assertImageFile } from '../../common/utils/file-validation';
 
-const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 @Injectable()
@@ -166,8 +166,7 @@ export class TeamsService {
     if (!team) throw AppError.teamNotFound();
     if (team.ownerId !== userId) throw AppError.notTeamOwner();
 
-    if (!ALLOWED_MIMES.includes(file.mimetype)) throw AppError.invalidFileType();
-    if (file.size > MAX_SIZE) throw AppError.fileTooLarge();
+    await assertImageFile(file, MAX_SIZE);
 
     // Delete old avatar if exists
     if (team.avatarUrl) {

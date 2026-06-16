@@ -3,6 +3,7 @@ import { PrismaService } from '../../common/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { NotificationService } from '../../common/services/notification.service';
 import { AppError } from '../../common/errors/app-error';
+import { assertImageFile } from '../../common/utils/file-validation';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateStructureDto } from './dto/update-structure.dto';
 import { AddSponsorsDto } from './dto/add-sponsors.dto';
@@ -903,13 +904,7 @@ export class TournamentsService {
       throw AppError.notTournamentOwner();
     }
 
-    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowed.includes(file.mimetype)) {
-      throw new BadRequestException('Formato inválido. Use JPEG, PNG ou WebP.');
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      throw new BadRequestException('Arquivo muito grande. Máximo 10MB.');
-    }
+    await assertImageFile(file, 10 * 1024 * 1024);
 
     const ext = file.originalname.split('.').pop() ?? 'jpg';
     const key = `tournaments/${tournamentId}/cover-${Date.now()}.${ext}`;

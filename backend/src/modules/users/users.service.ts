@@ -4,8 +4,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { NotificationPreferencesDto } from './dto/notification-preferences.dto';
 import { StorageService } from '../storage/storage.service';
 import { AppError } from '../../common/errors/app-error';
+import { assertImageFile } from '../../common/utils/file-validation';
 
-const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024;
 
 const DEFAULT_NOTIFICATION_PREFS = {
@@ -135,8 +135,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    if (!ALLOWED_MIMES.includes(file.mimetype)) throw AppError.invalidFileType();
-    if (file.size > MAX_SIZE) throw AppError.fileTooLarge();
+    await assertImageFile(file, MAX_SIZE);
 
     if (user.avatarUrl) {
       const oldKey = this.storage.extractKeyFromUrl(user.avatarUrl);

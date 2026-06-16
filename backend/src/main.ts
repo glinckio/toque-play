@@ -24,7 +24,22 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: false, // API does not serve HTML
+      crossOriginEmbedderPolicy: false, // avoid COEP issues with external CDNs
+      crossOriginOpenerPolicy: { policy: 'same-origin' },
+      crossOriginResourcePolicy: { policy: 'same-origin' },
+      hsts: {
+        maxAge: 63072000, // 2 years
+        includeSubDomains: true,
+        preload: true,
+      },
+      frameguard: { action: 'deny' },
+      noSniff: true,
+      referrerPolicy: { policy: 'no-referrer' },
+    }),
+  );
 
   // Sentry request handler (must be before other middleware)
   if (dsn) {

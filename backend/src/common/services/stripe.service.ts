@@ -1,15 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import StripeInit from 'stripe';
+import StripeInit, { Stripe } from 'stripe';
 
-const Stripe = (StripeInit as any).default || StripeInit;
+const StripeCtor = (StripeInit as any).default || StripeInit;
+
+// Stripe webhook tolerance window (seconds). Default 5 min guards against replay attacks.
+const WEBHOOK_TOLERANCE_SECONDS = 300;
 
 @Injectable()
 export class StripeService {
-  private stripe: any;
+  private readonly logger = new Logger(StripeService.name);
+  private readonly stripe: Stripe;
+  private readonly webhookSecret: string;
 
   constructor(private configService: ConfigService) {
-    this.stripe = new Stripe(configService.get<string>('STRIPE_SECRET_KEY')!);
+    this.stripe = new StripeCtor(configService.get<string>('STRIPE_SECRET_KEY')!);
+    this.webhookSecret = configService.get<string>('STRIPE_WEBHOOK_SECRET')!;
   }
 
   async createCheckoutSession(params: {
@@ -44,10 +50,20 @@ export class StripeService {
   }
 
   constructWebhookEvent(payload: Buffer, signature: string) {
+    // tolerance: rejects events older than 5 min (replay protection)
     return this.stripe.webhooks.constructEvent(
       payload,
       signature,
-      this.configService.get<string>('STRIPE_WEBHOOK_SECRET')!,
+      this.webhookSecret,
+      WEBHOOK_TOLERANCE_SECONDS,
     );
+  }
+
+  /**
+   * Returns true if the event id was already seen (idempotency guard).
+   * Uses Redis SETNX with 24h TTL.
+   */
+  async isEventProcessed(eventId: string, redisSetNxTtl: (key: string, value: string, ttlSec: number) => Promise<boolean>): Promise<boolean> {
+    return redisSetNxTtl(`stripe:event:${eventId}`, '1', 24 * 60 * 60);
   }
 }

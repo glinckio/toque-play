@@ -13,6 +13,15 @@ const API = process.env.API_INTERNAL_URL ?? "http://localhost:3000/api";
 
 type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
+// Whitelist de módulos backend que o proxy pode repassar.
+// Evita SSRF / chamadas arbitrárias se API_INTERNAL_URL for manipulado.
+const ALLOWED_PATH_RE =
+  /^(admin\/audit-logs|admin\/users|admin\/tournaments|admin\/matches|admin\/friendlies|admin\/athletes|admin\/payments|admin\/teams|admin\/dashboard|admin\/logs|admin\/monitoring|admin\/system|admin\/metrics|admin\/feed|admin\/registrations|auth|users|me|tournaments|matches|friendlies|registrations|payments|teams|chat|brackets|notifications|health)(\/.*)?$/;
+
+function isAllowed(path: string): boolean {
+  return ALLOWED_PATH_RE.test(path);
+}
+
 async function callBackend(
   path: string,
   search: string,
@@ -66,6 +75,10 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
   const path = rawPath.join("/");
   const search = new URL(req.url).search.replace(/^\?/, "");
   const method = req.method as Method;
+
+  if (!isAllowed(path)) {
+    return NextResponse.json({ message: "Path not allowed" }, { status: 403 });
+  }
 
   const store = await cookies();
   let access: string | undefined = store.get(COOKIE_ACCESS)?.value ?? undefined;

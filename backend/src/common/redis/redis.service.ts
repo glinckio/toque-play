@@ -22,6 +22,15 @@ export class RedisService implements OnModuleDestroy {
     }
   }
 
+  /**
+   * SETNX with TTL. Returns true if the key was newly set (i.e. caller is the first),
+   * false if it already existed (caller should treat as duplicate).
+   */
+  async setNx(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+    const res = await this.client.set(key, value, 'EX', ttlSeconds, 'NX');
+    return res === 'OK';
+  }
+
   async del(key: string): Promise<void> {
     await this.client.del(key);
   }

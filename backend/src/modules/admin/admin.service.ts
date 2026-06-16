@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { StorageService } from '../storage/storage.service';
+import { assertImageFile } from '../../common/utils/file-validation';
 import { AppError } from '../../common/errors/app-error';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { QueryAdminTournamentsDto } from './dto/query-admin-tournaments.dto';
@@ -1272,13 +1273,7 @@ export class AdminService {
     const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!tournament) throw AppError.tournamentNotFound();
 
-    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowed.includes(file.mimetype)) {
-      throw new BadRequestException('Formato inválido. Use JPEG, PNG ou WebP.');
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      throw new BadRequestException('Arquivo muito grande. Máximo 10MB.');
-    }
+    await assertImageFile(file, 10 * 1024 * 1024);
 
     const ext = file.originalname.split('.').pop() ?? 'jpg';
     const key = `tournaments/${tournamentId}/cover-${Date.now()}.${ext}`;

@@ -5,6 +5,7 @@ import { PrismaService } from '../../common/prisma.service';
 import { AppError } from '../../common/errors/app-error';
 import { StripeService } from '../../common/services/stripe.service';
 import { NotificationService } from '../../common/services/notification.service';
+import { RedisService } from '../../common/redis/redis.service';
 import { TournamentsService } from '../tournaments/tournaments.service';
 import { RegisterTeamDto } from './dto/register-team.dto';
 import { PaymentsGateway } from './payments.gateway';
@@ -42,6 +43,7 @@ export class RegistrationsService {
     private stripeService: StripeService,
     private notificationService: NotificationService,
     private auditService: AuditService,
+    private redisService: RedisService,
     @InjectQueue('registration-expiry') private expiryQueue: Queue,
   ) {}
 
@@ -315,6 +317,16 @@ export class RegistrationsService {
   }
 
   async handleStripeWebhook(event: any) {
+    // Idempotency: dedupe Stripe event deliveries (retries are common)
+    const isFirst = await this.redisService.setNx(
+      `stripe:event:${event.id}`,
+      '1',
+      24 * 60 * 60,
+    );
+    if (!isFirst) {
+      return; // already processed
+    }
+
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       const registrationId = session.metadata?.registrationId;

@@ -35,6 +35,7 @@ export class AuthController {
   @Public()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: 'Verificar email com codigo' })
   @ApiResponse({ status: 200, description: 'Email verificado com sucesso' })
   @ApiResponse({ status: 400, description: 'Codigo invalido ou expirado' })
@@ -68,6 +69,7 @@ export class AuthController {
   @Public()
   @Post('google')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: 'Login com Google' })
   @ApiResponse({ status: 200, description: 'Login realizado com sucesso' })
   @ApiResponse({ status: 401, description: 'Token do Google invalido' })
@@ -78,6 +80,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 30 } })
   @ApiOperation({ summary: 'Renovar access token' })
   @ApiResponse({ status: 200, description: 'Tokens renovados' })
   @ApiResponse({ status: 401, description: 'Refresh token invalido' })
@@ -111,7 +114,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout' })
   @ApiResponse({ status: 204, description: 'Logout realizado' })
-  async logout(@CurrentUser('id') userId: string) {
-    await this.authService.logout(userId);
+  async logout(@CurrentUser() user: { id: string; jti?: string }) {
+    await this.authService.logout(user.id, user.jti);
   }
 }
