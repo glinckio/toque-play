@@ -26,6 +26,7 @@ import { SentryModule } from './common/sentry/sentry.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuditInterceptor } from './modules/audit/audit.interceptor';
+import { PrivacyModule } from './modules/privacy/privacy.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { AuditInterceptor } from './modules/audit/audit.interceptor';
     HomeModule,
     AdminModule,
     AuditModule,
+    PrivacyModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

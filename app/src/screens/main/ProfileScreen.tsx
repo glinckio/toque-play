@@ -23,6 +23,7 @@ const MANAGEMENT_ITEMS = [
   { icon: 'clipboard-outline', label: 'Minhas inscrições', screen: 'MyRegistrations' as const },
   { icon: 'flash-outline', label: 'Meus amistosos', screen: 'MyFriendlies' as const },
   { icon: 'eye-outline', label: 'Minhas arbitragens', screen: 'MyReferees' as const },
+  { icon: 'lock-closed-outline', label: 'Privacidade e consentimentos', screen: 'PrivacyConsents' as const },
 ];
 
 export default function ProfileScreen() {

@@ -73,6 +73,18 @@ export const AppError = {
   resetTokenExpired: () =>
     withCode(BadRequestException, AuthErrorCode.RESET_TOKEN_EXPIRED),
 
+  // LGPD / Consent
+  consentRequired: () =>
+    withCode(BadRequestException, AuthErrorCode.CONSENT_REQUIRED),
+  consentOutdated: () =>
+    withCode(BadRequestException, AuthErrorCode.CONSENT_OUTDATED),
+  dataExportRateLimited: () =>
+    withCode(HttpException, AuthErrorCode.DATA_EXPORT_RATE_LIMITED, HttpStatus.TOO_MANY_REQUESTS),
+  dataExportNotReady: () =>
+    withCode(BadRequestException, AuthErrorCode.DATA_EXPORT_NOT_READY),
+  accountDeletionConfirmationRequired: () =>
+    withCode(BadRequestException, AuthErrorCode.ACCOUNT_DELETION_CONFIRMATION_REQUIRED),
+
   // Teams errors
   teamNotFound: () =>
     withCode(NotFoundException, TeamsErrorCode.TEAM_NOT_FOUND),

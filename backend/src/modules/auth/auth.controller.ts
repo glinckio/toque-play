@@ -1,6 +1,7 @@
-import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -28,8 +29,11 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Registro realizado com sucesso' })
   @ApiResponse({ status: 409, description: 'Email ja cadastrado' })
   @Audit('USER_REGISTERED', 'User')
-  async register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  async register(@Body() dto: RegisterDto, @Req() req: Request) {
+    const forwarded = (req.headers['x-forwarded-for'] as string | undefined) ?? null;
+    const ip = forwarded ? forwarded.split(',')[0].trim() : (req.ip ?? null);
+    const userAgent = req.headers['user-agent'] ?? null;
+    return this.authService.register(dto, { ip, userAgent });
   }
 
   @Public()

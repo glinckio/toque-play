@@ -10,6 +10,12 @@ export interface RegisterRequest {
   email: string;
   password: string;
   confirmPassword: string;
+  consent: boolean;
+  consents?: {
+    notificationsPush?: boolean;
+    locationDiscovery?: boolean;
+    marketingEmail?: boolean;
+  };
 }
 
 export interface VerifyEmailRequest {

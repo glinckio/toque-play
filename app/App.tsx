@@ -18,6 +18,9 @@ import CreateSheetScreen from './src/screens/main/CreateSheetScreen';
 import TeamsScreen from './src/screens/main/TeamsScreen';
 import MyFriendliesScreen from './src/screens/friendly/MyFriendliesScreen';
 import EditProfileScreen from './src/screens/main/EditProfileScreen';
+import PrivacyConsentScreen from './src/screens/profile/PrivacyConsentScreen';
+import DataExportScreen from './src/screens/profile/DataExportScreen';
+import DeleteAccountScreen from './src/screens/profile/DeleteAccountScreen';
 import SplashScreen from './src/screens/splash/SplashScreen';
 import AlertDialog from './src/components/AlertDialog';
 import { useAuthStore } from './src/stores/authStore';
@@ -89,6 +92,9 @@ export default function App() {
                   <RootStack.Screen name="MyTeams" component={TeamsScreen} options={{ presentation: 'modal' }} />
                   <RootStack.Screen name="MyFriendlies" component={MyFriendliesScreen} options={{ presentation: 'modal' }} />
                   <RootStack.Screen name="EditProfile" component={EditProfileScreen} options={{ presentation: 'card', animation: 'slide_from_bottom' }} />
+                  <RootStack.Screen name="PrivacyConsents" component={PrivacyConsentScreen} options={{ presentation: 'card', animation: 'slide_from_bottom' }} />
+                  <RootStack.Screen name="DataExport" component={DataExportScreen} options={{ presentation: 'card', animation: 'slide_from_bottom' }} />
+                  <RootStack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ presentation: 'card', animation: 'slide_from_bottom' }} />
                 </RootStack.Navigator>
               ) : (
                 <AuthNavigator />

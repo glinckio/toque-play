@@ -23,6 +23,13 @@ export enum AuthErrorCode {
   // Password reset
   RESET_TOKEN_INVALID = 'RESET_TOKEN_INVALID',
   RESET_TOKEN_EXPIRED = 'RESET_TOKEN_EXPIRED',
+
+  // LGPD / Consent
+  CONSENT_REQUIRED = 'CONSENT_REQUIRED',
+  CONSENT_OUTDATED = 'CONSENT_OUTDATED',
+  DATA_EXPORT_RATE_LIMITED = 'DATA_EXPORT_RATE_LIMITED',
+  DATA_EXPORT_NOT_READY = 'DATA_EXPORT_NOT_READY',
+  ACCOUNT_DELETION_CONFIRMATION_REQUIRED = 'ACCOUNT_DELETION_CONFIRMATION_REQUIRED',
 }
 
 export const AuthErrorMessages: Record<AuthErrorCode, string> = {
@@ -49,4 +56,14 @@ export const AuthErrorMessages: Record<AuthErrorCode, string> = {
 
   [AuthErrorCode.RESET_TOKEN_INVALID]: 'Invalid reset token',
   [AuthErrorCode.RESET_TOKEN_EXPIRED]: 'Reset token has expired',
+
+  [AuthErrorCode.CONSENT_REQUIRED]:
+    'Consent to Terms and Privacy Policy is required (LGPD art. 8)',
+  [AuthErrorCode.CONSENT_OUTDATED]:
+    'Terms version changed — please re-consent',
+  [AuthErrorCode.DATA_EXPORT_RATE_LIMITED]:
+    'You can request one data export per day',
+  [AuthErrorCode.DATA_EXPORT_NOT_READY]: 'Data export is not ready yet',
+  [AuthErrorCode.ACCOUNT_DELETION_CONFIRMATION_REQUIRED]:
+    'Account deletion requires email confirmation',
 };

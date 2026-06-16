@@ -149,6 +149,7 @@ model User {
   athleteStats       AthleteStats[]
   tournamentReferees TournamentReferee[]
   auditLogs          AuditLog[]
+  consents           UserConsent[]
 }
 
 model RefreshToken {
@@ -649,6 +650,29 @@ model AuditLog {
   @@index([actorId])
   @@index([action])
   @@map("audit_logs")
+}
+
+model UserConsent {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version      String                              // Terms/Privacy version (env TERMS_VERSION), e.g. "v1"
+  purpose      ConsentPurpose                      // granular purpose
+  accepted     Boolean  @default(true)
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([userId, purpose, version])
+  @@map("user_consents")
+}
+
+enum ConsentPurpose {
+  TERMS                       // Obrigatório: Termos + Política
+  NOTIFICATIONS_PUSH          // Opcional: push notifications
+  LOCATION_DISCOVERY          // Opcional: geolocalização para descoberta
+  MARKETING_EMAIL             // Opcional: marketing por email
 }
 
 model AthleteStats {

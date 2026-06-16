@@ -5,8 +5,29 @@ import {
   MinLength,
   MaxLength,
   ValidateIf,
+  IsBoolean,
+  IsOptional,
+  ValidateNested,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class ConsentsDto {
+  @ApiPropertyOptional({ description: 'Aceita receber notificações push (opcional)' })
+  @IsOptional()
+  @IsBoolean()
+  notificationsPush?: boolean;
+
+  @ApiPropertyOptional({ description: 'Aceita usar localização para descoberta (opcional)' })
+  @IsOptional()
+  @IsBoolean()
+  locationDiscovery?: boolean;
+
+  @ApiPropertyOptional({ description: 'Aceita receber emails de marketing (opcional)' })
+  @IsOptional()
+  @IsBoolean()
+  marketingEmail?: boolean;
+}
 
 export class RegisterDto {
   @ApiProperty({ description: 'Nome do usuario' })
@@ -31,4 +52,16 @@ export class RegisterDto {
   @IsNotEmpty()
   @ValidateIf((o: RegisterDto) => o.password !== o.confirmPassword)
   confirmPassword: string;
+
+  @ApiProperty({
+    description: 'Aceitação obrigatória dos Termos e Política de Privacidade (LGPD).',
+  })
+  @IsBoolean()
+  consent: boolean;
+
+  @ApiPropertyOptional({ description: 'Consentimentos granulares opcionais' })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ConsentsDto)
+  consents?: ConsentsDto;
 }

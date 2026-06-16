@@ -59,4 +59,7 @@ export type RootStackParamList = {
   MyFriendlies: undefined;
   CreateSheet: undefined;
   EditProfile: undefined;
+  PrivacyConsents: undefined;
+  DataExport: undefined;
+  DeleteAccount: undefined;
 };

@@ -33,7 +33,15 @@ export class AuthService {
     );
   }
 
-  async register(dto: RegisterDto) {
+  async register(
+    dto: RegisterDto,
+    ctx?: { ip?: string | null; userAgent?: string | null },
+  ) {
+    // LGPD art. 8 — registration requires explicit consent to Terms/Privacy.
+    if (dto.consent !== true) {
+      throw AppError.consentRequired();
+    }
+
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -54,8 +62,18 @@ export class AuthService {
         password: hashedPassword,
         isFirstAccess: true,
         isEmailVerified: false,
+        notificationPreferences: {
+          messages: true,
+          invites: true,
+          matches: true,
+          friendlies: true,
+          tournaments: true,
+        },
       },
     });
+
+    // Persist all consents at the current Terms version.
+    await this.persistConsents(user.id, dto.consents, ctx);
 
     const plainCode = await this.createVerificationCode(user.id);
     await this.mailService.sendVerificationEmail(
@@ -65,6 +83,55 @@ export class AuthService {
     );
 
     return { message: 'Registro realizado. Verifique seu email.' };
+  }
+
+  private async persistConsents(
+    userId: string,
+    granular: RegisterDto['consents'],
+    ctx?: { ip?: string | null; userAgent?: string | null },
+  ) {
+    const version = this.configService.get<string>('TERMS_VERSION') ?? 'v1';
+    const base = {
+      userId,
+      version,
+      ipAddress: ctx?.ip ?? null,
+      userAgent: ctx?.userAgent ?? null,
+    };
+
+    const records: Array<{
+      userId: string;
+      version: string;
+      purpose: any;
+      accepted: boolean;
+      ipAddress: string | null;
+      userAgent: string | null;
+    }> = [
+      { ...base, purpose: 'TERMS', accepted: true },
+    ];
+
+    if (granular?.notificationsPush !== undefined) {
+      records.push({
+        ...base,
+        purpose: 'NOTIFICATIONS_PUSH',
+        accepted: granular.notificationsPush,
+      });
+    }
+    if (granular?.locationDiscovery !== undefined) {
+      records.push({
+        ...base,
+        purpose: 'LOCATION_DISCOVERY',
+        accepted: granular.locationDiscovery,
+      });
+    }
+    if (granular?.marketingEmail !== undefined) {
+      records.push({
+        ...base,
+        purpose: 'MARKETING_EMAIL',
+        accepted: granular.marketingEmail,
+      });
+    }
+
+    await this.prisma.userConsent.createMany({ data: records });
   }
 
   async verifyEmail(dto: VerifyEmailDto) {
