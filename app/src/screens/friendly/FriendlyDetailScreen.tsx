@@ -491,6 +491,11 @@ export default function FriendlyDetailScreen({ route, navigation }: any) {
             <FlatList
               data={displayFriendly.athletes?.filter((a) => a.side === athletesSide) ?? []}
               keyExtractor={(item) => item.id}
+              removeClippedSubviews
+              maxToRenderPerBatch={10}
+              initialNumToRender={8}
+              windowSize={5}
+              getItemLayout={(_, index) => ({ length: 64, offset: 64 * index, index })}
               renderItem={({ item: athlete }) => (
                 <View style={s.athleteModalItem}>
                   <View style={s.athleteModalAvatar}>

@@ -7,9 +7,12 @@ export function useLocation() {
   const [permissionDenied, setPermissionDenied] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
+        if (cancelled) return;
         if (status !== 'granted') {
           setPermissionDenied(true);
           return;
@@ -18,6 +21,7 @@ export function useLocation() {
         const pos = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
+        if (cancelled) return;
 
         const { latitude, longitude } = pos.coords;
         setLocation({ latitude, longitude });
@@ -25,9 +29,13 @@ export function useLocation() {
         // Send to backend silently
         userService.updateLocation(latitude, longitude).catch(() => {});
       } catch {
-        setPermissionDenied(true);
+        if (!cancelled) setPermissionDenied(true);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { location, permissionDenied };

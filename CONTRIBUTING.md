@@ -44,6 +44,23 @@ Antes de abrir o PR, confirme:
 - [ ] **Rate limit**: rotas sensíveis (auth, export, DPO) têm `@Throttle`.
 - [ ] **Mascaramento em exports**: listagens/CSVs admin usam helpers `maskEmail/maskCpf/maskPhone/maskName` — PII completa só via toggle 2FA-gated.
 
+## Migrations destrutivas
+
+Antes de aplicar migrations que contêm `DROP`, `ALTER TYPE`, ou `ALTER COLUMN` com perda de dados:
+
+1. **Status check**: `pnpm --filter backend run db:migrate:status` para confirmar estado atual.
+2. **Backup**: rodar `pg_dump` (ou snapshot gerenciado) em ambientes não-dev antes de aplicar.
+3. **Review do SQL**: abrir o arquivo gerado em `prisma/migrations/<ts>_<name>/migration.sql`. Não aplicar no automerge se houver `DROP TABLE` sem `IF EXISTS` ou `CASCADE`.
+4. **Rollback plan**: migrations Prisma são forward-only. Documentar rollback manual no PR (ex: SQL para recriar índice/coluna).
+5. **Dry-run**: para migrations grandes, criar PR separado, aplicar em staging primeiro, validar antes de prod.
+
+Scripts disponíveis em `backend/package.json`:
+
+- `pnpm --filter backend run db:migrate` — dev (`migrate dev`).
+- `pnpm --filter backend run db:migrate:prod` — deploy (`migrate deploy`).
+- `pnpm --filter backend run db:migrate:status` — checar estado (não-destrutivo).
+- `pnpm --filter backend run db:migrate:resolve` — marcar migration como aplicada (em caso de drift).
+
 ## Testes
 
 - Hoje: 9 specs em backend (`*.service.spec.ts`). Nova lógica crítica (auth, payment, registration, audit) deve vir acompanhada de teste.

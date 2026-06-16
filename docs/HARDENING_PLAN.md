@@ -1,7 +1,7 @@
 # Plano Mestre — Hardening, LGPD e Evolução ToquePlay
 
 > Última atualização: **2026-06-16**
-> Status: **41 / 56 itens completos** (73%)
+> Status: **47 / 56 itens completos** (84%)
 > Responsável: time ToquePlay · DPO · dev backend/frontend
 
 ---
@@ -13,8 +13,8 @@
 | **Sprint 0** — Quick Wins | 6 | 6 | 0 | `71cee7f` |
 | **Sprint 1** — Críticos | 11 | 11 | 0 | `5a198c9` + LGPD |
 | **Sprint 2** — Altos | 16 | 16 | 0 | `cc03a03` |
-| **Sprint 3** — Médios | 16 | 8 | 8 (deferred) | _pending_ |
-| **Sprint 4** — Code Quality | 12 | 0 | 12 | — |
+| **Sprint 3** — Médios | 16 | 8 | 8 (deferred) | `f5a7087` |
+| **Sprint 4** — Code Quality | 12 | 6 | 6 (deferred) | _pending_ |
 | **LGPD Documentos Legais** | 7 | 1 (RPO) | 6 | — |
 | **Extras (Roadmap)** | ~30 | 0 | ~30 | — |
 
@@ -348,7 +348,10 @@ Resultado consolidado de 3 agentes exploradores + validação manual de pontos c
 
 ---
 
-## SPRINT 4 — Code Quality — ⬜ PENDENTE (12 itens)
+## SPRINT 4 — Code Quality — 🚧 PARCIAL (6/12) — demais adiados
+
+> 6 itens fechados nesta sessão. 6 grandes/UX adiados:
+> S4.1 (componentes >500 linhas), S4.4 (acessibilidade), S4.5 (OpenAPI codegen), S4.6 (refator includes Prisma), S4.7 (eslint hooks deps), S4.8 (tema unificado), S4.10 (Sentry source maps).
 
 ### ⬜ S4.1 Componentes >500 linhas
 - `FriendlyDetailScreen` etc → extrair hooks `useFriendlyDetail`, sub-componentes.
@@ -545,7 +548,8 @@ Slides para equipe sobre minimização, password hygiene, phishing, resposta a i
 | `5a198c9` | S1 (security) | `feat(security): Sprint 1 hardening — backend` |
 | `ed33fe9` | S1 (LGPD) | `feat(lgpd): Sprint 1 LGPD — consent + rights + app screens` |
 | `cc03a03` | S2 | `feat(security+lgpd): Sprint 2 — state machine, race, soft delete, retention, 2FA, DPO, incidents` |
-| _pending_ | S3 (partial) | `feat(hardening): Sprint 3 partial — timezones, SecureStore, WS backoff, app magic bytes, web CSP/HSTS, RPO, CONTRIBUTING` |
+| `f5a7087` | S3 (partial) | `feat(hardening): Sprint 3 partial — timezones, SecureStore, WS backoff, app magic bytes, web CSP/HSTS, RPO, CONTRIBUTING` |
+| _pending_ | S4 (partial) | `feat(quality): Sprint 4 partial — WS types, useLocation cleanup, FlatList perf, CI/CD, migrate safety` |
 
 ---
 

@@ -20,6 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:migrate": "npx prisma migrate dev",
     "db:migrate:prod": "npx prisma migrate deploy",
+    "db:migrate:status": "npx prisma migrate status",
+    "db:migrate:resolve": "npx prisma migrate resolve",
     "db:seed": "npx prisma db seed",
     "db:seed:tournament": "npx tsx prisma/seed-tournament.ts",
     "db:seed:banners": "npx tsx prisma/seed-banners.ts",
