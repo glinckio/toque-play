@@ -15,6 +15,7 @@ import { ResendCodeDto } from './dto/resend-code.dto';
 import { OAuth2Client } from 'google-auth-library';
 import { AppError } from '../../common/errors/app-error';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -44,7 +45,7 @@ export class AuthService {
       throw AppError.passwordsDoNotMatch();
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await bcrypt.hash(dto.password, 12);
 
     const user = await this.prisma.user.create({
       data: {
@@ -301,7 +302,7 @@ export class AuthService {
       return { message: 'Se o email existir, voce recebera o codigo de redefinicao.' };
     }
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = String(crypto.randomInt(100000, 1000000));
     const redisKey = `reset:${email}`;
     await this.redisService.set(redisKey, code, 15 * 60); // 15 min TTL
 
@@ -327,7 +328,7 @@ export class AuthService {
       throw AppError.userNotFound();
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
     await this.prisma.user.update({
       where: { id: user.id },
       data: { password: hashedPassword },
@@ -342,10 +343,8 @@ export class AuthService {
   }
 
   private async createVerificationCode(userId: string): Promise<string> {
-    const plainCode = String(
-      Math.floor(100000 + Math.random() * 900000),
-    );
-    const hashedCode = await bcrypt.hash(plainCode, 10);
+    const plainCode = String(crypto.randomInt(100000, 1000000));
+    const hashedCode = await bcrypt.hash(plainCode, 12);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     await this.prisma.emailVerification.create({

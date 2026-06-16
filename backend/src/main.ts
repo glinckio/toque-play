@@ -46,8 +46,12 @@ async function bootstrap() {
   app.useGlobalFilters(new SentryFilter());
 
   const allowedOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',')
-    : ['http://localhost:3001', 'http://localhost:19006', 'exp://localhost:19000', 'http://192.168.1.7:3000', 'http://192.168.1.7:3001'];
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+    : process.env.NODE_ENV === 'production'
+      ? (() => {
+          throw new Error('CORS_ORIGINS env var required in production');
+        })()
+      : ['http://localhost:3001', 'http://localhost:19006', 'exp://localhost:19000'];
 
   app.enableCors({
     origin: allowedOrigins,

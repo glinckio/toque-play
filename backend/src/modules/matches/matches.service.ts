@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { AppError } from '../../common/errors/app-error';
 import { MatchesGateway } from './matches.gateway';
@@ -15,6 +15,8 @@ import { MatchStatus, MatchEventType, TournamentModality } from '@prisma/client'
 
 @Injectable()
 export class MatchesService {
+  private readonly logger = new Logger(MatchesService.name);
+
   constructor(
     private prisma: PrismaService,
     private matchesGateway: MatchesGateway,
@@ -25,7 +27,7 @@ export class MatchesService {
   ) {}
 
   private emitMatchEvent(match: any, event: string, data: any) {
-    console.log(`[WS] Emitting ${event} for match:${match.id}`, JSON.stringify(data));
+    this.logger.verbose(`ws emit event=${event} match=${match.id}`);
     // Always emit to match room (works for both tournament and friendly)
     this.matchesGateway.emitToMatch(match.id, event, data);
     if (match.friendlyId) {

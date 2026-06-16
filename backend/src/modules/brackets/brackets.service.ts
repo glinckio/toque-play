@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { AppError } from '../../common/errors/app-error';
 import { NotificationService } from '../../common/services/notification.service';
@@ -27,6 +27,8 @@ const BRACKET_INCLUDE = {
 
 @Injectable()
 export class BracketsService {
+  private readonly logger = new Logger(BracketsService.name);
+
   constructor(
     private prisma: PrismaService,
     private tournamentsService: TournamentsService,
@@ -34,17 +36,17 @@ export class BracketsService {
   ) {}
 
   async generateBracket(tournamentId: string, userId: string, dto: GenerateBracketDto) {
-    console.log('[BRACKET] generateBracket called', { tournamentId, userId, dto });
+    this.logger.debug(`generateBracket called tournamentId=${tournamentId} userId=${userId}`);
 
     const tournament = await this.tournamentsService.verifyOwnership(tournamentId, userId);
-    console.log('[BRACKET] tournament status:', tournament.status);
+    this.logger.debug(`tournament status=${tournament.status}`);
 
     if (
       tournament.status !== TournamentStatus.REGISTRATION_CLOSED &&
       tournament.status !== TournamentStatus.REGISTRATION_OPEN &&
       tournament.status !== TournamentStatus.PUBLISHED
     ) {
-      console.log('[BRACKET] FAIL: tournament not ready, status=', tournament.status);
+      this.logger.warn(`generateBracket rejected: tournament not ready status=${tournament.status}`);
       throw AppError.tournamentNotReady();
     }
 
@@ -59,10 +61,10 @@ export class BracketsService {
       twoDaysBefore.setDate(twoDaysBefore.getDate() - 2);
       twoDaysBefore.setHours(0, 0, 0, 0);
 
-      console.log('[BRACKET] stage date:', nearestStage.date, '| twoDaysBefore:', twoDaysBefore, '| now:', new Date());
+      this.logger.debug(`stage date=${nearestStage.date.toISOString()} twoDaysBefore=${twoDaysBefore.toISOString()}`);
 
       if (new Date() < twoDaysBefore) {
-        console.log('[BRACKET] FAIL: too early to generate');
+        this.logger.warn(`generateBracket rejected: too early`);
         throw AppError.bracketTooEarly();
       }
     }
@@ -83,10 +85,10 @@ export class BracketsService {
       include: { team: { select: { id: true, name: true } } },
     });
 
-    console.log('[BRACKET] confirmed registrations:', registrations.length);
+    this.logger.debug(`confirmed registrations count=${registrations.length}`);
 
     if (registrations.length < 2) {
-      console.log('[BRACKET] FAIL: not enough confirmed teams');
+      this.logger.warn(`generateBracket rejected: not enough confirmed teams`);
       throw AppError.noConfirmedTeams();
     }
 

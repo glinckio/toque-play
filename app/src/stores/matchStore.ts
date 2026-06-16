@@ -51,16 +51,16 @@ export const useLiveMatchStore = create<LiveMatchState>((set, get) => ({
     });
 
     socket.on('connect', () => {
-      console.log('[WS] Connected, joining match:', match.id);
+      if (__DEV__) console.log('[WS] Connected, joining match:', match.id);
       socket.emit('match:join', { matchId: match.id });
     });
 
     socket.on('connect_error', (err) => {
-      console.error('[WS] Connect error:', err.message);
+      if (__DEV__) console.warn('[WS] Connect error:', err.message);
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('[WS] Disconnected:', reason);
+      if (__DEV__) console.log('[WS] Disconnected:', reason);
     });
 
     const updateMatch = (data: any) => {

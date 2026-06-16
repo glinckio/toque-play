@@ -1,10 +1,11 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma.service';
 import * as admin from 'firebase-admin';
 
 @Injectable()
 export class NotificationService implements OnModuleInit {
+  private readonly logger = new Logger(NotificationService.name);
   private firebaseApp: admin.app.App | null = null;
 
   constructor(
@@ -148,7 +149,7 @@ export class NotificationService implements OnModuleInit {
 
       await admin.messaging().sendEachForMulticast(message);
     } catch (error) {
-      console.error('[FCM] Error sending push notification:', error.message);
+      this.logger.warn(`FCM send failed: ${(error as Error).message}`);
     }
   }
 

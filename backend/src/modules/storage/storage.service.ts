@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import {
   S3Client,
   PutObjectCommand,
@@ -10,6 +10,7 @@ import {
 
 @Injectable()
 export class StorageService implements OnModuleInit {
+  private readonly logger = new Logger(StorageService.name);
   private readonly client: S3Client;
   private readonly bucket: string;
 
@@ -56,7 +57,7 @@ export class StorageService implements OnModuleInit {
         Policy: JSON.stringify(policy),
       }),
     );
-    console.log('[Storage] public read policy applied to bucket:', this.bucket);
+    this.logger.log(`public read policy applied to bucket=${this.bucket}`);
   }
 
   private getPublicUrl(key: string): string {
@@ -83,7 +84,7 @@ export class StorageService implements OnModuleInit {
     );
 
     const url = this.getPublicUrl(key);
-    console.log('[Storage] uploaded:', key, '→ public url:', url);
+    this.logger.debug(`uploaded key=${key}`);
     return url;
   }
 

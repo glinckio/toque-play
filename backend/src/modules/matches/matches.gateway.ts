@@ -6,6 +6,7 @@ import {
   OnGatewayDisconnect,
   OnGatewayInit,
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { RedisService } from '../../common/redis/redis.service';
@@ -14,6 +15,8 @@ import { RedisService } from '../../common/redis/redis.service';
   cors: { origin: '*' },
 })
 export class MatchesGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
+  private readonly logger = new Logger(MatchesGateway.name);
+
   @WebSocketServer()
   server: Server;
 
@@ -30,11 +33,11 @@ export class MatchesGateway implements OnGatewayConnection, OnGatewayDisconnect,
   }
 
   handleConnection(client: Socket) {
-    console.log('[WS] Client connected:', client.id);
+    this.logger.debug(`ws connected client=${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    console.log('[WS] Client disconnected:', client.id);
+    this.logger.debug(`ws disconnected client=${client.id}`);
   }
 
   @SubscribeMessage('tournament:join')
@@ -59,7 +62,7 @@ export class MatchesGateway implements OnGatewayConnection, OnGatewayDisconnect,
 
   @SubscribeMessage('match:join')
   handleMatchJoin(client: Socket, payload: { matchId: string }) {
-    console.log('[WS] match:join', payload.matchId, 'client:', client.id);
+    this.logger.verbose(`ws match:join matchId=${payload.matchId} client=${client.id}`);
     client.join(`match:${payload.matchId}`);
   }
 

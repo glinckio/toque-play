@@ -22,7 +22,7 @@ export function setAuthCookies(
   };
   store.set(COOKIE_ACCESS, payload.accessToken, { ...common, httpOnly: true });
   store.set(COOKIE_REFRESH, payload.refreshToken, { ...common, httpOnly: true });
-  store.set(COOKIE_USER, JSON.stringify(payload.user), common);
+  store.set(COOKIE_USER, JSON.stringify(payload.user), { ...common, httpOnly: true });
 }
 
 export function clearAuthCookies(store: CookieStore) {

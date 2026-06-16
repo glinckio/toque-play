@@ -67,9 +67,6 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
   const search = new URL(req.url).search.replace(/^\?/, "");
   const method = req.method as Method;
 
-  // Debug temporário — remover depois
-  console.log("[proxy]", method, path, "→ API_INTERNAL_URL:", process.env.API_INTERNAL_URL ?? "(undefined, fallback 3000)");
-
   const store = await cookies();
   let access: string | undefined = store.get(COOKIE_ACCESS)?.value ?? undefined;
 

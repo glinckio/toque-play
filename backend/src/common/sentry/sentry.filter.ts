@@ -1,9 +1,11 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Response } from 'express';
 import * as Sentry from '@sentry/node';
 
 @Catch()
 export class SentryFilter implements ExceptionFilter {
+  private readonly logger = new Logger(SentryFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -37,7 +39,7 @@ export class SentryFilter implements ExceptionFilter {
       return response.status(status).json({ statusCode: status, message });
     }
 
-    console.error('[Unhandled Exception]', exception);
+    this.logger.error(exception instanceof Error ? exception.stack ?? exception.message : String(exception));
 
     return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,

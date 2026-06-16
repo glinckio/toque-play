@@ -4,6 +4,7 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthErrorMessages } from '../errors/auth-error.enum';
@@ -32,6 +33,8 @@ export interface AppErrorResponse {
 
 @Catch()
 export class AppExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(AppExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -66,7 +69,7 @@ export class AppExceptionFilter implements ExceptionFilter {
     const message =
       exception instanceof Error ? exception.message : 'Internal server error';
 
-    console.error('[Unhandled Exception]', exception);
+    this.logger.error(exception instanceof Error ? exception.stack ?? exception.message : String(exception));
 
     return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
