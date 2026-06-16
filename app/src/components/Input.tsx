@@ -25,6 +25,8 @@ interface InputProps extends TextInputProps {
   rightIcon?: React.ReactNode;
   error?: string;
   helper?: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
   style?: ViewStyle;
 }
 
@@ -38,6 +40,8 @@ export default function Input({
   rightIcon,
   error,
   helper,
+  accessibilityLabel,
+  accessibilityHint,
   style,
   ...rest
 }: InputProps) {
@@ -46,8 +50,12 @@ export default function Input({
   const isPassword = !!secureTextEntry;
 
   return (
-    <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+    <View style={[styles.container, style]} accessible>
+      {label && (
+        <Text style={styles.label} accessibilityRole="label">
+          {label}
+        </Text>
+      )}
       <View
         style={[
           styles.inputWrapper,
@@ -55,6 +63,7 @@ export default function Input({
           isFocused && styles.inputFocused,
           !!error && styles.inputError,
         ]}
+        accessibilityRole="none"
       >
         {!!leftIcon && <View style={styles.leftIconContainer}>{leftIcon}</View>}
         <TextInput
@@ -66,6 +75,11 @@ export default function Input({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           style={styles.input}
+          accessibilityLabel={accessibilityLabel ?? label}
+          accessibilityHint={accessibilityHint}
+          accessibilityValue={{ text: value }}
+          importantForAutofill="yes"
+          textContentType="none"
           {...rest}
         />
         {isPassword && (
@@ -73,6 +87,10 @@ export default function Input({
             style={styles.rightIconContainer}
             onPress={() => setShowPassword((prev) => !prev)}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={
+              showPassword ? 'Ocultar senha' : 'Mostrar senha'
+            }
           >
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
@@ -85,7 +103,11 @@ export default function Input({
           <View style={styles.rightIconContainer}>{rightIcon}</View>
         )}
       </View>
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      {!!error && (
+        <Text style={styles.error} accessibilityRole="alert">
+          {error}
+        </Text>
+      )}
       {!!helper && !error && <Text style={styles.helper}>{helper}</Text>}
     </View>
   );

@@ -7,6 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "build:with-sourcemaps": "nest build --sourceMap && pnpm run sentry:upload",
+    "sentry:upload": "node -e \"if(!process.env.SENTRY_AUTH_TOKEN){console.warn('[sentry] SENTRY_AUTH_TOKEN not set, skipping upload');process.exit(0)}const{execSync}=require('child_process');try{execSync('npx sentry-cli@sentry/cli releases files $(node -p \\\"require(\\'./package.json\\').version\\\") upload-sourcemaps --ext .js --ext .map dist/ --rewrite',{stdio:'inherit'})}catch(e){console.warn('[sentry] upload failed:',e.message)}\"",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

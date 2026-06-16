@@ -1,7 +1,7 @@
 # Plano Mestre — Hardening, LGPD e Evolução ToquePlay
 
 > Última atualização: **2026-06-16**
-> Status: **53 / 56 itens completos** (95%)
+> Status: **53 / 56 itens completos** (95%) — Sprint 3 e 4 em ~90% dos subitens úteis
 > Responsável: time ToquePlay · DPO · dev backend/frontend
 
 ---
@@ -13,9 +13,9 @@
 | **Sprint 0** — Quick Wins | 6 | 6 | 0 | `71cee7f` |
 | **Sprint 1** — Críticos | 11 | 11 | 0 | `5a198c9` + LGPD |
 | **Sprint 2** — Altos | 16 | 16 | 0 | `cc03a03` |
-| **Sprint 3** — Médios | 16 | 8 | 8 (deferred) | `f5a7087` |
-| **Sprint 4** — Code Quality | 12 | 6 | 6 (deferred) | `70cd6c2` |
-| **LGPD Documentos Legais** | 7 | 7 | 0 | _pending_ |
+| **Sprint 3** — Médios | 16 | 13 | 3 (testes setup, @db.Uuid, OpenAPI) | `f5a7087` + abaixo |
+| **Sprint 4** — Code Quality | 12 | 11 | 1 (refactor telas grandes) | `70cd6c2` + abaixo |
+| **LGPD Documentos Legais** | 7 | 7 | 0 | `92fdf3c` |
 | **Extras (Roadmap)** | ~30 | 0 | ~30 | — |
 
 Legenda: ✅ Feito · 🚧 Parcial · ⬜ Pendente

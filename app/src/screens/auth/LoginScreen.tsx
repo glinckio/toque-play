@@ -15,6 +15,7 @@ import ChevronButton from '../../components/ChevronButton';
 import HeroHeader from '../../components/HeroHeader';
 import { authService } from '../../services/auth';
 import { useAuthStore } from '../../stores/authStore';
+import { loginSchema } from '../../schemas/auth';
 
 type LoginNav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -26,10 +27,15 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
-    setLoading(true);
     setError('');
+    const parsed = loginSchema.safeParse({ email, password });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? 'Dados inválidos');
+      return;
+    }
+    setLoading(true);
     try {
-      const data = await authService.login({ email, password });
+      const data = await authService.login(parsed.data);
       useAuthStore.getState().setAuth(data);
     } catch (err: any) {
       const code = err?.response?.data?.code;
