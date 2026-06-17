@@ -10,12 +10,52 @@ export interface AuthResult {
   user: SessionUser;
 }
 
-/** Faz login contra o backend e grava cookies httpOnly. */
-export async function performLogin(email: string, password: string): Promise<AuthResult> {
+export interface TwoFactorRequiredResult {
+  twoFactorRequired: true;
+  temporaryToken: string;
+  userId: string;
+}
+
+type LoginResult = AuthResult | TwoFactorRequiredResult;
+
+export function isTwoFactorRequired(r: LoginResult): r is TwoFactorRequiredResult {
+  return (r as TwoFactorRequiredResult).twoFactorRequired === true;
+}
+
+/** Faz login contra o backend. Se 2FA obrigatório, retorna o ticket temporário
+ *  SEM gravar cookies. Caso contrário grava cookies httpOnly. */
+export async function performLogin(email: string, password: string): Promise<LoginResult> {
   const res = await fetch(`${API}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const msg = await safeError(res);
+    throw new Error(msg);
+  }
+
+  const data = (await res.json()) as LoginResult;
+  if (isTwoFactorRequired(data)) {
+    return data;
+  }
+  const store = await cookies();
+  setAuthCookies(store, data);
+  return data;
+}
+
+/** Completar login 2FA: valida temporaryToken + code contra o backend e,
+ *  em sucesso, grava cookies httpOnly. */
+export async function performVerify2fa(
+  temporaryToken: string,
+  code: string,
+): Promise<AuthResult> {
+  const res = await fetch(`${API}/auth/verify-2fa`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ temporaryToken, code }),
     cache: "no-store",
   });
 

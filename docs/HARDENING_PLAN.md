@@ -534,8 +534,8 @@ Slides para equipe sobre minimização, password hygiene, phishing, resposta a i
 **Itens cobertos**: IDOR, rate limit + lockout, webhook + idempotência (Redis + tabela), magic bytes, refresh rotation + reuse detection, JWT blacklist, helmet reforçado, proxy whitelist, LGPD consent + direitos do titular (acesso, portabilidade, eliminação, DPO channel), retenção automatizada, Sentry PII scrub, audit de leitura PII, CSV masking, incident response, 2FA TOTP, race condition inscrição, state machine Tournament, soft delete Tournament, friendly accept/cancel já estavam OK, CPF já validava, XSS já estava OK.
 
 **Pendências futuras** (dentro Sprint 2):
-- Fluxo login admin com 2FA verify (backend infra pronta).
-- Web admin UI `/2fa`, `/dpo-requests`, `/security-incidents`.
+- ✅ **Fluxo login 2FA verify** (2026-06-17) — backend `d9e06d3` (login intercept + `/auth/verify-2fa`), app `626ff90` (TwoFactorScreen), web (login step 2 + setup page `/2fa`).
+- ✅ **Web admin UI `/2fa`, `/dpo-requests`, `/security-incidents`** (2026-06-17) — 3 pages Next.js + sidebar entries + proxy whitelist `admin/privacy/*`.
 - Archive ChatMessage/MatchEvent para S3 Glacier.
 - Interceptação `TERMS_VERSION` em boot/login.
 

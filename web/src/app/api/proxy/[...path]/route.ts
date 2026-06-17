@@ -16,7 +16,7 @@ type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 // Whitelist de módulos backend que o proxy pode repassar.
 // Evita SSRF / chamadas arbitrárias se API_INTERNAL_URL for manipulado.
 const ALLOWED_PATH_RE =
-  /^(admin\/audit-logs|admin\/users|admin\/tournaments|admin\/matches|admin\/friendlies|admin\/athletes|admin\/payments|admin\/teams|admin\/dashboard|admin\/logs|admin\/monitoring|admin\/system|admin\/metrics|admin\/feed|admin\/registrations|auth|users|me|tournaments|matches|friendlies|registrations|payments|teams|chat|brackets|notifications|health)(\/.*)?$/;
+  /^(admin\/audit-logs|admin\/users|admin\/tournaments|admin\/matches|admin\/friendlies|admin\/athletes|admin\/payments|admin\/teams|admin\/dashboard|admin\/logs|admin\/monitoring|admin\/system|admin\/metrics|admin\/feed|admin\/registrations|admin\/privacy|auth|users|me|tournaments|matches|friendlies|registrations|payments|teams|chat|brackets|notifications|health)(\/.*)?$/;
 
 function isAllowed(path: string): boolean {
   return ALLOWED_PATH_RE.test(path);

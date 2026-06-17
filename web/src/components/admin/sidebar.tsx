@@ -10,16 +10,19 @@ import {
   LogOut,
   ScrollText,
   Settings,
+  ShieldCheck,
   Swords,
   Trophy,
   Users,
   Volleyball,
+  LifeBuoy,
+  AlertTriangle,
 } from "lucide-react";
 import { initials } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth/constants";
 import { NotificationsBell } from "./notifications-bell";
 
-type NavKey = "dashboard" | "tournaments" | "matches" | "athletes" | "users" | "payments" | "friendlies" | "settings" | "auditoria";
+type NavKey = "dashboard" | "tournaments" | "matches" | "athletes" | "users" | "payments" | "friendlies" | "settings" | "auditoria" | "twofa" | "dpo" | "incidents";
 
 interface NavItem {
   key: NavKey;
@@ -39,6 +42,9 @@ const items: NavItem[] = [
   { key: "payments", href: "/payments", label: "Pagamentos", icon: CreditCard },
   { key: "settings", href: "/settings", label: "Configurações", icon: Settings, section: "Sistema" },
   { key: "auditoria", href: "/auditoria", label: "Auditoria", icon: ScrollText },
+  { key: "twofa", href: "/2fa", label: "Autenticação 2FA", icon: ShieldCheck, section: "LGPD/Segurança" },
+  { key: "dpo", href: "/dpo-requests", label: "Solicitações DPO", icon: LifeBuoy },
+  { key: "incidents", href: "/security-incidents", label: "Incidentes", icon: AlertTriangle },
 ];
 
 export function Sidebar({ user }: { user: SessionUser }) {
