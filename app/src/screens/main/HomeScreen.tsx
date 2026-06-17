@@ -138,7 +138,7 @@ function tournamentPreviewToCard(tp: TournamentPreview): Tournament {
     registrationCount: tp.registrationCount,
     createdAt: tp.startDate,
     updatedAt: tp.startDate,
-  } as Tournament;
+  } as unknown as Tournament;
 }
 
 // ─── Component ────────────────────────────────────────────────────

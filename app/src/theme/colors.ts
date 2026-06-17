@@ -10,6 +10,7 @@ export const colors = {
   backgroundSecondary: '#F3F3F5',
   surface: '#FFFFFF',
   surfaceSoft: '#FFFFFF',
+  surfaceAlt: '#F3F3F5',
 
   // Text
   text: '#150A1F',
@@ -18,6 +19,7 @@ export const colors = {
   textSecondary: '#3D2C52',
   textMuted: '#6B5B7E',
   textPlaceholder: '#A89BBA',
+  textOnPrimary: '#FFFFFF',
 
   // Status
   error: '#E04545',
@@ -26,6 +28,7 @@ export const colors = {
 
   // Borders & Inputs
   border: 'rgba(0, 0, 0, 0.1)',
+  divider: 'rgba(0, 0, 0, 0.08)',
   inputBackground: '#F4EFFA',
   disabled: '#D6D5D5',
   disabledText: '#8D8D8D',

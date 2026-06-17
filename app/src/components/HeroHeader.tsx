@@ -133,6 +133,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: typography.letterSpacing.medium,
   },
+  titleCompact: {
+    fontFamily: fonts.title.regular,
+    fontSize: typography.sizes.title,
+    color: '#FFFFFF',
+    letterSpacing: typography.letterSpacing.medium,
+  },
   subtitle: {
     marginTop: spacing.sm,
     fontFamily: fonts.text.medium,

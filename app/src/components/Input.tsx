@@ -52,7 +52,7 @@ export default function Input({
   return (
     <View style={[styles.container, style]} accessible>
       {label && (
-        <Text style={styles.label} accessibilityRole="label">
+        <Text style={styles.label}>
           {label}
         </Text>
       )}

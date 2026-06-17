@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontFamily: fonts.text.bold,
-    fontSize: typography.sizes.lg,
+    fontSize: typography.sizes.body,
     textAlign: 'center',
   },
   hint: {
