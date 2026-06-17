@@ -92,6 +92,26 @@ export class PrivacyController {
     });
   }
 
+  @Post('consents/accept-terms')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Re-aceita a versão atual dos Termos (LGPD art. 8 — mudança material)',
+  })
+  @ApiResponse({ status: 200, description: 'Termos aceitos na versão atual' })
+  acceptCurrentTerms(
+    @CurrentUser() user: { id: string; email: string },
+    @Req() req: Request,
+  ) {
+    const forwarded = (req.headers['x-forwarded-for'] as string | undefined) ?? null;
+    const ip = forwarded ? forwarded.split(',')[0].trim() : (req.ip ?? null);
+    const userAgent = req.headers['user-agent'] ?? null;
+    return this.privacyService.acceptCurrentTerms(user.id, {
+      email: user.email,
+      ip,
+      userAgent,
+    });
+  }
+
   @Post('export')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 86400000, limit: 1 } }) // 1/day

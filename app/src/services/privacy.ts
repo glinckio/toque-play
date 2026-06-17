@@ -3,6 +3,8 @@ import api from './api';
 export interface ConsentsState {
   version: string;
   lastAcceptedAt: string | null;
+  lastAcceptedVersion: string | null;
+  termsOutdated: boolean;
   consents: {
     terms: boolean;
     notificationsPush: boolean;
@@ -42,6 +44,9 @@ export const privacyService = {
     locationDiscovery?: boolean;
     marketingEmail?: boolean;
   }) => api.put<ConsentsState>('/me/consents', data).then((r) => r.data),
+
+  acceptCurrentTerms: () =>
+    api.post<ConsentsState>('/me/consents/accept-terms').then((r) => r.data),
 
   getDataSummary: () =>
     api.get<DataSummary>('/me/data-summary').then((r) => r.data),

@@ -24,7 +24,9 @@ import DeleteAccountScreen from './src/screens/profile/DeleteAccountScreen';
 import DpoContactScreen from './src/screens/profile/DpoContactScreen';
 import SplashScreen from './src/screens/splash/SplashScreen';
 import AlertDialog from './src/components/AlertDialog';
+import { ReconsentGate } from './src/components/ReconsentGate';
 import { useAuthStore } from './src/stores/authStore';
+import { useConsentCheck } from './src/hooks/useConsentCheck';
 import { preloadHomeData } from './src/utils/homePreload';
 
 const RootStack = createNativeStackNavigator();
@@ -45,9 +47,12 @@ export default function App() {
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasHydrated = useAuthStore((s) => s._hasHydrated);
+  const requiresReconsent = useAuthStore((s) => s.requiresReconsent);
   const [forceReady, setForceReady] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useConsentCheck();
 
   // Fallback: force ready after 5s even if fonts or hydration stuck
   useEffect(() => {
@@ -136,6 +141,7 @@ export default function App() {
         <AuthNavigator />
       )}
     </NavigationContainer>
+    {isAuthenticated && requiresReconsent && <ReconsentGate />}
     <AlertDialog />
     </>
   );

@@ -217,9 +217,15 @@ export class PrivacyService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const lastAcceptedVersion = hasTerms?.version ?? null;
+    const termsOutdated =
+      !hasTerms || lastAcceptedVersion !== version;
+
     return {
       version,
       lastAcceptedAt: hasTerms?.createdAt ?? null,
+      lastAcceptedVersion,
+      termsOutdated,
       consents: {
         terms: byPurpose.get('TERMS') ?? false,
         notificationsPush: byPurpose.get('NOTIFICATIONS_PUSH') ?? false,
@@ -274,6 +280,43 @@ export class PrivacyService {
       ipAddress: requester.ip ?? null,
       userAgent: requester.userAgent ?? null,
       newValues: dto,
+    });
+
+    return this.getConsents(userId);
+  }
+
+  /**
+   * Records a fresh TERMS acceptance at the current TERMS_VERSION. Used by
+   * the boot/login intercept when the active version differs from what the
+   * user previously accepted (LGPD art. 8 — consent must be specific and
+   * informed; material changes require fresh acceptance).
+   */
+  async acceptCurrentTerms(
+    userId: string,
+    requester: { email: string; ip?: string | null; userAgent?: string | null },
+  ) {
+    const version = this.configService.get<string>('TERMS_VERSION') ?? 'v1';
+
+    await this.prisma.userConsent.create({
+      data: {
+        userId,
+        version,
+        purpose: 'TERMS',
+        accepted: true,
+        ipAddress: requester.ip ?? null,
+        userAgent: requester.userAgent ?? null,
+      },
+    });
+
+    void this.auditService.log({
+      action: 'USER_TERMS_ACCEPTED',
+      entityType: 'User',
+      entityId: userId,
+      actorId: userId,
+      actorEmail: requester.email,
+      ipAddress: requester.ip ?? null,
+      userAgent: requester.userAgent ?? null,
+      newValues: { version },
     });
 
     return this.getConsents(userId);

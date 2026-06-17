@@ -8,12 +8,14 @@ interface AuthState {
   refreshToken: string | null;
   user: User | null;
   isAuthenticated: boolean;
+  requiresReconsent: boolean;
   _hasHydrated: boolean;
 
   setAuth: (data: { accessToken: string; refreshToken: string; user: User }) => void;
   setUser: (user: User) => void;
   clearAuth: () => void;
   setHasHydrated: (value: boolean) => void;
+  setRequiresReconsent: (value: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,6 +25,7 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       user: null,
       isAuthenticated: false,
+      requiresReconsent: false,
       _hasHydrated: false,
 
       setAuth: (data) =>
@@ -31,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: data.refreshToken,
           user: data.user,
           isAuthenticated: true,
+          requiresReconsent: false,
         }),
 
       setUser: (user) => set({ user }),
@@ -44,10 +48,12 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           user: null,
           isAuthenticated: false,
+          requiresReconsent: false,
         });
       },
 
       setHasHydrated: (value) => set({ _hasHydrated: value }),
+      setRequiresReconsent: (value) => set({ requiresReconsent: value }),
     }),
     {
       name: 'auth-storage',

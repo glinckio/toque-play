@@ -536,8 +536,9 @@ Slides para equipe sobre minimização, password hygiene, phishing, resposta a i
 **Pendências futuras** (dentro Sprint 2):
 - ✅ **Fluxo login 2FA verify** (2026-06-17) — backend `d9e06d3` (login intercept + `/auth/verify-2fa`), app `626ff90` (TwoFactorScreen), web (login step 2 + setup page `/2fa`).
 - ✅ **Web admin UI `/2fa`, `/dpo-requests`, `/security-incidents`** (2026-06-17) — 3 pages Next.js + sidebar entries + proxy whitelist `admin/privacy/*`.
-- Archive ChatMessage/MatchEvent para S3 Glacier.
-- Interceptação `TERMS_VERSION` em boot/login.
+- ✅ **Interceptação `TERMS_VERSION` em boot/login** (2026-06-17) — backend `PrivacyService.getConsents` agora retorna `lastAcceptedVersion` + `termsOutdated`; nova rota `POST /me/consents/accept-terms`. App: hook `useConsentCheck` + `ReconsentGate` overlay bloqueando até aceitar. Web: `(admin)/layout` server-side redirect para `/reconsent`.
+- Archive ChatMessage/MatchEvent para S3 Glacier — **REJEITADO pelo time** (preferido particionamento Postgres se volume crescer).
+- Toggle "ver PII completo" com 2FA gate no export CSV admin.
 
 **Esforço restante estimado**: ~80-120 horas (Sprint 3 + 4 + LGPD docs + roadmap features).
 
