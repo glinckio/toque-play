@@ -7,6 +7,7 @@ import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
 import EmailConfirmationScreen from '../screens/auth/EmailConfirmationScreen';
 import EmailConfirmedScreen from '../screens/auth/EmailConfirmedScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import TwoFactorScreen from '../screens/auth/TwoFactorScreen';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
@@ -22,6 +23,7 @@ export default function AuthNavigator() {
       <Stack.Screen name="EmailConfirmation" component={EmailConfirmationScreen} />
       <Stack.Screen name="EmailConfirmed" component={EmailConfirmedScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen name="TwoFactor" component={TwoFactorScreen} />
     </Stack.Navigator>
   );
 }

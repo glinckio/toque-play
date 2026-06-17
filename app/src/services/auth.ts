@@ -6,11 +6,15 @@ import {
   GoogleAuthRequest,
   AuthResponse,
   MessageResponse,
+  TwoFactorRequiredResponse,
+  VerifyLogin2faRequest,
 } from '../types/auth';
 
 export const authService = {
   login: (data: LoginRequest) =>
-    api.post<AuthResponse>('/auth/login', data).then((r) => r.data),
+    api
+      .post<AuthResponse | TwoFactorRequiredResponse>('/auth/login', data)
+      .then((r) => r.data),
 
   register: (data: RegisterRequest) =>
     api.post<MessageResponse>('/auth/register', data).then((r) => r.data),
@@ -23,6 +27,9 @@ export const authService = {
 
   googleLogin: (data: GoogleAuthRequest) =>
     api.post<AuthResponse>('/auth/google', data).then((r) => r.data),
+
+  verifyLogin2fa: (data: VerifyLogin2faRequest) =>
+    api.post<AuthResponse>('/auth/verify-2fa', data).then((r) => r.data),
 
   refresh: (refreshToken: string) =>
     api.post<AuthResponse>('/auth/refresh', { refreshToken }).then((r) => r.data),

@@ -33,6 +33,17 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface TwoFactorRequiredResponse {
+  twoFactorRequired: true;
+  temporaryToken: string;
+  userId: string;
+}
+
+export interface VerifyLogin2faRequest {
+  temporaryToken: string;
+  code: string;
+}
+
 export interface MessageResponse {
   message: string;
 }

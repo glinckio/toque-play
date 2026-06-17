@@ -36,6 +36,17 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const data = await authService.login(parsed.data);
+      const is2fa = (
+        r: typeof data,
+      ): r is import('../../types/auth').TwoFactorRequiredResponse =>
+        !!r && (r as any).twoFactorRequired === true;
+      if (is2fa(data)) {
+        navigation.navigate('TwoFactor', {
+          temporaryToken: data.temporaryToken,
+          email: parsed.data.email,
+        });
+        return;
+      }
       useAuthStore.getState().setAuth(data);
     } catch (err: any) {
       const code = err?.response?.data?.code;

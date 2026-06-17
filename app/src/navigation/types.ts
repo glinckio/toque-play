@@ -6,6 +6,7 @@ export type AuthStackParamList = {
   EmailConfirmation: undefined;
   EmailConfirmed: undefined;
   ForgotPassword: undefined;
+  TwoFactor: { temporaryToken: string; email: string };
 };
 
 export type MainTabParamList = {
