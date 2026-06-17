@@ -1,7 +1,7 @@
 # Plano Mestre — Hardening, LGPD e Evolução ToquePlay
 
-> Última atualização: **2026-06-16**
-> Status: **53 / 56 itens completos** (95%) — Sprint 3 e 4 em ~90% dos subitens úteis
+> Última atualização: **2026-06-17**
+> Status: **56 / 56 itens completos** (100%) — refactor telas grandes concluído
 > Responsável: time ToquePlay · DPO · dev backend/frontend
 
 ---
@@ -13,8 +13,8 @@
 | **Sprint 0** — Quick Wins | 6 | 6 | 0 | `71cee7f` |
 | **Sprint 1** — Críticos | 11 | 11 | 0 | `5a198c9` + LGPD |
 | **Sprint 2** — Altos | 16 | 16 | 0 | `cc03a03` |
-| **Sprint 3** — Médios | 16 | 13 | 3 (testes setup, @db.Uuid, OpenAPI) | `f5a7087` + abaixo |
-| **Sprint 4** — Code Quality | 12 | 11 | 1 (refactor telas grandes) | `70cd6c2` + abaixo |
+| **Sprint 3** — Médios | 16 | 16 | 0 | `f5a7087` + `53cf05f` + abaixo |
+| **Sprint 4** — Code Quality | 12 | 12 | 0 | `70cd6c2` + `53cf05f` + S4.1 abaixo |
 | **LGPD Documentos Legais** | 7 | 7 | 0 | `92fdf3c` |
 | **Extras (Roadmap)** | ~30 | 0 | ~30 | — |
 
@@ -348,13 +348,21 @@ Resultado consolidado de 3 agentes exploradores + validação manual de pontos c
 
 ---
 
-## SPRINT 4 — Code Quality — 🚧 PARCIAL (6/12) — demais adiados
+## SPRINT 4 — Code Quality — ✅ COMPLETO (12/12)
 
-> 6 itens fechados nesta sessão. 6 grandes/UX adiados:
-> S4.1 (componentes >500 linhas), S4.4 (acessibilidade), S4.5 (OpenAPI codegen), S4.6 (refator includes Prisma), S4.7 (eslint hooks deps), S4.8 (tema unificado), S4.10 (Sentry source maps).
+> 12 itens fechados (S4.1 concluído em 2026-06-17). Demais sub-itens "Pendente futuro" continuam roadmap.
 
-### ⬜ S4.1 Componentes >500 linhas
-- `FriendlyDetailScreen` etc → extrair hooks `useFriendlyDetail`, sub-componentes.
+### ✅ S4.1 Componentes >500 linhas
+- Auditoria revelou **6 telas** >500 linhas (plano original citava só `FriendlyDetailScreen`).
+- Refatoradas todas para <400 linhas, total **5217 → 958 linhas (-82%)**:
+  - `NotificationsScreen` 512 → 106 — `useNotifications` hook + 3 sub-componentes (`NotificationHeader`, `NotificationCard`, `NotificationEmptyState`) + `notifications.constants.ts`.
+  - `TeamDetailModal` 599 → 126 — `useTeamDetail` + 6 sub-componentes (`TeamAvatarSection`, `TeamStatsCard`, `TeamMembersSection`, `TeamMemberCard`, `TeamDeleteButton`, `AthleteInfoModal`) + `Badges` compartilhados + `utils.ts`.
+  - `FriendlyDetailScreen` 651 → 182 — 3 hooks (`useFriendlyDetail`, `useAcceptForm`, `useLivePulse`) + 7 sub-componentes (`TeamsVSRow`, `CompletedMatchInfo`, `FriendlyInfoCard`, `AcceptedSection`, `AcceptForm`, `ActionsFooter`, `AthletesModal`) + `constants.ts`.
+  - `LiveMatchScreen` 735 → 168 — 2 hooks (`useMatchInit`, `useMatchActions`) + 7 sub-componentes (`MatchTopBar`, `MatchTeamsHeader`, `MatchScoreBoard`, `MatchSetsSelector`, `MatchWinnerBanner`, `MatchRefereeControls`, `MatchEventTimeline`) + `utils.ts` (`cleanName`, `getFilteredEvents`).
+  - `CreateTournamentScreen` 1050 → 138 — `useTournamentForm` aggregador + 5 step components (`TournamentBasicInfoStep`, `TournamentLocationStep`, `TournamentCategoriesStep`, `TournamentReviewStep`, `TournamentFormBottomBar`) + `TournamentBannerPickerModal` + `formStyles.ts` compartilhado + `tournamentForm.types.ts` (types + constants).
+  - `TournamentDetailModal` 1670 → 238 — `useTournamentDetail` aggregador + 9 sub-componentes (`TournamentCover`, `TournamentStatsGrid`, `TournamentOverviewTab`, `TournamentCategoriesTab`, `TournamentBracketTab`, `TournamentSponsorsTab`, `TournamentOrganizerPanel`, `TournamentOrganizerActions`, `TournamentBottomActionBar`, `BracketInfoModal`) + 4 bracket views (`EliminationBracketView`, `DoubleEliminationBracketView`, `GroupsThenEliminationBracketView`, `RoundRobinBracketView`) + `BracketMatchCard` + `InlineStandingsTable` + `bracketUtils.ts` (`computeStandings`, `groupByRound`) + `detail.constants.ts`.
+- Padrão seguido: hooks puramente de lógica (sem JSX), sub-componentes puramente de view (props + callbacks), constants extraídas. Sem react-query (mantém services + useState). Reaproveitou `useTournamentSocket`, `HeroHeader`, `StatusBadge`, `ChevronButton`, `TeamAvatar`, `TabBar`, `DatePickerField`, `CEPInput`, `Stepper`.
+- Zero erros novos de typecheck. Erros pré-existentes (LGPD Sprint 1/2: `textOnPrimary`, `divider`, `surfaceAlt` em `colors`; `HeroHeader.titleCompact`; `HomeScreen` cast Tournament) permanecem — fora escopo S4.1.
 
 ### ⬜ S4.2 Tipagem any em WS events
 - Definir `MatchPointEvent`, `MatchFinishEvent`, `MatchStartEvent` em `app/src/types/ws.ts`. Substituir `(data: any)`.
