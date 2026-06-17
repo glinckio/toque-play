@@ -12,6 +12,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendCodeDto } from './dto/resend-code.dto';
+import { TwoFactorService } from './two-factor.service';
 import { OAuth2Client } from 'google-auth-library';
 import { AppError } from '../../common/errors/app-error';
 import * as bcrypt from 'bcrypt';
@@ -27,6 +28,7 @@ export class AuthService {
     private configService: ConfigService,
     private mailService: MailService,
     private redisService: RedisService,
+    private twoFactorService: TwoFactorService,
   ) {
     this.googleClient = new OAuth2Client(
       this.configService.get<string>('GOOGLE_CLIENT_ID'),
@@ -256,7 +258,97 @@ export class AuthService {
       throw AppError.emailNotVerified();
     }
 
+    // 2FA: if enabled, do NOT issue access/refresh tokens yet. Hand back a
+    // short-lived temporary token that only authorizes verify-2fa.
+    if (user.twoFactorEnabled) {
+      const temporaryToken = await this.issueTwoFactorPendingToken(user.id);
+      return { twoFactorRequired: true as const, temporaryToken, userId: user.id };
+    }
+
     await this.clearFailedLogins(dto.email);
+
+    const { accessToken, refreshToken } = await this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+        isFirstAccess: user.isFirstAccess,
+        isEmailVerified: user.isEmailVerified,
+        role: user.role,
+      },
+    };
+  }
+
+  /**
+   * Issues a short-lived (5 min) JWT that only authorizes verify-2fa.
+   * Persists a Redis nonce with matching TTL to prevent reuse after expiry.
+   */
+  private async issueTwoFactorPendingToken(userId: string): Promise<string> {
+    const nonce = crypto.randomUUID();
+    const token = this.jwtService.sign(
+      { sub: userId, purpose: '2fa-pending', nonce },
+      {
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: '5m',
+      },
+    );
+    await this.redisService.set(
+      `2fa:pending:${nonce}`,
+      userId,
+      5 * 60,
+    );
+    return token;
+  }
+
+  /**
+   * Completes login after the user submits a TOTP/backup code.
+   * Validates the pending token + nonce, verifies the code, then issues
+   * real access/refresh tokens. Pending nonce is consumed (single-use).
+   */
+  async verifyLogin2fa(temporaryToken: string, code: string) {
+    let payload: { sub: string; purpose?: string; nonce?: string };
+    try {
+      payload = this.jwtService.verify(temporaryToken, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
+    } catch {
+      throw AppError.invalidOrExpiredCode();
+    }
+
+    if (payload.purpose !== '2fa-pending' || !payload.nonce) {
+      throw AppError.invalidOrExpiredCode();
+    }
+
+    const userId = await this.redisService.get(`2fa:pending:${payload.nonce}`);
+    if (!userId || userId !== payload.sub) {
+      throw AppError.invalidOrExpiredCode();
+    }
+
+    const ok = await this.twoFactorService.verifyToken(payload.sub, code);
+    if (!ok) {
+      throw AppError.invalidOrExpiredCode();
+    }
+
+    // Consume the nonce so the temporary token can't be replayed.
+    await this.redisService.del(`2fa:pending:${payload.nonce}`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+    if (!user) {
+      throw AppError.emailNotFound();
+    }
+
+    await this.clearFailedLogins(user.email);
 
     const { accessToken, refreshToken } = await this.generateTokens(
       user.id,

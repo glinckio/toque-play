@@ -11,6 +11,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendCodeDto } from './dto/resend-code.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyLogin2faDto } from './dto/verify-login-2fa.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -79,6 +80,21 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Token do Google invalido' })
   async loginWithGoogle(@Body() dto: GoogleAuthDto) {
     return this.authService.loginWithGoogle(dto);
+  }
+
+  @Public()
+  @Post('verify-2fa')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @ApiOperation({ summary: 'Completar login 2FA com codigo TOTP ou backup' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login 2FA verificado com sucesso, retorna tokens',
+  })
+  @ApiResponse({ status: 401, description: 'Codigo ou token temporario invalido' })
+  @Audit('USER_2FA_VERIFIED', 'User')
+  async verifyLogin2fa(@Body() dto: VerifyLogin2faDto) {
+    return this.authService.verifyLogin2fa(dto.temporaryToken, dto.code);
   }
 
   @Public()
