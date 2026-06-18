@@ -35,7 +35,17 @@
       "Bash(mkdir -p \"C:/Users/Linck/bin\")",
       "Bash(pnpm exec:*)",
       "Bash(pnpm run:*)",
-      "Bash(xargs wc:*)"
+      "Bash(xargs wc:*)",
+      "Bash(pnpm tsc:*)",
+      "Bash(ls -la E:/Code/toqueplay/packages/web/.env* E:/Code/toqueplay/packages/app/.env*)",
+      "Bash(pnpm add:*)",
+      "Bash(ls E:/Code/toqueplay/packages/backend/src/modules/*/*.spec.ts)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm install:*)",
+      "Bash(npm view:*)",
+      "Bash(grep -nE \"String\\\\? +$|String +$\" prisma/schema.prisma)",
+      "Bash(ls -la .env*)"
     ]
   }
 }
