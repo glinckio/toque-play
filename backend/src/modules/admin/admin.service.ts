@@ -1,8 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { StorageService } from '../storage/storage.service';
+import { TwoFactorService } from '../auth/two-factor.service';
 import { maskEmail, maskName, maskPhone, toCsv } from '../../common/utils/pii-masking';
 import { parseDate } from '../../common/utils/date';
 import { assertImageFile } from '../../common/utils/file-validation';
@@ -29,6 +32,7 @@ import {
   AddRegistrationMemberAdminDto,
 } from './dto/registration-admin.dto';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 const DASHBOARD_CACHE_KEY = 'admin:dashboard:v2';
 const DASHBOARD_CACHE_TTL = 300; // 5 minutes
@@ -41,6 +45,9 @@ export class AdminService {
     private prisma: PrismaService,
     private redis: RedisService,
     private storage: StorageService,
+    private jwtService: JwtService,
+    private configService: ConfigService,
+    private twoFactorService: TwoFactorService,
   ) {}
 
   // ─── Dashboard ───────────────────────────────────────────
@@ -258,10 +265,11 @@ export class AdminService {
   }
 
   /**
-   * CSV export of all users with PII masked (LGPD minimization on bulk exports).
-   * Full-PII view requires S2.14 2FA-enabled admin toggle (future).
+   * CSV export of all users. By default PII is masked (LGPD minimization on
+   * bulk exports). Full-PII export requires a 2FA-verified unlock token
+   * issued by `unlockFullPiiExport`.
    */
-  async exportUsersCsv(): Promise<string> {
+  async exportUsersCsv(opts: { fullPii?: boolean } = {}): Promise<string> {
     const users = await this.prisma.user.findMany({
       select: {
         id: true,
@@ -276,11 +284,13 @@ export class AdminService {
       take: 10000,
     });
 
+    const fullPii = !!opts.fullPii;
+
     const rows = users.map((u) => ({
       id: u.id,
-      name: maskName(u.name),
-      email: maskEmail(u.email),
-      phone: maskPhone(u.phone),
+      name: fullPii ? u.name : maskName(u.name),
+      email: fullPii ? u.email : maskEmail(u.email),
+      phone: fullPii ? u.phone ?? '' : maskPhone(u.phone),
       role: u.role,
       status: u.status,
       createdAt: u.createdAt.toISOString(),
@@ -295,6 +305,62 @@ export class AdminService {
       { key: 'status', label: 'Status' },
       { key: 'createdAt', label: 'Criado em' },
     ]);
+  }
+
+  /**
+   * Verifies the admin's 2FA code and issues a single-use, short-lived
+   * (5 min) unlock token authorizing one full-PII export. Requires the
+   * admin to have 2FA enabled. Token nonce is persisted in Redis to
+   * guarantee single use even before JWT exp.
+   */
+  async unlockFullPiiExport(adminId: string, code: string): Promise<string> {
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId },
+      select: { twoFactorEnabled: true },
+    });
+    if (!admin?.twoFactorEnabled) {
+      throw AppError.consentRequired();
+    }
+
+    const ok = await this.twoFactorService.verifyToken(adminId, code);
+    if (!ok) {
+      throw AppError.invalidOrExpiredCode();
+    }
+
+    const nonce = crypto.randomUUID();
+    const token = this.jwtService.sign(
+      { sub: adminId, purpose: 'pii-export', nonce },
+      {
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: '5m',
+      },
+    );
+    await this.redis.set(`pii:export:${nonce}`, adminId, 5 * 60);
+    return token;
+  }
+
+  /**
+   * Validates an unlock token issued by unlockFullPiiExport. Consumes the
+   * nonce (single-use). Throws AppError on any failure.
+   */
+  async assertFullPiiUnlock(token: string): Promise<string> {
+    let payload: { sub: string; purpose?: string; nonce?: string };
+    try {
+      payload = this.jwtService.verify(token, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
+    } catch {
+      throw AppError.invalidOrExpiredCode();
+    }
+    if (payload.purpose !== 'pii-export' || !payload.nonce) {
+      throw AppError.invalidOrExpiredCode();
+    }
+    const owner = await this.redis.get(`pii:export:${payload.nonce}`);
+    if (!owner || owner !== payload.sub) {
+      throw AppError.invalidOrExpiredCode();
+    }
+    await this.redis.del(`pii:export:${payload.nonce}`);
+    return payload.sub;
   }
 
   async blockUser(userId: string) {

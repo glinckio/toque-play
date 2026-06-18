@@ -1,11 +1,13 @@
 import { Module, MiddlewareConsumer } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { AuthModule } from '../auth/auth.module';
 import { MaintenanceMiddleware } from '../../common/middleware/maintenance.middleware';
 import { BullBoardMiddleware } from './bull-board.middleware';
 
 @Module({
-  imports: [],
+  imports: [JwtModule.register({}), AuthModule],
   controllers: [AdminController],
   providers: [AdminService],
 })

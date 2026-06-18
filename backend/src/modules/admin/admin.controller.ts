@@ -23,8 +23,10 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AdminService } from './admin.service';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { QueryAdminTournamentsDto } from './dto/query-admin-tournaments.dto';
@@ -82,17 +84,68 @@ export class AdminController {
   }
 
   @Get('users/export')
-  @ApiOperation({ summary: 'Export users as CSV (PII masked)' })
+  @ApiOperation({ summary: 'Export users as CSV (PII masked by default)' })
   @ApiResponse({
     status: 200,
-    description: 'CSV with cpf/email/phone masked. Full PII requires S2.14 2FA toggle.',
+    description:
+      'CSV with name/email/phone masked. Pass fullPii=true with a valid unlockToken from POST /admin/users/export-unlock for unmasked export.',
   })
-  @AuditRead('USERS_EXPORTED', 'User')
-  async exportUsersCsv(@Req() req: Request, @Res() res: Response) {
-    const csv = await this.adminService.exportUsersCsv();
+  async exportUsersCsv(
+    @Query('fullPii') fullPii: string | undefined,
+    @Query('unlockToken') unlockToken: string | undefined,
+    @CurrentUser() requester: { id: string; email: string },
+    @Res() res: Response,
+  ) {
+    let useFullPii = false;
+    if (fullPii === 'true') {
+      if (!unlockToken) {
+        res.status(400).json({ message: 'unlockToken required for fullPii export' });
+        return;
+      }
+      const adminId = await this.adminService.assertFullPiiUnlock(unlockToken);
+      useFullPii = true;
+      await this.auditService.log({
+        action: 'USER_PII_FULL_EXPORTED',
+        entityType: 'User',
+        entityId: adminId,
+        actorId: requester.id,
+        actorEmail: requester.email,
+      });
+    } else {
+      await this.auditService.log({
+        action: 'USERS_EXPORTED',
+        entityType: 'User',
+        entityId: requester.id,
+        actorId: requester.id,
+        actorEmail: requester.email,
+      });
+    }
+    const csv = await this.adminService.exportUsersCsv({ fullPii: useFullPii });
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="users-${Date.now()}.csv"`);
     res.send(csv);
+  }
+
+  @Post('users/export-unlock')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
+  @ApiOperation({
+    summary:
+      'Verify 2FA and issue a single-use unlock token for full-PII export',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns { unlockToken } valid for 5 minutes',
+  })
+  async unlockFullPiiExport(
+    @CurrentUser('id') adminId: string,
+    @Body() dto: { code: string },
+  ) {
+    const unlockToken = await this.adminService.unlockFullPiiExport(
+      adminId,
+      dto.code,
+    );
+    return { unlockToken };
   }
 
   @Patch('users/:id/block')

@@ -538,7 +538,7 @@ Slides para equipe sobre minimização, password hygiene, phishing, resposta a i
 - ✅ **Web admin UI `/2fa`, `/dpo-requests`, `/security-incidents`** (2026-06-17) — 3 pages Next.js + sidebar entries + proxy whitelist `admin/privacy/*`.
 - ✅ **Interceptação `TERMS_VERSION` em boot/login** (2026-06-17) — backend `PrivacyService.getConsents` agora retorna `lastAcceptedVersion` + `termsOutdated`; nova rota `POST /me/consents/accept-terms`. App: hook `useConsentCheck` + `ReconsentGate` overlay bloqueando até aceitar. Web: `(admin)/layout` server-side redirect para `/reconsent`.
 - Archive ChatMessage/MatchEvent para S3 Glacier — **REJEITADO pelo time** (preferido particionamento Postgres se volume crescer).
-- Toggle "ver PII completo" com 2FA gate no export CSV admin.
+- ✅ **Toggle "ver PII completo" com 2FA gate** (2026-06-17) — backend: `AdminService.exportUsersCsv({ fullPii })`, `unlockFullPiiExport(adminId, code)` emite JWT 5min + nonce Redis (single-use); nova rota `POST /admin/users/export-unlock`; `GET /admin/users/export?fullPii=true&unlockToken=...` valida token e audita como `USER_PII_FULL_EXPORTED`. Web: modal no `/users` com botão "Completo (2FA)" pedindo TOTP/backup antes do download.
 
 **Esforço restante estimado**: ~80-120 horas (Sprint 3 + 4 + LGPD docs + roadmap features).
 
