@@ -18,9 +18,7 @@ import { radius } from '../theme/radius';
 import ChevronButton from './ChevronButton';
 import { privacyService, type ConsentsState } from '../services/privacy';
 import { useAuthStore } from '../stores/authStore';
-
-const PRIVACY_POLICY_URL = 'https://toqueplay.com/privacy-policy';
-const TERMS_OF_USE_URL = 'https://toqueplay.com/terms-of-use';
+import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '../config/legal-urls';
 
 /**
  * Full-screen blocking overlay shown when the active TERMS_VERSION differs

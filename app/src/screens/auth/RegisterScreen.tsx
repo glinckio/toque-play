@@ -13,11 +13,9 @@ import Input from '../../components/Input';
 import ChevronButton from '../../components/ChevronButton';
 import HeroHeader from '../../components/HeroHeader';
 import { authService } from '../../services/auth';
+import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '../../config/legal-urls';
 
 type RegisterNav = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
-
-const PRIVACY_POLICY_URL = 'https://toqueplay.com/privacy-policy';
-const TERMS_OF_USE_URL = 'https://toqueplay.com/terms-of-use';
 
 function ConsentCheckbox({
   checked,

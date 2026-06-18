@@ -21,11 +21,9 @@ import { radius } from '../../theme/radius';
 import HeroHeader from '../../components/HeroHeader';
 import { privacyService, type ConsentsState } from '../../services/privacy';
 import type { RootStackParamList } from '../../navigation/types';
+import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '../../config/legal-urls';
 
 type RootNav = NativeStackNavigationProp<RootStackParamList>;
-
-const PRIVACY_POLICY_URL = 'https://toqueplay.com/privacy-policy';
-const TERMS_OF_USE_URL = 'https://toqueplay.com/terms-of-use';
 
 export default function PrivacyConsentScreen() {
   const navigation = useNavigation<RootNav>();

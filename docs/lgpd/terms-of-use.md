@@ -27,7 +27,8 @@ Estes Termos regulam a relação entre _[RAZÃO SOCIAL]_ ("ToquePlay", "nós", "
 - Senhas são armazenadas com hash bcrypt cost 12 — nunca em texto plano.
 
 ### 2.3 Verificação
-- Email deve ser verificado em até 10 minutos após o registro (código enviado por email).
+- Email deve ser verificado em até **10 minutos** após o registro (código enviado por email).
+- Código de redefinição de senha expira em **5 minutos**.
 - A ToquePlay pode exigir verificação adicional (CPF, documento) para uso de funções específicas.
 
 ---
@@ -94,7 +95,7 @@ Você se compromete a:
 A ToquePlay poderá suspender ou encerrar contas que:
 
 - Violem estes Termos (especialmente §3).
-- Sejam alvo de **3 ou mais reclamações** fundamentadas de outros usuários em 90 dias.
+- Sejam alvo de **reclamações fundamentadas reiteradas** por outros usuários, avaliadas caso a caso pelo time de moderação.
 - Apresentem atividade fraudulenta, pagamento chargeback, ou uso malicioso de rate limit.
 - Sejam determinadas por ordem judicial ou requisição da ANPD.
 
@@ -130,6 +131,7 @@ Termos podem ser atualizados. Mudanças **major** (ex.: v1 → v2) ou que afetem
 | Versão | Data | Mudança |
 |--------|------|---------|
 | v1.0 | 2026-06-16 | Versão inicial. |
+| v1.1 | 2026-06-18 | Adicionado prazo de reset de senha (5 min). Ajustada regra de bloqueio: removido número fixo "3 reclamações em 90 dias" (sem mecanismo automático), substituída por avaliação caso a caso. |
 
 ---
 

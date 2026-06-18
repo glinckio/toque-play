@@ -6,8 +6,8 @@ import { performLogout } from "@/lib/auth/session";
 
 export const metadata = { title: "Termos atualizados · ToquePlay Admin" };
 
-const TERMS_OF_USE_URL = "https://toqueplay.com/terms-of-use";
-const PRIVACY_POLICY_URL = "https://toqueplay.com/privacy-policy";
+const TERMS_OF_USE_URL = "/terms-of-use";
+const PRIVACY_POLICY_URL = "/privacy-policy";
 
 export default async function ReconsentPage() {
   const user = await getSessionUser();

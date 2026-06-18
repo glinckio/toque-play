@@ -88,22 +88,22 @@ Os contratos DPA completos estão disponíveis mediante solicitação ao DPO.
 
 ## 6. Retenção
 
-| Categoria | Período | Destino pós retenção |
-|-----------|---------|---------------------|
+| Categoria | Período | Mecanismo |
+|-----------|---------|-----------|
 | Conta ativa | Enquanto ativa | Anonimização em exclusão (`DELETE /me/delete-account`) |
-| Refresh tokens | 7 dias | Auto-purge Redis + DB |
-| Código de verificação de email | 10 min | DB TTL |
-| Código de reset de senha | 15 min | Redis TTL |
+| Refresh tokens | 7 dias | Auto-purge Redis + DB (`PrivacyRetentionCron`) |
+| Código de verificação de email | 10 min | DB TTL (`expiresAt`) |
+| Código de reset de senha | 5 min | Redis TTL |
 | Notificações | 180 dias | Auto-purge (cron diário) |
 | DeviceTokens (push) | 90 dias sem uso | Auto-purge |
-| Mensagens de chat | 2 anos | Archive S3 Glacier → apagar DB |
-| Logs de auditoria | 24 meses | Auto-purge (cron mensal) |
-| Eventos de partida (PointEvent, MatchEvent) | 5 anos | Archive Glacier → apagar DB |
-| Registros financeiros / fiscais | 5 anos | Exclusão (obrigação legal CDC/fiscal) |
-| Solicitações DPO | 5 anos | Exclusão (registro de compliance) |
-| Incidentes de segurança | 5 anos | Exclusão |
+| Mensagens de chat (ChatMessage) | 24 meses | Auto-purge (cron diário) |
+| Logs de auditoria (AuditLog) | 24 meses | Auto-purge (cron diário) |
+| Eventos de partida (PointEvent, MatchEvent) | 5 anos | Auto-purge (cron diário) |
+| Registros financeiros / fiscais (Registration, paymentId) | 5 anos | Retidos por obrigação legal (CDC/fiscal). Sem purge automático; exclusão manual mediante autorização do DPO + jurídico. |
+| Solicitações DPO (DataSubjectRequest) | 5 anos | Retidos por obrigação de compliance. Sem purge automático. |
+| Incidentes de segurança (SecurityIncident) | 5 anos | Retidos por obrigação de compliance. Sem purge automático. |
 
-Política operacionalizada por `PrivacyRetentionCron` no backend.
+Política operacionalizada por `PrivacyRetentionCron` no backend (cron diário, boot + 10min depois primeira execução). Categorias "sem purge automático" permanecem no DB até exclusão manual autorizada.
 
 ---
 
@@ -130,6 +130,10 @@ Você pode exercer, a qualquer momento, os seguintes direitos:
 
 Solicitações fora do app podem ser feitas pelo canal do DPO (`POST /me/dpo-contact` ou email).
 
+### Re-aceite de Termos
+
+Quando a versão dos Termos muda (variável de ambiente `TERMS_VERSION` no backend), o app e o painel admin interceptam o login/boot e bloqueiam a navegação até que você aceite explicitamente a nova versão. Endpoint dedicado: `POST /me/consents/accept-terms` (registrado com IP/UA no `UserConsent`).
+
 ---
 
 ## 8. Segurança dos dados (art. 46)
@@ -155,9 +159,9 @@ Adotamos medidas técnicas e organizacionais:
 
 A plataforma web admin usa 3 cookies **todos httpOnly** (não acessíveis via JavaScript):
 
-- `tp_access` — token JWT de acesso (15 min).
+- `tp_access` — token JWT de acesso. **Cookie persiste 7 dias**; o JWT embutido expira em 15 minutos e é renovado silenciosamente pelo `tp_refresh`.
 - `tp_refresh` — refresh token (7 dias).
-- `tp_user` — JSON mínimo do usuário logado (id, nome, email, role).
+- `tp_user` — JSON mínimo do usuário logado (id, nome, email, role; 7 dias).
 
 O app móvel armazena tokens em **Keychain (iOS) / Android Keystore** via `expo-secure-store`.
 
@@ -175,6 +179,7 @@ Esta Política pode ser atualizada para refletir mudanças legais, técnicas ou 
 | Versão | Data | Mudança |
 |--------|------|---------|
 | v1.0 | 2026-06-16 | Versão inicial. |
+| v1.1 | 2026-06-18 | Retenção: removido "Archive Glacier" (rejeitado), adicionado purge automático AuditLog/ChatMessage/PointEvent/MatchEvent. Reset code 15min→5min (alinhado com auth.service). Cookie `tp_access`: cookie=7d, JWT=15min. Documentado `POST /me/consents/accept-terms` §7. |
 
 ---
 

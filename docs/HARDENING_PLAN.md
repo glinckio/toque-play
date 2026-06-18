@@ -1,7 +1,7 @@
 # Plano Mestre — Hardening, LGPD e Evolução ToquePlay
 
-> Última atualização: **2026-06-17**
-> Status: **56 / 56 itens completos** (100%) — refactor telas grandes concluído
+> Última atualização: **2026-06-18**
+> Status: **63 / 63 itens completos** (100%) — refactor telas + LGPD drafts legais concluídos
 > Responsável: time ToquePlay · DPO · dev backend/frontend
 
 ---
@@ -15,7 +15,7 @@
 | **Sprint 2** — Altos | 16 | 16 | 0 | `cc03a03` |
 | **Sprint 3** — Médios | 16 | 16 | 0 | `f5a7087` + `53cf05f` + abaixo |
 | **Sprint 4** — Code Quality | 12 | 12 | 0 | `70cd6c2` + `53cf05f` + S4.1 abaixo |
-| **LGPD Documentos Legais** | 7 | 7 | 0 | `92fdf3c` |
+| **LGPD Documentos Legais** | 7 | 7 | 0 | `92fdf3c` + drafts 2026-06-16 |
 | **Extras (Roadmap)** | ~30 | 0 | ~30 | — |
 
 Legenda: ✅ Feito · 🚧 Parcial · ⬜ Pendente
@@ -399,11 +399,11 @@ Resultado consolidado de 3 agentes exploradores + validação manual de pontos c
 
 ---
 
-## Trilha LGPD — Documentos Legais (drafts) — ⬜ PENDENTE
+## Trilha LGPD — Documentos Legais (drafts) — ✅ COMPLETO (7/7)
 
-Criar `docs/lgpd/`:
+Drafts criados em `docs/lgpd/` (2026-06-16). Revisão jurídica externa ainda pendente antes de publicação oficial.
 
-### ⬜ L.1 Política de Privacidade (`privacy-policy.md`)
+### ✅ L.1 Política de Privacidade (`privacy-policy.md`)
 Estrutura (10 seções):
 1. Quem somos (controlador: ToquePlay, CNPJ, DPO contato).
 2. Dados coletados: identificação (nome, email, telefone, CPF), registro (foto), geolocalização opt-in, dados de pagamento (processados só por Stripe), dados de uso (logs auditoria, IP, UA).
@@ -415,8 +415,9 @@ Estrutura (10 seções):
 8. Segurança (art. 46) — medidas técnicas.
 9. Cookies/storage.
 10. Atualizações e versão (versionamento semântico).
+- **Placeholders pendentes**: `_[RAZÃO SOCIAL]_`, `_[CNPJ]_`, `_[endereço]_`.
 
-### ⬜ L.2 Termos de Uso (`terms-of-use.md`)
+### ✅ L.2 Termos de Uso (`terms-of-use.md`)
 1. Objeto.
 2. Cadastro e conta.
 3. Responsabilidades do usuário.
@@ -427,22 +428,26 @@ Estrutura (10 seções):
 8. Limitação de responsabilidade.
 9. Foro (Brasil — comarca São Paulo/SP ou sede da empresa).
 10. Versão.
+- **Placeholders pendentes**: `_[RAZÃO SOCIAL]_`, `_[XX.XXX.XXX/0001-XX]_`, `_[SÃO PAULO / SP ou sede da empresa]_`.
 
-### ⬜ L.3 Política de Cookies (`cookies-policy.md`)
+### ✅ L.3 Política de Cookies (`cookies-policy.md`)
 Mapear: `tp_access`, `tp_refresh`, `tp_user` (todos httpOnly após S0.3) + storage local app. Finalidade, duração, opt-out.
 
-### ⬜ L.4 Procedimento de Incidentes (`incident-response.md`)
+### ✅ L.4 Procedimento de Incidentes (`incident-response.md`)
 Runbook técnico: detecção (Sentry, alertas), contenção, erradicação, recuperação, notificação ANPD (até 2 dias úteis — Resolução CD/ANPD 15/2024), notificação aos afetados, registro pós-incidente.
+- **Placeholders pendentes**: `_[nome]_` para Tech Lead, CISO, Comunicação, Jurídico; `_[tel]_` DPO; `_[advogado externo]_`.
 
 ### ✅ L.5 RPO — Registro de Operações (`rpo.md`)
 Tabela: operação, dado, finalidade, base legal, coletado de, retenção, destinatário, transferência internacional, medidas segurança, responsável interno.
 **Feito em Sprint 3** — `docs/lgpd/rpo.md` com 15 operações mapeadas.
 
-### ⬜ L.6 Contratos DPA com terceiros (`dpa-templates/`)
+### ✅ L.6 Contratos DPA com terceiros (`dpa-templates/`)
 Templates para Stripe, Google, Sentry, AWS, push providers. Documento interno "configuração de privacidade" para cada.
+- **Pendências por template** (checklist `[ ]` interno): decisão AWS vs MinIO, app verification Google, plano Sentry Business, etc.
 
-### ⬜ L.7 Treinamento interno (`training.md`)
+### ✅ L.7 Treinamento interno (`training.md`)
 Slides para equipe sobre minimização, password hygiene, phishing, resposta a incidentes.
+- **Pendência**: criar `docs/lgpd/training-records/` (referenciado no §Avaliação).
 
 ---
 
@@ -528,7 +533,7 @@ Slides para equipe sobre minimização, password hygiene, phishing, resposta a i
 - ✅ **Sprint 1 completo** (11/11) — security backend `5a198c9` + LGPD feature `ed33fe9`.
 - ✅ **Sprint 2 completo** (16/16) — state machine, race condition, soft delete, retention cron, Sentry PII scrub, AuditRead decorator, masking CSV, incident response, DPO channel, 2FA TOTP backend, Stripe idempotency persistente, friendly/state checks já estavam OK.
 - ⬜ Sprint 3 (16 itens), Sprint 4 (12) — pendentes.
-- ⬜ Trilha LGPD legal (7 documentos) — pendente.
+- ✅ Trilha LGPD legal (7 documentos) — drafts completos, aguardando revisão jurídica externa.
 - ⬜ Roadmap de features extras (~30 ideias) — pendente.
 
 **Itens cobertos**: IDOR, rate limit + lockout, webhook + idempotência (Redis + tabela), magic bytes, refresh rotation + reuse detection, JWT blacklist, helmet reforçado, proxy whitelist, LGPD consent + direitos do titular (acesso, portabilidade, eliminação, DPO channel), retenção automatizada, Sentry PII scrub, audit de leitura PII, CSV masking, incident response, 2FA TOTP, race condition inscrição, state machine Tournament, soft delete Tournament, friendly accept/cancel já estavam OK, CPF já validava, XSS já estava OK.
