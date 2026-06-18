@@ -1,6 +1,6 @@
 # Política de Privacidade
 
-> **Versão**: v1.0 · **Data**: 2026-06-16
+> **Versão**: v1.2 · **Data**: 2026-06-18
 > Aplicável conforme `TERMS_VERSION=v1` no backend. Mudanças de versão exigem re-consentimento.
 
 A ToquePlay ("nós", "nossa", "Controladora") respeita a privacidade dos usuários ("titulares") e está comprometida em proteger seus dados pessoais em conformidade com a **Lei nº 13.709/2018 (LGPD)**.
@@ -116,7 +116,7 @@ Você pode exercer, a qualquer momento, os seguintes direitos:
 | **Confirmação** da existência de tratamento | `GET /me/data-summary` |
 | **Acesso** aos seus dados | `POST /me/export` (cooldown 24h) |
 | **Correção** de dados incompletos/inexatos | `PATCH /users/me` ou via DPO |
-| **Anonimização / Eliminação** | `DELETE /me/delete-account` |
+| **Anonimização / Eliminação** | `DELETE /me/delete-account` (autenticado, dentro do app) · formulário web público em [`/delete-account`](https://toqueplay.com/delete-account) (exigência Google Play Data Deletion) |
 | **Portabilidade** dos dados | `POST /me/export` (formato JSON) |
 | **Eliminação** dos dados pessoais desnecessários | `DELETE /me/delete-account` |
 | **Informação** sobre compartilhamento | Esta Política, §4 |
@@ -180,6 +180,7 @@ Esta Política pode ser atualizada para refletir mudanças legais, técnicas ou 
 |--------|------|---------|
 | v1.0 | 2026-06-16 | Versão inicial. |
 | v1.1 | 2026-06-18 | Retenção: removido "Archive Glacier" (rejeitado), adicionado purge automático AuditLog/ChatMessage/PointEvent/MatchEvent. Reset code 15min→5min (alinhado com auth.service). Cookie `tp_access`: cookie=7d, JWT=15min. Documentado `POST /me/consents/accept-terms` §7. |
+| v1.2 | 2026-06-18 | Documentado web form público `/delete-account` §7 (Google Play Data Deletion Policy). |
 
 ---
 
